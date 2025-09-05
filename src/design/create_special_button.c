@@ -64,21 +64,21 @@ GtkWidget *create_button_icon_no_callback(const char *icon_name, const char *lab
 }
 
 // create a button with two icons
-GtkWidget *create_button_two_icon(const char *main_icon, const char *second_icon, const char *label_text, GCallback callback, gpointer data) 
+GtkWidget *create_button_two_icon(const char *first_icon, const char *second_icon, const char *label_text, GCallback callback, gpointer data) 
 {
     GtkWidget *button = gtk_button_new();
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
 
-    if (second_icon != NULL) GTK_ALIGN_CENTER
+    if (first_icon != NULL)
     {
-        GtkWidget *second_icon = gtk_image_new_from_icon_name(second_icon);
-        gtk_box_append(GTK_BOX(box), second_icon);
+        GtkWidget *first_img = gtk_image_new_from_icon_name(first_icon);
+        gtk_box_append(GTK_BOX(box), first_img);
     }
 
-    GtkWidget *main_img = gtk_image_new_from_icon_name(main_icon);
+    GtkWidget *second_img = gtk_image_new_from_icon_name(second_icon);
     GtkWidget *label = gtk_label_new(label_text);
 
-    gtk_box_append(GTK_BOX(box), main_img);
+    gtk_box_append(GTK_BOX(box), second_img);
     gtk_box_append(GTK_BOX(box), label);
     gtk_button_set_child(GTK_BUTTON(button), box);
     g_signal_connect(button, "clicked", callback, data);

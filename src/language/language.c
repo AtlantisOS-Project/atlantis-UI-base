@@ -30,7 +30,7 @@ void init_language(void)
     // get the locale from the system
     setlocale(LC_ALL, "");
 
-    LOG_INFO("Set language by the system language.");
+    LOGI("Set language by the system language.");
     char langbuf[16] = {0};
 
     // read environment variable LANG
@@ -46,7 +46,7 @@ void init_language(void)
     }
 
     // set global usage of the language
-    LOG_INFO("Set new language: %s", langbuf);
+    LOGI("Set new language: %s", langbuf);
     setenv("LANGUAGE", langbuf, 1);
     bind_language(langbuf);
 }
@@ -56,11 +56,11 @@ void set_language(const char *lang)
 {
     if (!lang || strlen(lang) < 2)
     {
-    	LOG_INFO("Using fallback language");
+    	LOGI("Using fallback language");
     	lang = "en"; // fallback to english
     }
 	
-	LOG_INFO("Set the new language: %s", lang);
+	LOGI("Set the new language: %s", lang);
     setenv("LANGUAGE", lang, 1);
     setlocale(LC_ALL, "");
     bind_language(lang);

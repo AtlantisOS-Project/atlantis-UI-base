@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include "helper.h"
 #include "language.h"
+#include "design.h"
 
 GtkWidget *text_view = NULL;
 FILE *log_file_fc;
@@ -146,9 +147,6 @@ void log_viewer(GtkButton *button, gpointer user_data)
 	
 	// add the scrolled window to the box
     gtk_box_append(GTK_BOX(main_box), scrolled_window);
-
-    char log_file[4096];
-    get_log_filepath(log_file, sizeof(log_file));
 	
 	// open the log file
     open_log_source();
@@ -158,7 +156,7 @@ void log_viewer(GtkButton *button, gpointer user_data)
 
     gtk_window_present(GTK_WINDOW(window_log));
 }
-gtk_window_set_titlebar()
+
 // function that kills the program itself
 void kill_program(GtkButton *button, gpointer user_data)
 {

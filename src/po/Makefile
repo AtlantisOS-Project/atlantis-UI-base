@@ -25,8 +25,8 @@ PO_FILES = $(addprefix $(PODIR)/,$(addsuffix .po,$(LANGS)))
 MO_FILES = $(addprefix $(LOCALEDIR)/,$(addsuffix /LC_MESSAGES/$(PACKAGE).mo,$(LANGS)))
 
 # use sources from the main project 
-SRCS = $(shell find ../src -name '*.c')
-HEADERS = $(shell find ../src -name '*.h')
+SRCS = $(shell find .. -name '*.c')
+HEADERS = $(shell find .. -name '*.h')
 
 .PHONY: all init-po update-po mo-all install clean
 

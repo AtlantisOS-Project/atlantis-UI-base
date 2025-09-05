@@ -26,6 +26,12 @@
 #include "helper.h"
 
 /*
+* define special window width and height
+*/
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
+
+/*
 * Style Setting with libadwaita and CSS
 *
 */

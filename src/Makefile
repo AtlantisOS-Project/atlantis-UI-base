@@ -29,17 +29,26 @@
 #
 # cleanup
 # make clean
-
+#
+# create test app
+# make test
+#
+# run test app
+# make testing
 
 # compiler
 #CC = gcc
 CC = ccache gcc
-CFLAGS = -Wall -fPIC `pkg-config --cflags gtk4 libadwaita-1`
-LIBS = `pkg-config --cflags gtk4 libadwaita-1`
+# pass on to GCC where to search
+INCLUDES = -I. -Iinclude
+# compiler flags
+CFLAGS = -Wall -fPIC $(INCLUDES) `pkg-config --cflags gtk4 libadwaita-1`
+# linker flags
+LIBS   = `pkg-config --libs gtk4 libadwaita-1`
 
 # all .c files
+HEADERS = $(shell find . -name '*.h')
 SRC = $(shell find . -name '*.c' ! -name 'test.c')
-HDR = $(shell find . -name '*.h')
 
 # objectfiles
 OBJ = $(SRC:.c=.o)
@@ -47,7 +56,7 @@ OBJ = $(SRC:.c=.o)
 # targets
 STATIC_LIB = libatluibase.a
 SHARED_LIB = libatluibase.so
-TEST_BUILD = test_app
+TEST_APP = test_app
 
 # installtion paths
 PREFIX = /usr/local
@@ -61,8 +70,11 @@ all: lib test po
 # build libary
 lib: $(STATIC_LIB) $(SHARED_LIB)
 
+# build test program
+test: $(TEST_APP)
+
 # static library
-$(STATIC_LIB): $(OBJ)
+$(STATIC_LIB): $(OBJ) 
 	ar rcs $@ $(OBJ)
 
 # build dynamic library
@@ -70,15 +82,15 @@ $(SHARED_LIB): $(OBJ)
 	$(CC) -shared -o $@ $(OBJ) $(LIBS)
 
 # create objectfiles
-%.o: %.c $(HDR)
-	$(CC) -c $< -o $@ $(CFLAGS)
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@ 
 
 # build test program
-$(TEST_APP): test/test.c $(SRC)
+$(TEST_APP): test/test.c $(SRC) $(HEADERS)
 	$(CC) test/test.c $(SRC) -o $(TEST_BUILD) $(CFLAGS) $(LIBS)
 
 # run test program
-test: $(TEST_BUILD)
+testing: $(TEST_BUILD)
 	./$(TEST_BUILD)
 
 # running language logic in /po
@@ -89,7 +101,7 @@ po:
 install: lib
 	mkdir -p $(LIBDIR) $(INCDIR)
 	cp $(STATIC_LIB) $(SHARED_LIB) $(LIBDIR)/
-	cp $(HDR) $(INCDIR)/
+	cp $(HEADERS) $(INCDIR)/
 	$(MAKE) -C po install
 
 # cleanup

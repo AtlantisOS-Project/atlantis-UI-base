@@ -32,6 +32,8 @@ Usage:
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
+#include <stdarg.h>
 
 // global int 
 int use_syslog = 0;
@@ -54,24 +56,31 @@ void make_dir(const char *path)
     }
 }
 
+int map_level_to_syslog(int level) 
+{
+    switch(level) 
+    {
+        case 1: return LOG_INFO;
+        case 2: return LOG_WARNING;
+        case 3: return LOG_ERR;
+        case 4: return LOG_DEBUG;
+        default: return LOG_INFO;
+    }
+}
+
+
 // function that set a new logging mode 
 void set_logging_mode(int syslog_mode) 
 {
     use_syslog = syslog_mode;
 	
-	// use syslog
+    // use syslog
     if (use_syslog) 
     {
         openlog(LOCALE_DOMAIN, LOG_PID | LOG_CONS, LOG_USER);
         log_path[0] = '\0';  
     } 
-    
-    /* use a own logging methode
-    *
-    * two possible log dirs:
-    * /var/log/LOCALE_DOMAIN
-    * ~/.local/log/LOCALE_DOMAIN
-    */
+    // own logging method
     else 
     {
         char log_dir[512];
@@ -79,18 +88,18 @@ void set_logging_mode(int syslog_mode)
         time_t now = time(NULL);
         struct tm *t = localtime(&now);
 		
-		// use /var/log
+        // use /var/log
         snprintf(log_dir, sizeof(log_dir), "/var/log/%s", LOCALE_DOMAIN);
         // create the log dir 
         if (mkdir(log_dir, 0755) == -1 && errno != EEXIST) 
         {
-            // use /.local as fallback
+            // use ~/.local as fallback
             snprintf(log_dir, sizeof(log_dir), "%s/.local/log/%s", getenv("HOME"), LOCALE_DOMAIN);
         }
         // create the dir
         make_dir(log_dir);
 		
-		// create the name of the log file
+        // create the name of the log file
         snprintf(log_file, sizeof(log_file),
                  "%s/%04d-%02d-%02d_%02d-%02d-%02d.log",
                  log_dir,
@@ -101,7 +110,7 @@ void set_logging_mode(int syslog_mode)
                  t->tm_min,
                  t->tm_sec);
 		
-		// create the log file
+        // create the log file
         logfile = fopen(log_file, "a");
         if (!logfile) 
         {
@@ -109,7 +118,7 @@ void set_logging_mode(int syslog_mode)
             exit(EXIT_FAILURE);
         }
 		
-		// write every line to the log file
+        // write every line to the log file
         setvbuf(logfile, NULL, _IOLBF, 0);
 
         // save the path of the log file
@@ -133,7 +142,6 @@ void close_logging(void)
     {
         closelog();
     } 
-    
     // manual logging
     else if (logfile) 
     {
@@ -153,10 +161,10 @@ void log_message(const char *level, int syslog_level, const char *fmt, va_list a
 	// using syslog
     if (use_syslog) 
     {
-        char buffer[1024];
-        vsnprintf(buffer, sizeof(buffer), fmt, args);
-        syslog(syslog_level, "[%s] %s", level, buffer);
-    } 
+    	char buffer[1024];
+    	vsnprintf(buffer, sizeof(buffer), fmt, args);
+    	syslog(map_level_to_syslog(syslog_level), "[%s] %s", level, buffer);
+	}
     
     // manual logging
     else 
@@ -171,7 +179,16 @@ void log_message(const char *level, int syslog_level, const char *fmt, va_list a
         
         // ouput to the terminal
         g_print("[%s] [%s]: ", time_buf, level);
-        g_vprintf(fmt, args);
+        vprintf(fmt, args);
         g_print("\n");
     }
+}
+
+// wrapper: takes variadic arguments and forwards to log_message
+void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...) 
+{
+    va_list args;
+    va_start(args, fmt);
+    log_message(level, syslog_level, fmt, args);
+    va_end(args);
 }

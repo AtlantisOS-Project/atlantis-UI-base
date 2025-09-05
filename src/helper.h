@@ -19,6 +19,7 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <adwaita.h>
+#include <syslog.h>
 
 #ifndef HELPER_H
 #define HELPER_H
@@ -91,18 +92,34 @@ const char *get_log_path(void);
 void close_logging(void);
 // function that create the log message
 void log_message(const char *level, int syslog_level, const char *fmt, va_list args);
+// wrapper: takes variadic arguments and forwards to log_message
+void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...);
 
 /* 
 * makros for the logging
 */
+/*
 // infos
 #define LOG_INFO(msg, ...)  do { va_list ap; va_start(ap, msg); log_message("INFO",  LOG_INFO,  msg, ap); va_end(ap); } while(0)
 // errors
-#define LOG_ERROR(msg, ...) do { va_list ap; va_start(ap, msg); log_message("ERROR", LOG_ERR,   msg, ap); va_end(ap); } while(0)
+#define LOG_ERROR(msg, ...) do { va_list ap; va_start(ap, msg); log_message("ERROR", LOG_ERROR,   msg, ap); va_end(ap); } while(0)
 // warnings
 #define LOG_WARN(msg, ...)  do { va_list ap; va_start(ap, msg); log_message("WARN",  LOG_WARNING, msg, ap); va_end(ap); } while(0)
 // debug infos
 #define LOG_DEBUG(msg, ...) do { va_list ap; va_start(ap, msg); log_message("DEBUG", LOG_DEBUG, msg, ap); va_end(ap); } while(0)
+*/
+// eigene Level-Konstanten
+#define LOG_LEVEL_INFO   1
+#define LOG_LEVEL_WARN   2
+#define LOG_LEVEL_ERROR  3
+#define LOG_LEVEL_DEBUG  4
+
+// Logging Macros
+#define LOGI(fmt, ...)  log_message_wrap("INFO",  LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
+#define LOGW(fmt, ...)  log_message_wrap("WARN",  LOG_LEVEL_WARN,  fmt, ##__VA_ARGS__)
+#define LOGE(fmt, ...)  log_message_wrap("ERROR", LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
+#define LOGD(fmt, ...)  log_message_wrap("DEBUG", LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
+
 
 /*
 * Log viewer
@@ -124,6 +141,6 @@ gboolean update_text_view_from_log(gpointer user_data);
 void log_viewer_destroyed(GtkWidget *widget, gpointer user_data);
 
 // header that create the popover menu
-GtkWidget* create_custom_headerbar(gpointer stack) 
+GtkWidget* create_custom_headerbar(gpointer stack);
 
 #endif // HELPER_H

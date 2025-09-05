@@ -31,7 +31,7 @@ GtkCssProvider* create_css_provider()
     GtkCssProvider *new_provider = gtk_css_provider_new();
     if (!new_provider) 
     {
-        LOG_ERROR("Could not create the CSS provider.");
+        LOGE("Could not create the CSS provider.");
         exit(1);
     }
     return new_provider;
@@ -49,7 +49,7 @@ void unload_css_provider(GtkCssProvider *provider)
 // function to load the css provider with adw themes
 void load_adw_provider(void) 
 {
-    const char *adw_css = get_custom_css();
+    const char *adw_css = get_custom_adw_css();
     gtk_css_provider_load_from_string(provider_adw, adw_css);
 }
 

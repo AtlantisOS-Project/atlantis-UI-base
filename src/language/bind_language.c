@@ -45,17 +45,17 @@ void bind_language(const char *lang)
             fclose(file);
             bindtextdomain(LOCALE_DOMAIN, locale_paths[i]);
             found = 1;
-            LOG_INFO("Using translations from: %s", locale_paths[i]);
+            LOGI("Using translations from: %s", locale_paths[i]);
             break;
         }
     }
 
     if (!found) 
     {
-        LOG_INFO("No .mo found, fallback to /usr/share/locale");
+        LOGI("No .mo found, fallback to /usr/share/locale");
         bindtextdomain(LOCALE_DOMAIN, "/usr/share/locale");
     }
 
     textdomain(LOCALE_DOMAIN);
-    LOG_INFO("Set textdomain: %s", LOCALE_DOMAIN);
+    LOGI("Set textdomain: %s", LOCALE_DOMAIN);
 }

@@ -31,21 +31,21 @@ const char *LOCALE_DOMAIN = "test";
 // dummy callback
 static void test_dummy_callback(GtkWidget *widget, gpointer stack)
 {
-	LOG_INFO("Button clicked");
+	LOGI("Button clicked");
 }
 
 // test the log
 static void test_log_callback(GtkWidget *widget, gpointer stack)
 {
-	LOG_INFO("Hello %s!", "World");
-	LOG_INFO("Total shit");
-	LOG_ERROR("This are the are with code %d", 42);
-	LOG_INFO("Some bullshit");
-	LOG_WARN("This are warning. Nobody cares!");
-	LOG_DEBUG("Debug-Information: ");
-	LOG_DEBUG("Bring some fruits: ");
-	LOG_DEBUG("bananas=%dkg, apples=%dkg, raspberries=%dkg", 10, 20, 50);
-	LOG_INFO("No more nonsense");
+	LOGI("Hello %s!", "World");
+	LOGI("Total shit");
+	LOGE("This are the are with code %d", 42);
+	LOGI("Some bullshit");
+	LOGW("This are warning. Nobody cares!");
+	LOGD("Debug-Information: ");
+	LOGD("Bring some fruits: ");
+	LOGD("bananas=%dkg, apples=%dkg, raspberries=%dkg", 10, 20, 50);
+	LOGI("No more nonsense");
 }
 
 // test switching in the stack
@@ -57,11 +57,11 @@ static void test_stack(GtkWidget *widget, gpointer stack)
     gtk_widget_set_valign(test_stack, GTK_ALIGN_CENTER);
 	
 	// create some button 
-    GtkWidget *btn1 = create_button(_("Normal Button"), G_CALLBACK(test_dummy_callback), stack,);
+    GtkWidget *btn1 = create_button(_("Normal Button"), G_CALLBACK(test_dummy_callback), stack);
     GtkWidget *btn2 = create_button_icon("preferences-other-symbolic", _("1. Special Button"), G_CALLBACK(test_dummy_callback), stack);
     GtkWidget *btn3 = create_button_icon_no_callback("preferences-other-symbolic", _("2. Special Button"));
-    GtkWidget *btn4 = create_button_two_icon("preferences-other-symbolic", _("3. Special Button"), G_CALLBACK(test_dummy_callback), stack);
-    GtkWidget *btn5 = create_button_icon_position("preferences-other-symbolic", _("4. Special Button"), G_CALLBACK(test_dummy_callback), stack, GTK_ALIGN_RIGHT);
+    GtkWidget *btn4 = create_button_two_icon("preferences-other-symbolic", "preferences-other-symbolic", _("3. Special Button"), G_CALLBACK(test_dummy_callback), stack);
+    GtkWidget *btn5 = create_button_icon_position("preferences-other-symbolic", _("4. Special Button"), G_CALLBACK(test_dummy_callback), stack, GTK_ALIGN_END);
     GtkWidget *btn_back = create_button_icon_position("pan-start-symbolic", _("Back Button"), G_CALLBACK(show_home_page), stack, GTK_ALIGN_CENTER);
 	
     // add the button to the box
@@ -101,10 +101,10 @@ static void switch_log_type_callback(GtkWidget *widget, gpointer stack)
 	
 	// create some labels
 	GtkWidget *label1 = create_label_icon("preferences-other-symbolic", "some nonsense");
- 	GtkWidget *label2 = create_label_icon_position("preferences-other-symbolic", "some bullshit", GTK_ALIGN_RIGHT);
+ 	GtkWidget *label2 = create_label_icon_position("preferences-other-symbolic", "some bullshit", GTK_ALIGN_END);
 	
 	// create some button 
-    GtkWidget *btn1 = create_button_icon("preferences-other-symbolic", _("Manual Logging"), G_CALLBACK(test_dummy_callback), stack,);
+    GtkWidget *btn1 = create_button_icon("preferences-other-symbolic", _("Manual Logging"), G_CALLBACK(test_dummy_callback), stack);
     GtkWidget *btn2 = create_button_icon("preferences-other-symbolic", _("Syslog"), G_CALLBACK(test_dummy_callback), stack);
     GtkWidget *btn_back = create_button_icon("pan-start-symbolic", _("Back Button"), G_CALLBACK(show_home_page), stack);
     	
@@ -132,6 +132,9 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     // 0 → manual logging
     // 1 → syslog
     set_logging_mode(0);
+    
+    // use the advanced custom css provider
+    //use_adw_provider();
     
     //adw_init();
     
@@ -194,7 +197,7 @@ int main(int argc, char *argv[])
 {
 	g_autoptr(AdwApplication) app = NULL;
 
-    app = adw_application_new("org.test.atlantis.uibase", G_APPLICATION_FLAGS_NONE);
+    app = adw_application_new("org.test.atlantis.uibase", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK (activate_test), NULL);
 
     return g_application_run(G_APPLICATION (app), argc, argv);

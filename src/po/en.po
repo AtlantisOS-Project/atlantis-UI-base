@@ -1,0 +1,84 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-05 16:27+0200\n"
+"PO-Revision-Date: 2025-09-05 16:27+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ../test/test.c:61
+msgid "1. Special Button"
+msgstr "1. Special Button"
+
+#: ../test/test.c:62
+msgid "2. Special Button"
+msgstr "2. Special Button"
+
+#: ../test/test.c:63
+msgid "3. Special Button"
+msgstr "3. Special Button"
+
+#: ../test/test.c:64
+msgid "4. Special Button"
+msgstr "4. Special Button"
+
+#: ../test/test.c:65 ../test/test.c:109
+msgid "Back Button"
+msgstr "Back Button"
+
+#. process-stop / application-exit
+#: ../helper/log/write_log_text.c:212
+msgid "Exit"
+msgstr "Exit"
+
+#: ../helper/log/write_log_text.c:127
+msgid "Log Viewer"
+msgstr "Log Viewer"
+
+#. create some button
+#: ../test/test.c:107
+msgid "Manual Logging"
+msgstr "Manual Logging"
+
+#. create some button
+#: ../test/test.c:60
+msgid "Normal Button"
+msgstr "Normal Button"
+
+#. utilities-terminal - utilities-terminal-symbolic - utilities-system-monitor-symbolic
+#: ../helper/log/write_log_text.c:188
+msgid "Show Log"
+msgstr "Show Log"
+
+#: ../test/test.c:182
+msgid "Switch Log Type"
+msgstr "Switch Log Type"
+
+#: ../test/test.c:108
+msgid "Syslog"
+msgstr "Syslog"
+
+#: ../test/test.c:181
+msgid "Test Log"
+msgstr "Test Log"
+
+#. create the buttons with translated labels
+#: ../test/test.c:180
+msgid "Test Stack"
+msgstr "Test Stack"
+
+#. GtkWindow *window = GTK_WINDOW(gtk_window_new()); // second variante → use adw_init();
+#: ../test/test.c:144
+msgid "Test UI Base"
+msgstr "Test UI Base"
