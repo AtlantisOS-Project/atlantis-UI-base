@@ -6,8 +6,22 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* Usage:
-* write_log();
+Usage:
+* 0 = own logging function to /var/log/LOCALE_DOMAIN or 
+* 1 = syslog
+* 
+* This at the start:
+* set_logging_mode(1);
+*
+* In the program:
+* LOG_INFO("Programm gestartet");
+* LOG_INFO("Hallo %s!", "Welt");
+* LOG_ERROR("Dies ist ein Fehler mit Code %d", 42);
+* LOG_WARN("Dies ist eine Warnung");
+* LOG_DEBUG("Debug-Informationen: x=%d, y=%d", 10, 20);
+*
+* At the end of the program:
+* close_logging();
 */
 
 #include <stdio.h>

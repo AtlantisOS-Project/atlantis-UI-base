@@ -27,7 +27,7 @@
 * Defined in the main Code
 *
 * Usage:
-* const char *LOCALE_DOMAIN = "atlupdater"
+* const char *LOCALE_DOMAIN = "atlupdater";
 */
 // define the local domain 
 extern const char *LOCALE_DOMAIN;
