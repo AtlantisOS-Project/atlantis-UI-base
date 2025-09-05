@@ -34,8 +34,8 @@
 # compiler
 #CC = gcc
 CC = ccache gcc
-CFLAGS = -Wall -fPIC `pkg-config --cflags gtk4`
-LIBS = `pkg-config --libs gtk4`
+CFLAGS = -Wall -fPIC `pkg-config --cflags gtk4 libadwaita-1`
+LIBS = `pkg-config --cflags gtk4 libadwaita-1`
 
 # all .c files
 SRC = $(shell find . -name '*.c' ! -name 'test.c')
