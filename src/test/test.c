@@ -133,10 +133,14 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     // 1 → syslog
     set_logging_mode(0);
     
+    //adw_init();
+    
     // create the main window
-    GtkWindow *window = GTK_WINDOW(gtk_window_new());
+    GtkWidget *window = gtk_application_window_new (app); 
+    //GtkWindow *window = GTK_WINDOW(gtk_window_new()); // second variante → use adw_init();  
     gtk_window_set_title(GTK_WINDOW(window), _("Test UI Base"));
-    gtk_window_set_default_size(GTK_WINDOW(window), WINDOW_WIDTH, WINDOW_HEIGHT);
+    gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
+    
 
     // create a box container for the main content
     GtkWidget *content_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -188,13 +192,28 @@ static void activate_test(GtkApplication* app, gpointer user_data)
 // main function
 int main(int argc, char *argv[]) 
 {
+	g_autoptr(AdwApplication) app = NULL;
+
+    app = adw_application_new("org.test.atlantis.uibase", G_APPLICATION_FLAGS_NONE);
+    g_signal_connect(app, "activate", G_CALLBACK (activate_test), NULL);
+
+    return g_application_run(G_APPLICATION (app), argc, argv);
+}
+
+// alternative main
+/*
+int main(int argc, char *argv[]) 
+{
     GtkApplication *app;
     int status;
 
-    app = gtk_application_new("io.test.atl.uibase", G_APPLICATION_DEFAULT_FLAGS);
+    app = gtk_application_new("org.test.atlantis.uibase", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate_test), NULL);
     status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
 
     return status;
 }
+*/
+
+

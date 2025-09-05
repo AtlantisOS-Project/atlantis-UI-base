@@ -29,6 +29,27 @@
 * Style Setting with libadwaita and CSS
 *
 */
+/*
+* helper functions for libadwaita style and custom CSS
+*/
+// the adw_provider
+const char *get_custom_adw_css(void);
+// function that create a css provider
+GtkCssProvider* create_css_provider();
+// function that unload a css provider
+void unload_css_provider(GtkCssProvider *provider);
+// function that load the main css from get_custom_adw_css()
+void load_adw_provider(void);
+// function that reload the theme, if theme changed
+void adw_theme_changed(AdwStyleManager *style_manager, GParamSpec *pspec, gpointer user_data);
+
+/*
+* use the libadwaita and custom CSS theme
+*
+* Usage:
+* use-adw_provider();
+*/
+void use_adw_provider(void);
 
 /*
 * Switch page in the stack
