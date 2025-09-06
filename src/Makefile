@@ -8,6 +8,9 @@
 # Usage:
 # everything:
 # make
+# 
+# building only object files
+# make objects
 #
 # building libs
 # make lib
@@ -63,9 +66,12 @@ PREFIX = /usr/local
 INCDIR = $(PREFIX)/include/atluibase
 LIBDIR = $(PREFIX)/lib
 
-.PHONY: all lib test po install clean
+.PHONY: all objects lib test po install clean testing
 
 all: lib test po
+
+# Building only object files
+objects: $(OBJ)
 
 # build libary
 lib: $(STATIC_LIB) $(SHARED_LIB)
