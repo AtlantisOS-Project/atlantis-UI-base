@@ -57,6 +57,15 @@ int make_path(const char *path);
 int make_path_dirname(const char *filepath);
 
 /*
+* get values from a config file
+*
+* Usage:
+* char *update_type = get_conf_value(conf_file, "UPDATE_TYPE");
+*/
+// function that get values from config files
+char *get_config_value(const char *filename, const char *key);
+
+/*
 * Logging:
 *
 * Usage:
