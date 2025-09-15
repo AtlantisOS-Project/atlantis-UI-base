@@ -12,148 +12,79 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <signal.h>
-#include <unistd.h>
+#include <vte/vte.h>
 #include "helper.h"
 #include "language.h"
 #include "design.h"
 
-GtkWidget *text_view = NULL;
-FILE *log_file_fc;
-int log_fd;
-gsize last_offset = 0;
-guint log_timeout_id = 0;
-
-FILE *log_stream = NULL;
+#define MAX_LOG_LINES 200
 
 // use extern configs
 extern int use_syslog;       
 extern const char *LOCALE_DOMAIN;
 
-// function that open the log 
-void open_log_source()
+// create new process
+static void spawn_cb(VteTerminal *terminal, GPid pid, GError *error, gpointer user_data)
 {
-    // V1: use journalctl (syslog only)
-    if (use_syslog) 
+    if (error) 
     {
-        char cmd[512];
-        snprintf(cmd, sizeof(cmd), "journalctl -f -t %s --output=short", LOCALE_DOMAIN);
-        log_stream = popen(cmd, "r");
+        g_printerr("Error starting the process: %s\n", error->message);
+        g_error_free(error);
     }
-    // use own log file
+     
     else 
     {
-		// get the log file
-        const char *log_file = get_log_path();  
-        if (!log_file) 
-        {
-        	return;
-        }
-        
-        // open the log file
-        log_stream = fopen(log_file, "r");
-        if (log_stream) 
-        {
-            fseek(log_stream, 0, SEEK_END);
-            last_offset = ftell(log_stream);
-        }
+        g_print("Process started, PID=%d\n", pid);
     }
 }
 
-// function to write string to the textview 
-void write_to_textview(GtkWidget *text_view, const char *str)
+// create a window, that shows the log
+void log_viewer(void)
 {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-    if (!buffer) return;
+    GtkWidget *window_log;
+    GtkWidget *terminal;
 
-    GtkTextIter iter;
-    gtk_text_buffer_get_end_iter(buffer, &iter);
-    gtk_text_buffer_insert(buffer, &iter, str, -1);
-    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(text_view), &iter, 0, TRUE, 0.0, 0.0);
-}
-
-
-// function that reads the new logs
-gboolean update_text_view_from_log(gpointer user_data)
-{
-    if (!log_stream) 
-    {
-    	return G_SOURCE_CONTINUE;
-    }
-
-    gchar buffer[512];
-    if (use_syslog) 
-    {
-        // journalctl continuously outputs new lines
-        if (fgets(buffer, sizeof(buffer), log_stream)) 
-        {
-            // write this to the textview
-            write_to_textview(text_view, buffer);
-        }
-    } 
-    
-    else 
-    {
-        // own file 
-        fseek(log_stream, last_offset, SEEK_SET);
-        while (fgets(buffer, sizeof(buffer), log_stream)) 
-        {
-            // write this to the textview
-            write_to_textview(text_view, buffer);
-        }
-        last_offset = ftell(log_stream);
-    }
-    return G_SOURCE_CONTINUE;
-}
-
-// cleanup when log viewer is closed 
-void log_viewer_destroyed(GtkWidget *widget, gpointer user_data)
-{
-    if (log_timeout_id > 0)
-    {
-        g_source_remove(log_timeout_id);
-        log_timeout_id = 0;
-    }
-}
-
-// function that create the log viewer
-void log_viewer(GtkButton *button, gpointer user_data)
-{
-	// create the log window
-    GtkWidget *window_log = gtk_window_new();
+    // create window for the log viewer
+    window_log = gtk_window_new();
     gtk_window_set_title(GTK_WINDOW(window_log), _("Log Viewer"));
-    gtk_window_set_default_size(GTK_WINDOW(window_log), WINDOW_WIDTH, WINDOW_HEIGHT);
-    g_signal_connect(window_log, "destroy", G_CALLBACK(log_viewer_destroyed), NULL);
-	
-	// add the main box
-    GtkWidget *main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
-    gtk_window_set_child(GTK_WINDOW(window_log), main_box);
-	
-	// create the text view
-    text_view = gtk_text_view_new();
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
-    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(text_view), FALSE);
-	
-	// create the scrolled window
-    GtkWidget *scrolled_window = gtk_scrolled_window_new();
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), text_view);
-    gtk_widget_set_hexpand(scrolled_window, TRUE); 
-    gtk_widget_set_vexpand(scrolled_window, TRUE); 
-	
-	// add the scrolled window to the box
-    gtk_box_append(GTK_BOX(main_box), scrolled_window);
-	
-	// open the log file
-    open_log_source();
-    	
-	// update the log every 250 ms
-    log_timeout_id = g_timeout_add(250, update_text_view_from_log, NULL);
+    gtk_window_set_default_size(GTK_WINDOW(window_log), 800, 600);
 
+    // create new terminal widget 
+    terminal = vte_terminal_new();
+    gtk_window_set_child(GTK_WINDOW(window_log), terminal);
+
+    // use journalctl for the output
+    // NOTE: 
+    // use for logging journald
+    // full log of journald
+    //char *argv[] = { "journalctl", "-f", NULL };
+    // specific for the domain
+	char cmd[512];
+	snprintf(cmd, sizeof(cmd), "journalctl -f -t %s --output=short", LOCALE_DOMAIN);
+
+	char *argv[] = { "/bin/sh", "-c", cmd, NULL };
+	
+	// create a child process for the terminal widget
+    vte_terminal_spawn_async(
+        VTE_TERMINAL(terminal),
+        VTE_PTY_DEFAULT,        // PTY
+        NULL,                   // working dir
+        argv,                   // argv
+        NULL,                   // envv
+        G_SPAWN_DEFAULT,        // flags
+        NULL,                   // child_setup
+        NULL,                   // child_setup_data
+        NULL,                   // child_setup_data_destroy
+        -1,                     // timeout
+        NULL,                   // cancellable
+        spawn_cb,               // callback
+        NULL                    // user_data
+    );
+	
+	// show the window
     gtk_window_present(GTK_WINDOW(window_log));
 }
 
@@ -167,7 +98,7 @@ void kill_program(GtkButton *button, gpointer user_data)
 }
 
 // header that create the popover menu
-GtkWidget* create_custom_headerbar(gpointer stack) 
+GtkWidget *create_custom_headerbar(gpointer stack) 
 {    
     /*
     Icons for the menu:

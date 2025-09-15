@@ -48,10 +48,13 @@ void free_wrapper(void *p);
 // the makro that use the wrapper
 #define auto_free __attribute__((cleanup(free_wrapper)))
 
-
-
-// create a directory
+// helper function that create a directory
 void make_dir(const char *path);
+
+// creates a complete path by creating missing parent directories
+int make_path(const char *path);
+// creates parent directory of a file 
+int make_path_dirname(const char *filepath);
 
 /*
 * Logging:

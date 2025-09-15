@@ -34,6 +34,8 @@ Usage:
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
+#include "helper.h"
 
 // global int 
 int use_syslog = 0;
@@ -56,6 +58,7 @@ void make_dir(const char *path)
     }
 }
 
+// function that write level to syslog level
 int map_level_to_syslog(int level) 
 {
     switch(level) 
@@ -85,19 +88,30 @@ void set_logging_mode(int syslog_mode)
     {
         char log_dir[512];
         char log_file[1024];
+        char cwd[PATH_MAX]; // PATH_MAX from limits.h
         time_t now = time(NULL);
         struct tm *t = localtime(&now);
+        
+        if (getcwd(cwd, sizeof(cwd)) == NULL)
+        {
+        	 perror("getcwd");
+             exit(EXIT_FAILURE);
+		}
 		
         // use /var/log
-        snprintf(log_dir, sizeof(log_dir), "/var/log/%s", LOCALE_DOMAIN);
+        //snprintf(log_dir, sizeof(log_dir), "/var/log/%s", LOCALE_DOMAIN);
+        snprintf(log_dir, sizeof(log_dir), "%s/log/%s", cwd, LOCALE_DOMAIN); // for local tests
+        g_print("%s\n", log_dir);
         // create the log dir 
-        if (mkdir(log_dir, 0755) == -1 && errno != EEXIST) 
+        if (make_path(log_dir) != 0) 
         {
             // use ~/.local as fallback
-            snprintf(log_dir, sizeof(log_dir), "%s/.local/log/%s", getenv("HOME"), LOCALE_DOMAIN);
+            //snprintf(log_dir, sizeof(log_dir), "%s/.local/log/%s", getenv("HOME"), LOCALE_DOMAIN);
+            snprintf(log_dir, sizeof(log_dir), "%s/log/%s", cwd, LOCALE_DOMAIN); // for local tests
+            g_print("%s\n", log_dir);
+            // create the dir
+        	make_path(log_dir);
         }
-        // create the dir
-        make_dir(log_dir);
 		
         // create the name of the log file
         snprintf(log_file, sizeof(log_file),

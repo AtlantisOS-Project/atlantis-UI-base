@@ -45,9 +45,9 @@ CC = ccache gcc
 # pass on to GCC where to search
 INCLUDES = -I. -Iinclude
 # compiler flags
-CFLAGS = -Wall -fPIC $(INCLUDES) `pkg-config --cflags gtk4 libadwaita-1`
+CFLAGS = -Wall -fPIC $(INCLUDES) `pkg-config --cflags glib-2.0 gtk4 libadwaita-1 vte-2.91-gtk4`
 # linker flags
-LIBS   = `pkg-config --libs gtk4 libadwaita-1`
+LIBS   = `pkg-config --libs glib-2.0 gtk4 libadwaita-1 vte-2.91-gtk4`
 
 # all .c files
 HEADERS = $(shell find . -name '*.h')
@@ -93,11 +93,11 @@ $(SHARED_LIB): $(OBJ)
 
 # build test program
 $(TEST_APP): test/test.c $(SRC) $(HEADERS)
-	$(CC) test/test.c $(SRC) -o $(TEST_BUILD) $(CFLAGS) $(LIBS)
+	$(CC) test/test.c $(SRC) -o $(TEST_APP) $(CFLAGS) $(LIBS)
 
 # run test program
-testing: $(TEST_BUILD)
-	./$(TEST_BUILD)
+testing: $(TEST_APP)
+	./$(TEST_APP)
 
 # running language logic in /po
 po:

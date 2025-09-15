@@ -26,7 +26,7 @@
 #include "design.h"
 
 // define the local domain
-const char *LOCALE_DOMAIN = "test";
+const char *LOCALE_DOMAIN = "test_app";
 
 // dummy callback
 static void test_dummy_callback(GtkWidget *widget, gpointer stack)
@@ -104,8 +104,8 @@ static void switch_log_type_callback(GtkWidget *widget, gpointer stack)
  	GtkWidget *label2 = create_label_icon_position("preferences-other-symbolic", "some bullshit", GTK_ALIGN_END);
 	
 	// create some button 
-    GtkWidget *btn1 = create_button_icon("preferences-other-symbolic", _("Manual Logging"), G_CALLBACK(test_dummy_callback), stack);
-    GtkWidget *btn2 = create_button_icon("preferences-other-symbolic", _("Syslog"), G_CALLBACK(test_dummy_callback), stack);
+    GtkWidget *btn1 = create_button_icon("preferences-other-symbolic", _("Manual Logging"), G_CALLBACK(set_manual), stack);
+    GtkWidget *btn2 = create_button_icon("preferences-other-symbolic", _("Syslog"), G_CALLBACK(set_syslog), stack);
     GtkWidget *btn_back = create_button_icon("pan-start-symbolic", _("Back Button"), G_CALLBACK(show_home_page), stack);
     	
     // add the button  and label to the box
@@ -131,15 +131,16 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     // start logging
     // 0 → manual logging
     // 1 → syslog
-    set_logging_mode(0);
+    set_logging_mode(1);
     
     // use the advanced custom css provider
     //use_adw_provider();
     
     //adw_init();
+    use_adw_provider();
     
     // create the main window
-    GtkWidget *window = gtk_application_window_new (app); 
+    GtkWidget *window = gtk_application_window_new(app); 
     //GtkWindow *window = GTK_WINDOW(gtk_window_new()); // second variante → use adw_init();  
     gtk_window_set_title(GTK_WINDOW(window), _("Test UI Base"));
     gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
@@ -168,18 +169,16 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     gtk_box_append(GTK_BOX(content_box), stack);
 
     // create the home page grid
-    GtkWidget *home_page = gtk_grid_new();
-    gtk_grid_set_row_homogeneous(GTK_GRID(home_page), TRUE);
-    gtk_grid_set_column_homogeneous(GTK_GRID(home_page), TRUE);
-    gtk_widget_set_halign(home_page, GTK_ALIGN_CENTER);
-    gtk_widget_set_valign(home_page, GTK_ALIGN_CENTER);
-    gtk_widget_set_hexpand(home_page, TRUE);
-    gtk_widget_set_vexpand(home_page, TRUE);
+    GtkWidget *home_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
     // create the buttons with translated labels
     GtkWidget *btn1 = create_button_icon_position("pan-start-symbolic", _("Test Stack"), G_CALLBACK(test_stack), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn2 = create_button_icon_position("pan-start-symbolic", _("Test Log"), G_CALLBACK(test_log_callback), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn3 = create_button_icon_position("pan-start-symbolic", _("Switch Log Type"), G_CALLBACK(switch_log_type_callback), stack, GTK_ALIGN_CENTER);
+    
+    gtk_box_append(GTK_BOX(home_page), btn1);
+    gtk_box_append(GTK_BOX(home_page), btn2);
+    gtk_box_append(GTK_BOX(home_page), btn3);
    
     // add grid to stack
     gtk_stack_add_named(GTK_STACK(stack), home_page, "home_page");
