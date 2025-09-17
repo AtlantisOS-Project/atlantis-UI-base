@@ -131,6 +131,9 @@ static void switch_log_type_callback(GtkWidget *widget, gpointer stack)
     
     // show the page
 	gtk_stack_set_visible_child_name(GTK_STACK(stack), "switch_log_type");
+	
+	// free memory
+    free(update_type);
 }
 
 // main window
