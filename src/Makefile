@@ -38,6 +38,10 @@
 #
 # run test app
 # make testing
+# 
+# create test config file
+# make create-config
+
 
 # compiler
 #CC = gcc
@@ -66,9 +70,9 @@ PREFIX = /usr/local
 INCDIR = $(PREFIX)/include/atluibase
 LIBDIR = $(PREFIX)/lib
 
-.PHONY: all objects lib test po install clean testing
+.PHONY: all objects lib test po install clean testing create-config help
 
-all: lib test po
+all: lib test po create-config
 
 # Building only object files
 objects: $(OBJ)
@@ -77,7 +81,7 @@ objects: $(OBJ)
 lib: $(STATIC_LIB) $(SHARED_LIB)
 
 # build test program
-test: $(TEST_APP)
+test: $(TEST_APP) create-config
 
 # static library
 $(STATIC_LIB): $(OBJ) 
@@ -99,6 +103,9 @@ $(TEST_APP): test/test.c $(SRC) $(HEADERS)
 testing: $(TEST_APP)
 	./$(TEST_APP)
 
+create-config:
+	@echo 'UPDATE_TYPE="Update""' > datei.conf
+
 # running language logic in /po
 po:
 	$(MAKE) -C po
@@ -110,7 +117,36 @@ install: lib
 	cp $(HEADERS) $(INCDIR)/
 	$(MAKE) -C po install
 
+help:
+	@echo " Building everything: "
+	@echo " make "
+	@echo " Building only object files: "
+	@echo " make objects "
+	@echo " Building libs: "
+	@echo " make lib "
+	@echo " Building test: "
+	@echo " make test "
+	@echo " Only languages: "
+	@echo " make -C po "
+	@echo " Init new languages: "
+	@echo " make -C po init-po "
+	@echo " Update languages: "
+	@echo " make -C po update-po "
+	@echo " Install everything: "
+	@echo " sudo make install "
+	@echo " Cleanup: "
+	@echo " make clean "
+	@echo " Create test app: "
+	@echo " make test "
+	@echo " Run test app: "
+	@echo " make testing "
+	@echo " Create test config file: "
+	@echo " make create-config "
+	@echo " Help: "
+	@echo " make help "
+
 # cleanup
 clean:
 	rm -f $(OBJ) $(STATIC_LIB) $(SHARED_LIB) $(TEST_APP)
 	$(MAKE) -C po clean
+	rm -rf datei.conf

@@ -99,9 +99,17 @@ static void switch_log_type_callback(GtkWidget *widget, gpointer stack)
     gtk_widget_set_halign(switch_log_type, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(switch_log_type, GTK_ALIGN_CENTER);
 	
+	// testing the get_config_value
+	char buffer[512];
+	const char *config_file = "./datei.conf";
+	char *update_type = get_config_value(config_file, "UPDATE_TYPE");
+	
 	// create some labels
 	GtkWidget *label1 = create_label_icon("preferences-other-symbolic", "some nonsense");
  	GtkWidget *label2 = create_label_icon_position("preferences-other-symbolic", "some bullshit", GTK_ALIGN_END);
+
+    snprintf(buffer, sizeof(buffer), "Update Type: %s", update_type ? update_type : "N/A");
+    gtk_box_append(GTK_BOX(switch_log_type), gtk_label_new(buffer));
 	
 	// create some button 
     GtkWidget *btn1 = create_button_icon("preferences-other-symbolic", _("Manual Logging"), G_CALLBACK(set_manual), stack);
