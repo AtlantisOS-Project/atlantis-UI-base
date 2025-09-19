@@ -29,9 +29,12 @@
 *
 * Usage:
 * const char *LOCALE_DOMAIN = "atlupdater";
+* const char *DEFAULT_FILTER = "/path/to/the/filterfile.conf";
 */
 // define the local domain 
 extern const char *LOCALE_DOMAIN;
+// define the path to the filter file
+extern const char *DEFAULT_FILTER;
 
 /* 
 * makro for autofree the memory 
@@ -64,6 +67,21 @@ int make_path_dirname(const char *filepath);
 */
 // function that get values from config files
 char *get_config_value(const char *filename, const char *key);
+
+/*
+* load file filter from a config file
+*
+* Usage:
+* GListStore *filter_list = load_file_filters("/path/to/filechooser-filters.conf");
+* // now work with the filter
+* if (filter_list) 
+* {
+* 	  gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filter_list));
+* }
+*/
+// function that load the filter from a config file
+GListStore* load_file_filters(const char *config_path);
+
 
 /*
 * Logging:

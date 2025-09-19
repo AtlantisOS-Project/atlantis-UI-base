@@ -104,4 +104,16 @@ GtkWidget *create_button_two_icon(const char *main_icon, const char *second_icon
 // button with icon and special position
 GtkWidget *create_button_icon_position(const char *icon_name, const char *label_text, GCallback callback, gpointer data, GtkAlign alignment);
 
+/*
+* create a file chooser
+*
+* Usage:
+* GtkWidget *btn1 = create_button("label", G_CALLBACK(show_file_chooser), (gpointer)callback_function);
+*/
+// type definition for a function that processes a file
+typedef void (*FileProcessorFunc)(const gchar *filename);
+
+// function that create the file chooser
+void show_file_chooser(GtkWidget *widget, gpointer data);
+
 #endif // DESIGN_H

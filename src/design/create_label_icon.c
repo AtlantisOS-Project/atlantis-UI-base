@@ -10,10 +10,12 @@
 * create_label_icon("utilities-terminal", "some text");
 * create_label_icon_position("utilities-terminal", "some text", GTK_ALIGN_CENTER);
 */
-
-#include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <glib.h>
+#include <stdarg.h>
+#include <time.h>
+#include <unistd.h>
 #include <string.h>
 #include <gtk/gtk.h>
 #include "helper.h"

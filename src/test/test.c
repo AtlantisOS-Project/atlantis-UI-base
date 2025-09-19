@@ -27,6 +27,8 @@
 
 // define the local domain
 const char *LOCALE_DOMAIN = "test_app";
+// define the filter file
+const char *DEFAULT_FILTER = "";
 
 // dummy callback
 static void test_dummy_callback(GtkWidget *widget, gpointer stack)
