@@ -31,6 +31,7 @@ const char *get_custom_adw_css(void)
     	"    background-color: @theme_bg_color;\n" // bg color - 1
     	"    color: @theme_fg_color;\n" // fg color - 2
     	"    padding: 12px;\n"
+    	"    font-size: 14px;\n"
     	"    border: 2px solid @theme_bg_color;\n" // bg color - 3
     	"    border-radius: 35px;\n"
     	"}\n"
@@ -40,6 +41,7 @@ const char *get_custom_adw_css(void)
     	"    padding: 12px;\n"
     	"    border: 2px solid @theme_bg_color;\n" // bg color - 6
     	"    border-radius: 35px;\n"
+    	"    font-size: 14px;"
     	"}\n"
     	"button:hover {\n"
   		"	 background-color: @accent_color;\n" // accent color - 7
@@ -49,6 +51,7 @@ const char *get_custom_adw_css(void)
     	"label {\n"
     	"    color: @theme_fg_color;\n" // text / fg color - 9
     	"    font-weight: bold;\n"
+    	"    font-size: 16px;"
     	"}\n"
     	"headerbar {\n"
     	"    background-color: @theme_bg_color;\n" // bg color - 10
@@ -57,6 +60,7 @@ const char *get_custom_adw_css(void)
     	"    padding: 12px;\n"
     	"    border: 2px solid @theme_bg_color;\n" // bg color - 12
     	"    border-radius: 35px;\n"
+    	"    font-size: 14px;"
     	"}\n"
     	"frame {\n"
     	"	 border-width: 5px;\n"
