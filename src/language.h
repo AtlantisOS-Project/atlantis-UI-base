@@ -18,42 +18,41 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <unistd.h>  
-#include <sys/stat.h> 
-#include <sys/types.h> 
+#include <glib.h>
+#include <glib/gi18n.h>
 #include <libintl.h>
 #include <locale.h>
 #include "helper.h"
 
-/* define gettext macros
-* Usage:
-* _("Some text")
-*/
-#define _(STRING) gettext(STRING)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/*
+* Define the path to the langauge files
+*
+* Usage:
+* const char *LOCALEDIR_PATH = "/usr/share/locale";
+*/
+extern const char *LOCALEDIR_PATH;
 
 // function that get the path of the language file
-char *get_lang_path();
-// function that get the current language
-gchar *get_current_language();
+void set_language_dir(const char *dir);
+// get the language dir
+const char *get_language_dir(void);
 
 // new function that init the language
 // this usage the system language or fallback to english
 void init_language(void);
 
-/*
-* function that set the language manuell
-*
-* Usage: 
-* set_language("de");
-*/
-void set_language(const char *lang);
-
-
-/*
-* additional functions for the language managment
-*/
 // try to bind local dir and .mo files
+// dev mode = direct binding of languages 
 void bind_language(const char *lang);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LANGUAGE_H
 

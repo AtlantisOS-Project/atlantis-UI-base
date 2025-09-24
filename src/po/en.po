@@ -7,78 +7,41 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-05 16:27+0200\n"
-"PO-Revision-Date: 2025-09-05 16:27+0200\n"
+"POT-Creation-Date: 2025-09-24 11:04+0200\n"
+"PO-Revision-Date: 2025-09-24 10:34+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=ASCII\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../test/test.c:61
-msgid "1. Special Button"
-msgstr "1. Special Button"
-
-#: ../test/test.c:62
-msgid "2. Special Button"
-msgstr "2. Special Button"
-
-#: ../test/test.c:63
-msgid "3. Special Button"
-msgstr "3. Special Button"
-
-#: ../test/test.c:64
-msgid "4. Special Button"
-msgstr "4. Special Button"
-
-#: ../test/test.c:65 ../test/test.c:109
-msgid "Back Button"
-msgstr "Back Button"
-
-#. process-stop / application-exit
-#: ../helper/log/write_log_text.c:212
-msgid "Exit"
-msgstr "Exit"
-
-#: ../helper/log/write_log_text.c:127
+#: helper/log/write_log_text.c:52
 msgid "Log Viewer"
 msgstr "Log Viewer"
 
-#. create some button
-#: ../test/test.c:107
-msgid "Manual Logging"
-msgstr "Manual Logging"
-
-#. create some button
-#: ../test/test.c:60
-msgid "Normal Button"
-msgstr "Normal Button"
-
-#. utilities-terminal - utilities-terminal-symbolic - utilities-system-monitor-symbolic
-#: ../helper/log/write_log_text.c:188
+#: helper/log/write_log_text.c:119
 msgid "Show Log"
 msgstr "Show Log"
 
-#: ../test/test.c:182
-msgid "Switch Log Type"
-msgstr "Switch Log Type"
+#: helper/log/write_log_text.c:143
+msgid "Exit"
+msgstr "Exit"
 
-#: ../test/test.c:108
-msgid "Syslog"
-msgstr "Syslog"
+#: design/dialogs/about_dialog.c:79
+msgid "translator-credits"
+msgstr "translator-credits"
 
-#: ../test/test.c:181
-msgid "Test Log"
-msgstr "Test Log"
+#: design/dialogs/about_dialog.c:83
+#, fuzzy
+msgid "Documentation"
+msgstr "_Documentation"
 
-#. create the buttons with translated labels
-#: ../test/test.c:180
-msgid "Test Stack"
-msgstr "Test Stack"
+#: design/dialogs/about_dialog.c:87
+msgid "Fonts"
+msgstr "Fonts"
 
-#. GtkWindow *window = GTK_WINDOW(gtk_window_new()); // second variante → use adw_init();
-#: ../test/test.c:144
-msgid "Test UI Base"
-msgstr "Test UI Base"
+#: design/dialogs/about_dialog.c:92
+msgid "Special thanks to"
+msgstr "Special thanks to"

@@ -24,9 +24,14 @@
 #include <adwaita.h>
 #include "language.h"
 #include "helper.h"
+#include "dialogs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
-* define special window width and height
+* Define special window width and height
 */
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -105,7 +110,7 @@ GtkWidget *create_button_two_icon(const char *main_icon, const char *second_icon
 GtkWidget *create_button_icon_position(const char *icon_name, const char *label_text, GCallback callback, gpointer data, GtkAlign alignment);
 
 /*
-* create a file chooser
+* Create a file chooser
 *
 * Usage:
 * GtkWidget *btn1 = create_button("label", G_CALLBACK(show_file_chooser), (gpointer)callback_function);
@@ -115,5 +120,28 @@ typedef void (*FileProcessorFunc)(const gchar *filename);
 
 // function that create the file chooser
 void show_file_chooser(GtkWidget *widget, gpointer data);
+
+/*
+* Creating entries
+*
+* Usage:
+* 1. Normal entry: 
+* GtkEntry *username_entry;
+* GtkWidget *username_row = create_entry("Username:", "Gib deinen Benutzernamen ein", &username_entry);
+* gtk_box_append(GTK_BOX(vbox), username_row);
+*
+* 2. Password entry:
+* GtkEntry *password_entry;
+* GtkWidget *password_row = create_password_entry("Passwort:", "Gib dein Passwort ein", &password_entry);
+* gtk_box_append(GTK_BOX(vbox), password_row);
+*/
+// create normal entry
+GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out);
+// create password entry
+GtkWidget* create_password_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // DESIGN_H

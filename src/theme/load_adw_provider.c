@@ -79,9 +79,8 @@ void use_adw_provider(void)
         gdk_display_get_default(),
         GTK_STYLE_PROVIDER(provider_adw),
         GTK_STYLE_PROVIDER_PRIORITY_USER);
-
+	
     // check for theme change
     AdwStyleManager *style_manager = adw_style_manager_get_default();
     g_signal_connect(style_manager, "notify::dark", G_CALLBACK(adw_theme_changed), NULL);
 }
-

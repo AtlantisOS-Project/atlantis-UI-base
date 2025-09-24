@@ -23,39 +23,49 @@
 // extern config
 extern const char *LOCALE_DOMAIN;
 
-// set two paths for the .po files
-static const char *locale_paths[] = {
-    "./locale",   				  // build / run in source tree
-    "/usr/share/locale"           // system-wide packages  
-    "/usr/local/share/locale",    // self-installed
-};
-
 // try to bind local dir and .mo files
+// dev mode = direct binding of languages 
 void bind_language(const char *lang)
 {
+#ifdef DEV_MODE
+    // set two paths for the .po files
+    const char *locale_paths[] = {
+        "./locale",                // build / run in source tree
+        "/usr/local/share/locale", // self-installed
+        "/usr/share/locale"        // system-wide packages
+    };
+
     int found = 0;
     for (int i = 0; i < (int)(sizeof(locale_paths)/sizeof(locale_paths[0])); i++) 
     {
         char testpath[512];
-        snprintf(testpath, sizeof(testpath), "%s/%.*s/LC_MESSAGES/%s.mo", locale_paths[i], 2, lang, LOCALE_DOMAIN);
-
+        snprintf(testpath, sizeof(testpath), "%s/%.*s/LC_MESSAGES/%s.mo",
+                 locale_paths[i], 2, lang, LOCALE_DOMAIN);
+		
+		// open testpath
         FILE *file = fopen(testpath, "r");
         if (file) 
         {
             fclose(file);
+            // bind the files from the path
             bindtextdomain(LOCALE_DOMAIN, locale_paths[i]);
+            bind_textdomain_codeset(LOCALE_DOMAIN, "UTF-8");
+            textdomain(LOCALE_DOMAIN);
+            LOGI("Using translations from: %s (lang=%s)", locale_paths[i], lang);
             found = 1;
-            LOGI("Using translations from: %s", locale_paths[i]);
             break;
         }
     }
-
+	
+	// no file in the testpaths = use fallback to main logic
     if (!found) 
     {
-        LOGI("No .mo found, fallback to /usr/share/locale");
+        LOGW("No .mo found for %s, fallback to /usr/share/locale", lang);
         bindtextdomain(LOCALE_DOMAIN, "/usr/share/locale");
+        bind_textdomain_codeset(LOCALE_DOMAIN, "UTF-8");
+        textdomain(LOCALE_DOMAIN);
     }
-
-    textdomain(LOCALE_DOMAIN);
-    LOGI("Set textdomain: %s", LOCALE_DOMAIN);
+#else
+    LOGI("bind_language(%s) ignored: build without DEV_MODE", lang);
+#endif
 }

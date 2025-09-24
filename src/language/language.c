@@ -1,70 +1,75 @@
 /*
-* language.c
-*
-* (C) Copyright 2025 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* init_language();
-* set_language("de");
-*/
+ * language.c
+ *
+ * (C) Copyright 2025 AtlantisOS Project
+ * by @NachtsternBuild
+ *
+ * License: GNU GENERAL PUBLIC LICENSE Version 3
+ *
+ * Provides gettext binding and translation setup
+ */
 
-/* headers */
+#include "language.h"
+#include "helper.h"
+
+#include <glib/gi18n.h>
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <locale.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include "language.h"
 
 // extern config
 extern const char *LOCALE_DOMAIN;
+extern const char *LOCALEDIR_PATH;
 
-// function that read the language from files
-// function that get the system language directly
-void init_language(void)
+static char *current_localedir = NULL;
+
+// set the language dir
+void set_language_dir(const char *dir) 
 {
-    // get the locale from the system
-    setlocale(LC_ALL, "");
-
-    LOGI("Set language by the system language.");
-    char langbuf[16] = {0};
-
-    // read environment variable LANG
-    const char *envlang = getenv("LANG");
-    if (!envlang || strlen(envlang) < 2)
+    if (dir && g_file_test(dir, G_FILE_TEST_IS_DIR)) 
     {
-        strcpy(langbuf, "en"); // fallback to English
+        g_free(current_localedir);
+        current_localedir = g_strdup(dir);
     }
-    else
-    {
-        strncpy(langbuf, envlang, 2); // only first 2 chars like "de", "en"
-        langbuf[2] = '\0';
-    }
-
-    // set global usage of the language
-    LOGI("Set new language: %s", langbuf);
-    setenv("LANGUAGE", langbuf, 1);
-    bind_language(langbuf);
 }
 
-// function that set the language manuell
-void set_language(const char *lang)
+// get the language dir
+const char *get_language_dir(void) 
 {
-    if (!lang || strlen(lang) < 2)
+    return current_localedir ? current_localedir : LOCALEDIR_PATH;
+}
+
+// init local binding
+void init_language(void) 
+{
+    setlocale(LC_ALL, "");
+
+    // check for env = ATL_LOCALDIR
+    const char *envdir = g_getenv("ATL_LOCALEDIR");
+    // set dir by env
+    if (envdir && g_file_test(envdir, G_FILE_TEST_IS_DIR)) 
     {
-    	LOGI("Using fallback language");
-    	lang = "en"; // fallback to english
+        set_language_dir(envdir);
+    }
+    
+    // local /po dir
+    else if (g_file_test("./po", G_FILE_TEST_IS_DIR)) 
+    {
+        set_language_dir("./po");
+    }
+    
+    // default dir
+    else 
+    {
+        set_language_dir(LOCALEDIR_PATH);
     }
 	
-	LOGI("Set the new language: %s", lang);
-    setenv("LANGUAGE", lang, 1);
-    setlocale(LC_ALL, "");
-    bind_language(lang);
+	// bind the textdomain
+    bindtextdomain(LOCALE_DOMAIN, current_localedir);
+    bind_textdomain_codeset(LOCALE_DOMAIN, "UTF-8");
+    textdomain(LOCALE_DOMAIN);
+
+    LOGI("Using locale dir: %s (package: %s)", current_localedir, LOCALE_DOMAIN);
 }
-
-
-

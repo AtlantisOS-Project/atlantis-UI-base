@@ -24,6 +24,10 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
 * Defined in the main Code
 *
@@ -37,7 +41,7 @@ extern const char *LOCALE_DOMAIN;
 extern const char *DEFAULT_FILTER;
 
 /* 
-* makro for autofree the memory 
+* Makro for autofree the memory 
 *
 * Usage:
 * auto_free char *output = execute_command("ls /");
@@ -60,7 +64,7 @@ int make_path(const char *path);
 int make_path_dirname(const char *filepath);
 
 /*
-* get values from a config file
+* Get values from a config file
 *
 * Usage:
 * char *update_type = get_conf_value(conf_file, "UPDATE_TYPE");
@@ -69,7 +73,7 @@ int make_path_dirname(const char *filepath);
 char *get_config_value(const char *filename, const char *key);
 
 /*
-* load file filter from a config file
+* Load file filter from a config file
 *
 * Usage:
 * GListStore *filter_list = load_file_filters("/path/to/filechooser-filters.conf");
@@ -104,7 +108,7 @@ GListStore* load_file_filters(const char *config_path);
 * close_logging();
 */
 
-/* define the syslog usage
+/* Define the syslog usage
 *
 * Usage:
 * int use_syslog = 0; (defined at write_log)
@@ -112,7 +116,7 @@ GListStore* load_file_filters(const char *config_path);
 extern int use_syslog;
 
 /*
-* main functions
+* Main logging functions
 */
 // set a new log mode
 void set_logging_mode(int syslog_mode);
@@ -126,25 +130,15 @@ void log_message(const char *level, int syslog_level, const char *fmt, va_list a
 void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...);
 
 /* 
-* makros for the logging
+* Makros for the logging
 */
-/*
-// infos
-#define LOG_INFO(msg, ...)  do { va_list ap; va_start(ap, msg); log_message("INFO",  LOG_INFO,  msg, ap); va_end(ap); } while(0)
-// errors
-#define LOG_ERROR(msg, ...) do { va_list ap; va_start(ap, msg); log_message("ERROR", LOG_ERROR,   msg, ap); va_end(ap); } while(0)
-// warnings
-#define LOG_WARN(msg, ...)  do { va_list ap; va_start(ap, msg); log_message("WARN",  LOG_WARNING, msg, ap); va_end(ap); } while(0)
-// debug infos
-#define LOG_DEBUG(msg, ...) do { va_list ap; va_start(ap, msg); log_message("DEBUG", LOG_DEBUG, msg, ap); va_end(ap); } while(0)
-*/
-// eigene Level-Konstanten
+// own logging vars
 #define LOG_LEVEL_INFO   1
 #define LOG_LEVEL_WARN   2
 #define LOG_LEVEL_ERROR  3
 #define LOG_LEVEL_DEBUG  4
 
-// Logging Macros
+// logging Macros
 #define LOGI(fmt, ...)  log_message_wrap("INFO",  LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
 #define LOGW(fmt, ...)  log_message_wrap("WARN",  LOG_LEVEL_WARN,  fmt, ##__VA_ARGS__)
 #define LOGE(fmt, ...)  log_message_wrap("ERROR", LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
@@ -172,5 +166,9 @@ void log_viewer_destroyed(GtkWidget *widget, gpointer user_data);
 
 // header that create the popover menu
 GtkWidget* create_custom_headerbar(gpointer stack);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // HELPER_H
