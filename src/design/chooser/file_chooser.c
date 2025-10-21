@@ -10,9 +10,6 @@
 * GtkWidget *btn1 = create_button("label", G_CALLBACK(show_file_chooser), (gpointer)callback_function);
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <gtk/gtk.h>
 #include "helper.h"
 #include "language.h"
 #include "design.h"
@@ -49,7 +46,7 @@ void show_file_chooser(GtkWidget *widget, gpointer data)
     GtkFileDialog *dialog = gtk_file_dialog_new();
 
 	// load the external filter list
-    GListStore *filter_list = load_file_filters("/etc/atlantis/filechooser-filters.conf");
+    GListStore *filter_list = load_file_filters(DEFAULT_FILTER);
     if (filter_list) 
     {
         gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filter_list));

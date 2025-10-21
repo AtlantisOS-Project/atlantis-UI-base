@@ -14,11 +14,6 @@
 * create_button_icon_position("utilities-terminal", "some text", callback, data, GTK_ALIGN_CENTER);
 */
 
-#include <glib.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <gtk/gtk.h>
 #include "helper.h"
 #include "design.h"
 

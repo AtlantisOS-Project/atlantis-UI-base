@@ -10,8 +10,6 @@
 * used to auto free something
 */
  
-#include <stdio.h>
-#include <stdlib.h>
 #include "helper.h"
 
 // function to auto free

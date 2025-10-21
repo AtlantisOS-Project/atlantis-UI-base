@@ -192,6 +192,15 @@ static void test_about(GtkWidget *widget, gpointer stack)
 	show_about_dialog(widget);
 }
 
+static void test_spinner(GtkWidget *widget, gpointer stack) 
+{
+	show_spinner_dialog(GTK_WIDGET(widget), "Update running", "Please wait...", "sleep 5");
+}
+
+static void test_progress_dialog(GtkWidget *widget, gpointer stack)
+{
+	show_progress_dialog(GTK_WIDGET(widget), "Installation", "Install package...", "sleep 5");
+}
 // struct the for the login the entries
 struct LoginData {
     GtkEntry *username;
@@ -258,6 +267,8 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     
     GtkWidget *btn4 = create_button_icon_position("pan-start-symbolic", _("Test Dialog"), G_CALLBACK(test_dialog), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn5 = create_button_icon_position("pan-start-symbolic", _("Test About"), G_CALLBACK(test_about), stack, GTK_ALIGN_CENTER);
+    GtkWidget *btn6 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Spinner"), G_CALLBACK(test_spinner), stack, GTK_ALIGN_CENTER);
+    GtkWidget *btn7 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Progressbar"), G_CALLBACK(test_progress_dialog), stack, GTK_ALIGN_CENTER);
     
     gtk_box_append(GTK_BOX(home_page), btn1);
     gtk_box_append(GTK_BOX(home_page), btn2);
@@ -265,6 +276,8 @@ static void activate_test(GtkApplication* app, gpointer user_data)
    
     gtk_box_append(GTK_BOX(home_page), btn4);
     gtk_box_append(GTK_BOX(home_page), btn5);
+    gtk_box_append(GTK_BOX(home_page), btn6);
+    gtk_box_append(GTK_BOX(home_page), btn7);
     
     // create entry
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);

@@ -14,9 +14,6 @@
 * This get the all values from a config file
 */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "helper.h"
 
 // function that get values from config files
@@ -26,6 +23,7 @@ char *get_config_value(const char *filename, const char *key)
     FILE *fp = fopen(filename, "r");
     if (!fp) 
     {
+        LOGE("Could not open %s.\n", filename);
         fprintf(stderr, "Could not open %s.\n", filename);
         return NULL;
     }

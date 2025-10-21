@@ -20,6 +20,14 @@
 #include <gtk/gtk.h>
 #include <adwaita.h>
 #include <syslog.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <limits.h>
+#include <glib/gi18n.h>
+#include <locale.h>
+#include <signal.h>
+#include <vte/vte.h>
 
 #ifndef HELPER_H
 #define HELPER_H
@@ -55,6 +63,9 @@ void free_wrapper(void *p);
 // the makro that use the wrapper
 #define auto_free __attribute__((cleanup(free_wrapper)))
 
+/*
+* Filesystem helper
+*/
 // helper function that create a directory
 void make_dir(const char *path);
 
@@ -62,6 +73,37 @@ void make_dir(const char *path);
 int make_path(const char *path);
 // creates parent directory of a file 
 int make_path_dirname(const char *filepath);
+// check if directory exsits
+int directory_exists(const char *path);
+// get home dir
+const char *get_home_directory();
+// add home in a path 
+gchar *get_home(const gchar *path);
+// delete a file in  a directory
+void delete_files_in_dir(const char *path);
+/*
+*
+* Delete a full path with parents
+*
+* Usage:
+* delete_files_with_parent("/other/path"); 
+*
+* Notes:
+* Warning: This code deletes an entire path until it finds a stop point.
+* Warning: If no stop point is defined, files and directories that should not be deleted will be deleted.
+* Warning: Never use this code to delete foreign or non-program directories.
+*/
+void delete_files_with_parent(const char *path);
+
+/*
+* Helper for running commands
+*/
+// run a command
+void run_command(const char *command);
+// run command and read output
+char *execute_command(const char *command);
+// run command with pkexec
+void command_pkexec(const gchar *command);
 
 /*
 * Get values from a config file
@@ -166,6 +208,16 @@ void log_viewer_destroyed(GtkWidget *widget, gpointer user_data);
 
 // header that create the popover menu
 GtkWidget* create_custom_headerbar(gpointer stack);
+
+/*
+* Open terminal/URL
+* Note: 
+* default OS is linux
+*/
+// open url in the standard webbrowser
+void open_url(const char *url);
+//  run a command in a new terminal
+void open_terminal_by_desktop(const char *function_command);
 
 #ifdef __cplusplus
 }

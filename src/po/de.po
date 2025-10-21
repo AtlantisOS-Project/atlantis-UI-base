@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-24 11:04+0200\n"
+"POT-Creation-Date: 2025-10-21 11:13+0200\n"
 "PO-Revision-Date: 2025-09-24 10:34+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,30 +17,30 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: helper/log/write_log_text.c:52
+#: helper/log/write_log_text.c:46
 msgid "Log Viewer"
 msgstr ""
 
-#: helper/log/write_log_text.c:119
+#: helper/log/write_log_text.c:113
 msgid "Show Log"
 msgstr ""
 
-#: helper/log/write_log_text.c:143
+#: helper/log/write_log_text.c:137
 msgid "Exit"
 msgstr ""
 
-#: design/dialogs/about_dialog.c:79
+#: design/dialogs/about_dialog.c:74
 msgid "translator-credits"
 msgstr ""
 
-#: design/dialogs/about_dialog.c:83
+#: design/dialogs/about_dialog.c:78
 msgid "Documentation"
 msgstr ""
 
-#: design/dialogs/about_dialog.c:87
+#: design/dialogs/about_dialog.c:82
 msgid "Fonts"
 msgstr ""
 
-#: design/dialogs/about_dialog.c:92
+#: design/dialogs/about_dialog.c:87
 msgid "Special thanks to"
 msgstr ""

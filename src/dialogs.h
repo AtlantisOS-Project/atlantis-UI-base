@@ -25,6 +25,7 @@ extern "C" {
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
 #include <gtk/gtk.h>
 #include <adwaita.h>
 #include "language.h"
@@ -80,6 +81,18 @@ extern const char *special_thanks[];
 
 // function that show the adw about dialog
 void show_about_dialog(GtkWidget *parent);
+
+/*
+* Dialogs with spinner / progress bar
+*
+* Usage:
+* show_spinner_dialog(GTK_WIDGET(widget), "Update running", "Please wait...", "sleep 5");
+* show_progress_dialog(GTK_WIDGET(widget), "Installation", "Install package...", "sleep 5");
+*/
+// show dialog with spinner
+void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd);
+// show dialog with progressbar
+void show_progress_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd);
 
 #ifdef __cplusplus
 }

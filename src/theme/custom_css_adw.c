@@ -13,14 +13,6 @@
 * Note: Requires GTK4 (> 4.10), libadwaita (> 1.4)
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <gtk/gtk.h>
-#include <unistd.h>
-#include <adwaita.h>  
-#include <sys/stat.h> 
-#include <sys/types.h> 
 #include "helper.h"
 #include "design.h"
 

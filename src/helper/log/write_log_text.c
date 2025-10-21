@@ -8,14 +8,6 @@
 *
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <glib.h>
-#include <gtk/gtk.h>
-#include <signal.h>
-#include <vte/vte.h>
 #include "helper.h"
 #include "language.h"
 #include "design.h"
@@ -31,12 +23,14 @@ static void spawn_cb(VteTerminal *terminal, GPid pid, GError *error, gpointer us
 {
     if (error) 
     {
+        LOGE("Error starting the process: %s\n", error->message);
         g_printerr("Error starting the process: %s\n", error->message);
         g_error_free(error);
     }
      
     else 
     {
+        LOGI("Process started, PID=%d\n", pid);
         g_print("Process started, PID=%d\n", pid);
     }
 }

@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 #include <adwaita.h>
 #include "language.h"
 #include "helper.h"
@@ -114,12 +115,17 @@ GtkWidget *create_button_icon_position(const char *icon_name, const char *label_
 *
 * Usage:
 * GtkWidget *btn1 = create_button("label", G_CALLBACK(show_file_chooser), (gpointer)callback_function);
+* GtkWidget *btn2 = create_button("Choose folder", G_CALLBACK(show_folder_chooser), (gpointer)callback_function);
 */
 // type definition for a function that processes a file
 typedef void (*FileProcessorFunc)(const gchar *filename);
+// type definition for a function that porcesses a path
+typedef void (*FolderProcessorFunc)(const char *path);
 
 // function that create the file chooser
 void show_file_chooser(GtkWidget *widget, gpointer data);
+// function that create the folder chooser 
+void show_folder_chooser(GtkWidget *widget, gpointer data);
 
 /*
 * Creating entries

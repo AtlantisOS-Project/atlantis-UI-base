@@ -14,11 +14,6 @@
 * Note: Define the informations in the main program
 */
 
-#include <glib.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <gtk/gtk.h>
 #include "helper.h"
 #include "design.h"
 #include "dialogs.h"

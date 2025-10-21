@@ -15,11 +15,6 @@
 * }
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <gtk/gtk.h>
-#include <glib.h>
 #include "helper.h"
 
 // function that load the filter from a config file

@@ -16,12 +16,6 @@
 * @return 0 on success, -1 on error.
 */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <limits.h>
 #include "helper.h"
 
 // creates the full path 

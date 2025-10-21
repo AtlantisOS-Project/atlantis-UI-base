@@ -12,13 +12,6 @@
 #include "language.h"
 #include "helper.h"
 
-#include <glib/gi18n.h>
-#include <locale.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 // extern config
 extern const char *LOCALE_DOMAIN;
 extern const char *LOCALEDIR_PATH;
