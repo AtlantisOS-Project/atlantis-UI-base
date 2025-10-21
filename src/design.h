@@ -133,18 +133,26 @@ void show_folder_chooser(GtkWidget *widget, gpointer data);
 * Usage:
 * 1. Normal entry: 
 * GtkEntry *username_entry;
-* GtkWidget *username_row = create_entry("Username:", "Gib deinen Benutzernamen ein", &username_entry);
+* GtkWidget *username_row = create_entry("Username:", "Input username: ", &username_entry);
 * gtk_box_append(GTK_BOX(vbox), username_row);
 *
 * 2. Password entry:
 * GtkEntry *password_entry;
-* GtkWidget *password_row = create_password_entry("Passwort:", "Gib dein Passwort ein", &password_entry);
+* GtkWidget *password_row = create_password_entry("Password:", "Enter password", &password_entry);
 * gtk_box_append(GTK_BOX(vbox), password_row);
 */
 // create normal entry
 GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out);
 // create password entry
 GtkWidget* create_password_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out);
+
+/*
+* pkexec command with spinner/progressbar
+*/
+// spinner varinate
+void command_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text);
+// progressbar variante
+void command_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text);
 
 #ifdef __cplusplus
 }
