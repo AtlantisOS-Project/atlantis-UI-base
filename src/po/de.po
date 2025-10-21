@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-21 11:13+0200\n"
+"POT-Creation-Date: 2025-10-21 17:57+0200\n"
 "PO-Revision-Date: 2025-09-24 10:34+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -43,4 +43,17 @@ msgstr ""
 
 #: design/dialogs/about_dialog.c:87
 msgid "Special thanks to"
+msgstr ""
+
+#: design/dialogs/dialogs.c:30 design/dialogs/dialogs.c:39
+msgid "Information"
+msgstr ""
+
+#: design/dialogs/dialogs.c:31 design/dialogs/dialogs.c:47
+#: design/dialogs/dialogs.c:56 design/dialogs/dialogs.c:72
+msgid "OK"
+msgstr ""
+
+#: design/dialogs/dialogs.c:55 design/dialogs/dialogs.c:64
+msgid "Error"
 msgstr ""

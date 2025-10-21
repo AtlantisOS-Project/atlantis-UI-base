@@ -6,13 +6,10 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* 1. show adw alert dialog
+* show adw alert dialog
 *
 * Usage:
 * show_alert_dialog(widget, "Dialog Title", "Some text in the dialog", "OK");
-*
-* 2. Probaly some other dialogs
-* TODO: create multiple dialogs
 */
 
 #include "helper.h"

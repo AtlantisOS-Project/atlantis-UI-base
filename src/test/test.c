@@ -12,18 +12,7 @@
 * Note: This is a test code that is used to test all functions from the atlantis-UI-base.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <glib.h>
-#include <stdarg.h>
-#include <time.h>
-#include <unistd.h>
-#include <string.h>
-#include <gtk/gtk.h>
-#include <adwaita.h>
-#include "language.h"
-#include "helper.h"
-#include "design.h"
+#include "atlbase.h"
 
 // define the local domain
 const char *LOCALE_DOMAIN = "test_app";
@@ -183,7 +172,7 @@ static void switch_log_type_callback(GtkWidget *widget, gpointer stack)
 // function that run a test dialog
 static void test_dialog(GtkWidget *widget, gpointer stack)
 {
-	show_alert_dialog(widget, _("Dialog Title"), _("Some text in the dialog"), _("OK"));
+	//show_alert_dialog(widget, _("Dialog Title"), _("Some text in the dialog"), _("OK"));
 }
 
 // function that show a test about site

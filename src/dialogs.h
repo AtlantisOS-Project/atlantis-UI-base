@@ -42,6 +42,33 @@ extern "C" {
 void show_alert_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label);
 
 /*
+* Multiple dialogs for special operations
+*
+* Usage:
+* show_alert_dialog(widget, "Dialog Title", "Some text in the dialog", "OK");
+* show_info_dialog(widget, "Some text in the dialog");
+* show_info_button_dialog(widget, "Some text in the dialog", "OK");
+* show_dialog_title(widget, "Dialog Title", "Some text in the dialog");
+* show_error_dialog(widget, "Some text in the dialog");
+* show_error_button_dialog(widget, "Some text in the dialog", "OK");
+* show_error_title_dialog(widget, "Dialog Title", "Some text in the dialog");
+* show_error_title_button_dialog(widget, "Dialog Title", "Some text in the dialog", "OK");
+*/
+// show information dialog
+void show_info_dialog(GtkWidget *parent, const char *body);
+// show information dialog with button title
+void show_info_button_dialog(GtkWidget *parent, const char *body, const char *button_label);
+// show dialog with title
+void show_dialog_title(GtkWidget *parent, const char *title, const char *body);
+// show error dialog
+void show_error_dialog(GtkWidget *parent, const char *body);
+// show error dialog with special button
+void show_error_button_dialog(GtkWidget *parent, const char *body, const char *button_label);
+// show error message dialog with special title
+void show_error_title_dialog(GtkWidget *parent, const char *title, const char *body);
+// show error message dialog with special title and special button
+void show_error_title_button_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label);
+/*
 * Show the adw about dialog
 *
 * Usage:
