@@ -10,7 +10,9 @@
  *
  * Usage:
  * show_spinner_dialog(GTK_WIDGET(widget), "Update running", "Please wait...", "sleep 5");
+ * show_spinner_dialog_return(GTK_WIDGET(widget), "Running update", "Please wait...", "ls /boot && sleep 5", on_command_done, NULL);
  * show_progress_dialog(GTK_WIDGET(widget), "Installation", "Install package...", "sleep 5");
+ * show_progress_dialog_return(GTK_WIDGET(widget), "Running update", "Please wait...", "ls /boot && sleep 5", on_command_done, NULL);
  */
 
 #include "dialogs.h"

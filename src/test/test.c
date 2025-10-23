@@ -207,6 +207,25 @@ static void test_progressbar_dialog_return(GtkWidget *widget, gpointer stack)
 	show_progress_dialog_return(GTK_WIDGET(widget), "Running update", "Please wait...", "ls /boot && sleep 5", on_command_done, NULL);
 }
 
+static void on_entry_submitted(const gchar *text, gpointer user_data)
+{
+    g_print("User entered: %s\n", text);
+}
+
+static void open_name_dialog(GtkWidget *widget, gpointer stack)
+{
+    show_entry_dialog(widget,
+                            "Enter Username",
+                            "Please type your name below:",
+                            "Confirm",
+                            "Cancel",
+                            "Name:",
+                            "John Doe",
+                            on_entry_submitted,
+                            NULL);
+}
+
+
 // struct the for the login the entries
 struct LoginData {
     GtkEntry *username;
@@ -277,7 +296,7 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     GtkWidget *btn7 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Progressbar"), G_CALLBACK(test_progress_dialog), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn8 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Spinner Return"), G_CALLBACK(test_spinner_dialog_return), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn9 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Progressbar Return"), G_CALLBACK(test_progressbar_dialog_return), stack, GTK_ALIGN_CENTER);
-    
+    GtkWidget *btn10 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Entry"), G_CALLBACK(open_name_dialog), stack, GTK_ALIGN_CENTER);
     
     gtk_box_append(GTK_BOX(home_page), btn1);
     gtk_box_append(GTK_BOX(home_page), btn2);
@@ -289,6 +308,7 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     gtk_box_append(GTK_BOX(home_page), btn7);
     gtk_box_append(GTK_BOX(home_page), btn8);
     gtk_box_append(GTK_BOX(home_page), btn9);
+    gtk_box_append(GTK_BOX(home_page), btn10);
     
     // create entry
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);

@@ -33,6 +33,8 @@ extern "C" {
 
 // callback type for returning output
 typedef void (*CommandFinishedCallback)(const gchar *output, gpointer user_data);
+// callback type for dialog with entry
+typedef void (*EntryDialogCallback)(const gchar *text, gpointer user_data);
 
 /*
 * Show adw alert dialog
@@ -116,7 +118,9 @@ void show_about_dialog(GtkWidget *parent);
 *
 * Usage:
 * show_spinner_dialog(GTK_WIDGET(widget), "Update running", "Please wait...", "sleep 5");
+* show_spinner_dialog_return(GTK_WIDGET(widget), "Running update", "Please wait...", "ls /boot && sleep 5", on_command_done, NULL);
 * show_progress_dialog(GTK_WIDGET(widget), "Installation", "Install package...", "sleep 5");
+* show_progress_dialog_return(GTK_WIDGET(widget), "Running update", "Please wait...", "ls /boot && sleep 5", on_command_done, NULL);
 */
 // show dialog with spinner
 void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd);
@@ -126,6 +130,12 @@ void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char
 void show_progress_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd);
 // show the dialog with progressbar and return the output
 void show_progress_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data);
+
+/*
+* ADW dialog with entry
+*/
+void show_entry_dialog(GtkWidget *parent, const char *title, const char *body, const char *ok_label, const char *cancel_label, const char *entry_label, const char *placeholder, EntryDialogCallback callback, gpointer user_data);
+
 
 #ifdef __cplusplus
 }

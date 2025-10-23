@@ -31,6 +31,8 @@ GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntr
     GtkWidget *label = gtk_label_new(label_text);
     gtk_widget_set_halign(label, GTK_ALIGN_START);
     gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
+    gtk_widget_set_margin_start(label, 8);
+    gtk_widget_set_margin_end(label, 8);
 
     // create a new entry
     GtkWidget *entry = gtk_entry_new();
@@ -39,6 +41,8 @@ GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntr
     {
         gtk_entry_set_placeholder_text(GTK_ENTRY(entry), placeholder);
 	}
+	
+	gtk_widget_set_hexpand(entry, TRUE);
 	
     // add everything to the box
     gtk_box_append(GTK_BOX(box), label);
