@@ -31,6 +31,8 @@ extern "C" {
 #include "language.h"
 #include "helper.h"
 
+// callback type for returning output
+typedef void (*CommandFinishedCallback)(const gchar *output, gpointer user_data);
 
 /*
 * Show adw alert dialog
@@ -118,8 +120,12 @@ void show_about_dialog(GtkWidget *parent);
 */
 // show dialog with spinner
 void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd);
+// show the dialog with spinner and return the output
+void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data);
 // show dialog with progressbar
 void show_progress_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd);
+// show the dialog with progressbar and return the output
+void show_progress_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data);
 
 #ifdef __cplusplus
 }

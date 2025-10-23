@@ -119,7 +119,7 @@ GtkWidget *create_button_icon_position(const char *icon_name, const char *label_
 */
 // type definition for a function that processes a file
 typedef void (*FileProcessorFunc)(const gchar *filename);
-// type definition for a function that porcesses a path
+// type definition for a function that processes a path
 typedef void (*FolderProcessorFunc)(const char *path);
 
 // function that create the file chooser

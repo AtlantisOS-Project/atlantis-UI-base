@@ -16,7 +16,7 @@
 #include "language.h"
 #include "design.h"
 
-// Der Callback-Typ, wie bei deiner File-Variante
+// type definition for a function that processes a path
 typedef void (*FolderProcessorFunc)(const char *path);
 
 // function for work with the path

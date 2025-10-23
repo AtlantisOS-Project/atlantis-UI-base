@@ -172,7 +172,7 @@ static void switch_log_type_callback(GtkWidget *widget, gpointer stack)
 // function that run a test dialog
 static void test_dialog(GtkWidget *widget, gpointer stack)
 {
-	//show_alert_dialog(widget, _("Dialog Title"), _("Some text in the dialog"), _("OK"));
+	show_alert_dialog(widget, _("Dialog Title"), _("Some text in the dialog"), _("OK"));
 }
 
 // function that show a test about site
@@ -190,6 +190,23 @@ static void test_progress_dialog(GtkWidget *widget, gpointer stack)
 {
 	show_progress_dialog(GTK_WIDGET(widget), "Installation", "Install package...", "sleep 5");
 }
+
+// output retrun
+static void on_command_done(const gchar *output, gpointer user_data)
+{
+    g_print("Command output:\n%s\n", output);
+}
+
+static void test_spinner_dialog_return(GtkWidget *widget, gpointer stack)
+{
+	show_spinner_dialog_return(GTK_WIDGET(widget), "Running update", "Please wait...", "ls /boot && sleep 5", on_command_done, NULL);
+}
+
+static void test_progressbar_dialog_return(GtkWidget *widget, gpointer stack)
+{
+	show_progress_dialog_return(GTK_WIDGET(widget), "Running update", "Please wait...", "ls /boot && sleep 5", on_command_done, NULL);
+}
+
 // struct the for the login the entries
 struct LoginData {
     GtkEntry *username;
@@ -258,6 +275,9 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     GtkWidget *btn5 = create_button_icon_position("pan-start-symbolic", _("Test About"), G_CALLBACK(test_about), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn6 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Spinner"), G_CALLBACK(test_spinner), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn7 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Progressbar"), G_CALLBACK(test_progress_dialog), stack, GTK_ALIGN_CENTER);
+    GtkWidget *btn8 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Spinner Return"), G_CALLBACK(test_spinner_dialog_return), stack, GTK_ALIGN_CENTER);
+    GtkWidget *btn9 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Progressbar Return"), G_CALLBACK(test_progressbar_dialog_return), stack, GTK_ALIGN_CENTER);
+    
     
     gtk_box_append(GTK_BOX(home_page), btn1);
     gtk_box_append(GTK_BOX(home_page), btn2);
@@ -267,16 +287,18 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     gtk_box_append(GTK_BOX(home_page), btn5);
     gtk_box_append(GTK_BOX(home_page), btn6);
     gtk_box_append(GTK_BOX(home_page), btn7);
+    gtk_box_append(GTK_BOX(home_page), btn8);
+    gtk_box_append(GTK_BOX(home_page), btn9);
     
     // create entry
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
     GtkEntry *username_entry;
-    GtkWidget *username_row = create_entry("Username:", "Gib deinen Benutzernamen ein", &username_entry);
+    GtkWidget *username_row = create_entry("Username:", "Input Username", &username_entry);
     gtk_box_append(GTK_BOX(vbox), username_row);
 
     GtkEntry *password_entry;
-    GtkWidget *password_row = create_password_entry("Passwort:", "Gib dein Passwort ein", &password_entry);
+    GtkWidget *password_row = create_password_entry("Password:", "Input password", &password_entry);
     gtk_box_append(GTK_BOX(vbox), password_row);
 
     GtkWidget *login_button = gtk_button_new_with_label("Login");
