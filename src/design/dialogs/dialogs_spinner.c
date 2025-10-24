@@ -118,7 +118,7 @@ static gpointer run_command_thread_return(gpointer data)
 }
 
 // porgress bar pulse
-static gboolean pulse_progress(GtkProgressBar *pbar)
+gboolean pulse_progress(GtkProgressBar *pbar)
 {
     if (!GTK_IS_PROGRESS_BAR(pbar)) 
     {

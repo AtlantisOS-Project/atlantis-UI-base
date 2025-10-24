@@ -37,6 +37,34 @@ typedef void (*CommandFinishedCallback)(const gchar *output, gpointer user_data)
 typedef void (*EntryDialogCallback)(const gchar *text, gpointer user_data);
 
 /*
+* Structure command steps for dialog with multiple commands
+* 
+* Usage:
+* GSList *commands = NULL;
+* CommandEntry *entry1 = g_new0(CommandEntry, 1);
+* entry1->cmd = g_strdup("sleep 2"); 
+* entry1->description = g_strdup("Initialize the system..."); 
+* commands = g_slist_append(commands, entry1);
+*
+* CommandEntry *entry2 = g_new0(CommandEntry, 1);
+* entry2->cmd = g_strdup("sleep 5");
+* entry2->description = g_strdup("Reading filesystem informations...");
+* commands = g_slist_append(commands, entry2);
+
+* CommandEntry *entry3 = g_new0(CommandEntry, 1);
+* entry3->cmd = g_strdup("sleep 3");
+* entry3->description = g_strdup("Finalize the configuration...");
+* commands = g_slist_append(commands, entry3);
+*/
+typedef struct {
+    gchar *cmd;
+    gchar *description;
+} CommandEntry;
+
+// use global the progressbar
+gboolean pulse_progress(GtkProgressBar *pbar);
+
+/*
 * Show adw alert dialog
 *
 * Usage:
@@ -135,6 +163,14 @@ void show_progress_dialog_return(GtkWidget *parent, const char *title, const cha
 * ADW dialog with entry
 */
 void show_entry_dialog(GtkWidget *parent, const char *title, const char *body, const char *ok_label, const char *cancel_label, const char *entry_label, const char *placeholder, EntryDialogCallback callback, gpointer user_data);
+
+/*
+* ADW dialog with progress that show the steps
+*
+* Usage:
+* show_progress_dialog_multi(widget, "System-Update", "This may take some time...", commands);
+*/
+void show_progress_dialog_multi(GtkWidget *parent, const char *title, const char *body, GSList *commands);
 
 
 #ifdef __cplusplus
