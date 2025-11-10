@@ -98,3 +98,6 @@ clean-tmp:
 - `dialogs/` – Dialog system (spinners, progress bars, inputs)
 - `helper/` – Helper functions
 - `language/` – Localization system
+
+## Module Usage
+- [Developer Docs](https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/docs/DEVELOPER_DOCS.md)

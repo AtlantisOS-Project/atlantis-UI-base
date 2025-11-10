@@ -13,12 +13,12 @@
 - Use of stacks and other UI elements
 
 ## Usage 
-- [User Guide](USER_GUIDE.md)
+- [User Guide](https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/docs/USER_GUIDE.md)
 
 ## Documentation Overview
 
-- [User Guide](USER_GUIDE.md)
-- [API Reference](DEVELOPER_DOCS.md)
-- [Module Overview](MODULES_OVERVIEW.md)
+- [User Guide](https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/docs/USER_GUIDE.md)
+- [Module Overview](https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/docs/MODULES_OVERVIEW.md)
+- [API Reference](https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/docs/DEVELOPER_DOCS.md)
 
 
