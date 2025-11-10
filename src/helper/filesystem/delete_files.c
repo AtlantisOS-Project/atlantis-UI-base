@@ -53,7 +53,7 @@ void delete_files_in_dir(const char *path)
         // get full path
         snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
 
-        // delet files
+        // delete files
         if (remove(fullpath) != 0) 
         {
             LOGE("Error deleting the file.");
@@ -100,6 +100,28 @@ static bool is_mount_point(const char *path, const char *parent_path)
     }
 
     return false;
+}
+
+/**
+* remove file in dir
+*/
+int remove_file(const char *filepath) 
+{
+    
+    // remove file in path
+    if (remove(filepath) == 0) 
+    {
+        // success
+        LOGI("The file ‘%s’ was successfully deleted.", filepath);
+        return 0;
+    } 
+    
+    else 
+    {
+		// error
+        LOGE("Fehler beim Löschen der Datei");
+        return -1;
+    }
 }
 
 /**

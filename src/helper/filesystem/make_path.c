@@ -18,6 +18,18 @@
 
 #include "helper.h"
 
+// helper function that create a directory
+void make_directory(const char *path) 
+{
+    if (mkdir(path, 0755) == -1 && errno != EEXIST) 
+    {
+        LOGE("mkdir");
+        perror("mkdir");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
 // creates the full path 
 int make_path(const char *path)
 {
@@ -43,7 +55,8 @@ int make_path(const char *path)
     // iterate through path and create intermediate dirs 
     for (p = tmp + 1; *p; p++) 
     {
-        if (*p == '/') {
+        if (*p == '/') 
+        {
             *p = '\0';
             if (mkdir(tmp, 0755) != 0) 
             {
@@ -104,5 +117,17 @@ int make_path_dirname(const char *filepath)
     return make_path(buff);
 }
 
+// same function, but using g_mkdir_with_parents
+void create_directory(const char *path) 
+{
+    if (g_mkdir_with_parents(path, 0755) != 0) 
+    {
+        LOGE("Error when creating the directory: %s", path);
+    } 
+    else 
+    {
+        LOGD("Directory created: %s", path);
+    }
+}
 
 

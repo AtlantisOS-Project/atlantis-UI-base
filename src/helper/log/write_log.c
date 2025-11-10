@@ -37,16 +37,6 @@ char log_path[1024] = {0};
 // extern configs
 extern const char *LOCALE_DOMAIN;
 
-// helper function that create a directory
-void make_dir(const char *path) 
-{
-    if (mkdir(path, 0755) == -1 && errno != EEXIST) 
-    {
-        perror("mkdir");
-        exit(EXIT_FAILURE);
-    }
-}
-
 // function that write level to syslog level
 int map_level_to_syslog(int level) 
 {

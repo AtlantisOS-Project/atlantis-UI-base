@@ -67,20 +67,28 @@ void free_wrapper(void *p);
 * Filesystem helper
 */
 // helper function that create a directory
-void make_dir(const char *path);
+void make_directory(const char *path);
 
 // creates a complete path by creating missing parent directories
 int make_path(const char *path);
 // creates parent directory of a file 
 int make_path_dirname(const char *filepath);
+// create a full path
+void create_directory(const char *path);
+
 // check if directory exsits
 int directory_exists(const char *path);
+// check if file exsists
+int file_exists(const char *path);
+
 // get home dir
 const char *get_home_directory();
 // add home in a path 
 gchar *get_home(const gchar *path);
 // delete a file in  a directory
 void delete_files_in_dir(const char *path);
+// remove a file
+int remove_file(const char *filepath);
 /*
 *
 * Delete a full path with parents

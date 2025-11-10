@@ -20,3 +20,11 @@ int directory_exists(const char *path)
     snprintf(command, sizeof(command), "test -d %s", path);
     return system(command) == 0;
 }
+
+// check if file exsists
+int file_exists(const char *path) 
+{
+    char command[2048];
+    snprintf(command, sizeof(command), "test -e %s", path);
+    return system(command) == 0;
+}
