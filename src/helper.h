@@ -1,4 +1,4 @@
-/*
+/**
 * helper.h
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -12,21 +12,29 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <glib.h>
 #include <stdarg.h>
-#include <time.h>
-#include <unistd.h>
+#include <stdbool.h>
 #include <string.h>
-#include <gtk/gtk.h>
-#include <adwaita.h>
+#include <strings.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <limits.h>
+#include <time.h>
+#include <locale.h>
+#include <fcntl.h>
+#include <pthread.h>
 #include <syslog.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <errno.h>
-#include <limits.h>
+#include <sys/wait.h>
+#include <glib.h>
+#include <libintl.h>
 #include <glib/gi18n.h>
-#include <locale.h>
-#include <signal.h>
+#include <gdk/gdk.h>
+#include <gtk/gtk.h>
+#include <adwaita.h>
 #include <vte/vte.h>
 
 #ifndef HELPER_H
@@ -36,7 +44,7 @@
 extern "C" {
 #endif
 
-/*
+/**
 * Defined in the main Code
 *
 * Usage:
@@ -48,7 +56,7 @@ extern const char *LOCALE_DOMAIN;
 // define the path to the filter file
 extern const char *DEFAULT_FILTER;
 
-/* 
+/** 
 * Makro for autofree the memory 
 *
 * Usage:
@@ -63,7 +71,7 @@ void free_wrapper(void *p);
 // the makro that use the wrapper
 #define auto_free __attribute__((cleanup(free_wrapper)))
 
-/*
+/**
 * Filesystem helper
 */
 // helper function that create a directory
@@ -80,6 +88,8 @@ void create_directory(const char *path);
 int directory_exists(const char *path);
 // check if file exsists
 int file_exists(const char *path);
+// search for strings in filenames
+int search_file_directory(const char *directory, const char *search_string);
 
 // get home dir
 const char *get_home_directory();
@@ -89,7 +99,11 @@ gchar *get_home(const gchar *path);
 void delete_files_in_dir(const char *path);
 // remove a file
 int remove_file(const char *filepath);
-/*
+
+// expand '~' to $HOME
+char *expand_path(const char *path);
+
+/**
 *
 * Delete a full path with parents
 *
@@ -103,17 +117,19 @@ int remove_file(const char *filepath);
 */
 void delete_files_with_parent(const char *path);
 
-/*
+/**
 * Helper for running commands
 */
 // run a command
 void run_command(const char *command);
+// run a command and return true or false
+bool run_command_bool(const char *cmd);
 // run command and read output
 char *execute_command(const char *command);
 // run command with pkexec
 void command_pkexec(const gchar *command);
 
-/*
+/**
 * Get values from a config file
 *
 * Usage:
@@ -122,14 +138,13 @@ void command_pkexec(const gchar *command);
 // function that get values from config files
 char *get_config_value(const char *filename, const char *key);
 
-/*
+/**
 * Load file filter from a config file
 *
 * Usage:
 * GListStore *filter_list = load_file_filters("/path/to/filechooser-filters.conf");
 * // now work with the filter
-* if (filter_list) 
-* {
+* if (filter_list) {
 * 	  gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filter_list));
 * }
 */
@@ -137,7 +152,7 @@ char *get_config_value(const char *filename, const char *key);
 GListStore* load_file_filters(const char *config_path);
 
 
-/*
+/**
 * Logging:
 *
 * Usage:
@@ -158,14 +173,15 @@ GListStore* load_file_filters(const char *config_path);
 * close_logging();
 */
 
-/* Define the syslog usage
+/**
+* Define the syslog usage
 *
 * Usage:
 * int use_syslog = 0; (defined at write_log)
 */
 extern int use_syslog;
 
-/*
+/**
 * Main logging functions
 */
 // set a new log mode
@@ -179,7 +195,7 @@ void log_message(const char *level, int syslog_level, const char *fmt, va_list a
 // wrapper: takes variadic arguments and forwards to log_message
 void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...);
 
-/* 
+/** 
 * Makros for the logging
 */
 // own logging vars
@@ -195,7 +211,7 @@ void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...)
 #define LOGD(fmt, ...)  log_message_wrap("DEBUG", LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
 
 
-/*
+/**
 * Log viewer
 * 
 * Usage:
@@ -217,7 +233,7 @@ void log_viewer_destroyed(GtkWidget *widget, gpointer user_data);
 // header that create the popover menu
 GtkWidget* create_custom_headerbar(gpointer stack);
 
-/*
+/**
 * Open terminal/URL
 * Note: 
 * default OS is linux

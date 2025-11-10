@@ -1,4 +1,4 @@
-/*
+/**
 * get_config_value.c
 *
 * (C) Copyright 2025 AtlantisOS Project

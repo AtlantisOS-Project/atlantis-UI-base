@@ -1,4 +1,4 @@
-/*
+/**
 * design.h
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -13,16 +13,6 @@
 #ifndef DESIGN_H
 #define DESIGN_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <glib.h>
-#include <stdarg.h>
-#include <time.h>
-#include <unistd.h>
-#include <string.h>
-#include <gtk/gtk.h>
-#include <gdk/gdk.h>
-#include <adwaita.h>
 #include "language.h"
 #include "helper.h"
 #include "dialogs.h"
@@ -31,17 +21,17 @@
 extern "C" {
 #endif
 
-/*
+/**
 * Define special window width and height
 */
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-/*
+/**
 * Style Setting with libadwaita and CSS
 *
 */
-/*
+/**
 * helper functions for libadwaita style and custom CSS
 */
 // the adw_provider
@@ -55,7 +45,7 @@ void load_adw_provider(void);
 // function that reload the theme, if theme changed
 void adw_theme_changed(AdwStyleManager *style_manager, GParamSpec *pspec, gpointer user_data);
 
-/*
+/**
 * use the libadwaita and custom CSS theme
 *
 * Usage:
@@ -63,7 +53,7 @@ void adw_theme_changed(AdwStyleManager *style_manager, GParamSpec *pspec, gpoint
 */
 void use_adw_provider(void);
 
-/*
+/**
 * Switch page in the stack
 *
 * Usage:
@@ -77,7 +67,7 @@ void show_home_page(GtkWidget *widget, gpointer stack);
 // switch to pages
 void switch_page(GtkWidget *widget, gpointer user_data);
 
-/*
+/**
 * Creating special labels
 *
 * Usage:
@@ -89,7 +79,7 @@ GtkWidget *create_label_icon(const char *icon_name, const char *label_text);
 // label with icon and postion
 GtkWidget *create_label_icon_position(const char *icon_name, const char *label_text, GtkAlign alignment);
 
-/*
+/**
 * Creating special buttons
 *
 * Usage:
@@ -110,7 +100,7 @@ GtkWidget *create_button_two_icon(const char *main_icon, const char *second_icon
 // button with icon and special position
 GtkWidget *create_button_icon_position(const char *icon_name, const char *label_text, GCallback callback, gpointer data, GtkAlign alignment);
 
-/*
+/**
 * Create a file chooser
 *
 * Usage:
@@ -127,7 +117,7 @@ void show_file_chooser(GtkWidget *widget, gpointer data);
 // function that create the folder chooser 
 void show_folder_chooser(GtkWidget *widget, gpointer data);
 
-/*
+/**
 * Creating entries
 *
 * Usage:
@@ -146,7 +136,7 @@ GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntr
 // create password entry
 GtkWidget* create_password_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out);
 
-/*
+/**
 * pkexec command with spinner/progressbar
 */
 // spinner varinate

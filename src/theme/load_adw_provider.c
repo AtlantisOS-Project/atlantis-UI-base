@@ -1,4 +1,4 @@
-/*
+/**
 * load_adw_provider.c
 *
 * (C) Copyright 2025 AtlantisOS Project

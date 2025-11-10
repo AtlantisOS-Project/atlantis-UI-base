@@ -29,6 +29,8 @@
 - **helper/filesystem/make_path.c** — Helper functions for recurring tasks.
 - **helper/filesystem/directory_exists.c** — Helper functions for recurring tasks.
 - **helper/filesystem/delete_directory.c** — Helper functions for recurring tasks.
+- **helper/filesystem/search_file_directory.c** – Helper function for searching filename
+- **helper/filesystem/expand_path.c** – Helper that expand `~` to `$HOME`
 - **helper/commands/command_pkexec.c** — Helper functions for recurring tasks.
 - **helper/commands/open_url.c** — Helper functions for recurring tasks.
 - **helper/commands/open_terminal_desktop.c** — Helper functions for recurring tasks.

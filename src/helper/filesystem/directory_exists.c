@@ -1,4 +1,4 @@
-/*
+/**
  * directory_exists.c
  *
  * (C) 2025 AtlantisOS Project

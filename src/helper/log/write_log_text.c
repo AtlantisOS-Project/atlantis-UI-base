@@ -1,4 +1,4 @@
-/*
+/**
 * write_log_text.c
 *
 * (C) Copyright 2025 AtlantisOS Project

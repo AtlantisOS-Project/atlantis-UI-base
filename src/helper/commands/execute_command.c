@@ -1,4 +1,4 @@
-/*
+/**
 * execute_command.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -12,6 +12,8 @@
 * g_free(full_command);
 *
 * run_command("sleep 5");
+*
+* if (!run_command(cmd)) {}
 */
 
 #include "helper.h"
@@ -24,6 +26,13 @@ void run_command(const char *command)
         // use system()-command
         system(command);
     }
+}
+
+// run a command and return true or false
+bool run_command_bool(const char *cmd) 
+{
+    int status = system(cmd);
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
 
 

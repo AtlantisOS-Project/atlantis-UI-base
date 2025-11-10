@@ -1,4 +1,4 @@
-/*
+/**
 * dialogs.h
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -18,16 +18,6 @@ extern "C" {
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <glib.h>
-#include <stdarg.h>
-#include <time.h>
-#include <unistd.h>
-#include <string.h>
-#include <pthread.h>
-#include <gtk/gtk.h>
-#include <adwaita.h>
 #include "language.h"
 #include "helper.h"
 
@@ -36,7 +26,7 @@ typedef void (*CommandFinishedCallback)(const gchar *output, gpointer user_data)
 // callback type for dialog with entry
 typedef void (*EntryDialogCallback)(const gchar *text, gpointer user_data);
 
-/*
+/**
 * Structure command steps for dialog with multiple commands
 * 
 * Usage:
@@ -64,7 +54,7 @@ typedef struct {
 // use global the progressbar
 gboolean pulse_progress(GtkProgressBar *pbar);
 
-/*
+/**
 * Show adw alert dialog
 *
 * Usage:
@@ -73,7 +63,7 @@ gboolean pulse_progress(GtkProgressBar *pbar);
 // function that show a adw alert dialog
 void show_alert_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label);
 
-/*
+/**
 * Multiple dialogs for special operations
 *
 * Usage:
@@ -100,13 +90,13 @@ void show_error_button_dialog(GtkWidget *parent, const char *body, const char *b
 void show_error_title_dialog(GtkWidget *parent, const char *title, const char *body);
 // show error message dialog with special title and special button
 void show_error_title_button_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label);
-/*
+/**
 * Show the adw about dialog
 *
 * Usage:
 * show_about_dialog(GtkWidget *parent);
 */
-/*
+/**
 * define some infos for the about page
 *
 * Note: Define the informations in the main program
@@ -141,7 +131,7 @@ extern const char *special_thanks[];
 // function that show the adw about dialog
 void show_about_dialog(GtkWidget *parent);
 
-/*
+/**
 * Dialogs with spinner / progress bar
 *
 * Usage:
@@ -159,12 +149,12 @@ void show_progress_dialog(GtkWidget *parent, const char *title, const char *body
 // show the dialog with progressbar and return the output
 void show_progress_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data);
 
-/*
+/**
 * ADW dialog with entry
 */
 void show_entry_dialog(GtkWidget *parent, const char *title, const char *body, const char *ok_label, const char *cancel_label, const char *entry_label, const char *placeholder, EntryDialogCallback callback, gpointer user_data);
 
-/*
+/**
 * ADW dialog with progress that show the steps
 *
 * Usage:

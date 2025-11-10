@@ -1,4 +1,4 @@
-/*
+/**
 * command_pkexec.c
 *
 * (C) Copyright 2025 AtlantisOS Project

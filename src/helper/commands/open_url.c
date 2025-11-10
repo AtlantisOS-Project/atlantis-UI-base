@@ -1,4 +1,4 @@
-/*
+/**
  * open_url.c
  *
  * (C) 2025 AtlantisOS Project

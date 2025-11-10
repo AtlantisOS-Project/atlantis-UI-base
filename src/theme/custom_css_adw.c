@@ -1,4 +1,4 @@
-/*
+/**
 * custom_css_adw.c
 *
 * (C) Copyright 2025 AtlantisOS Project

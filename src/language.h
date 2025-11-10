@@ -1,4 +1,4 @@
-/*
+/**
 * language.h
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -13,22 +13,13 @@
 #ifndef LANGUAGE_H
 #define LANGUAGE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <gtk/gtk.h>
-#include <unistd.h>  
-#include <glib.h>
-#include <glib/gi18n.h>
-#include <libintl.h>
-#include <locale.h>
 #include "helper.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
+/**
 * Define the path to the langauge files
 *
 * Usage:
@@ -55,4 +46,3 @@ void bind_language(const char *lang);
 #endif
 
 #endif // LANGUAGE_H
-

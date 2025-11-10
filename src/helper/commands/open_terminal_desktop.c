@@ -1,4 +1,4 @@
-/*
+/**
  * open_terminal_desktop.c
  *
  * (C) 2025 AtlantisOS Project
@@ -33,7 +33,7 @@ void open_terminal_by_desktop(const char *function_command)
 	char *desktop = getenv("XDG_CURRENT_DESKTOP");
     char command[2048];
 
-    /*
+    /**
     * Running in WSL:
     * Using cmd.exe that start wsl.exe
     */
@@ -46,7 +46,7 @@ void open_terminal_by_desktop(const char *function_command)
     }
 	
     #ifdef _WIN32
-        /*
+        /**
         * Windows: 
         * Using 'start' to start the cmd.exe
         */
@@ -54,7 +54,7 @@ void open_terminal_by_desktop(const char *function_command)
         result = system(cmd);
 
     #elif defined(__APPLE__) && defined(__MACH__)
-        /* 
+        /**
         * macOS: 
         * Using 'osascript'         
         */
@@ -62,7 +62,7 @@ void open_terminal_by_desktop(const char *function_command)
         result = system(cmd);
 
     #else
-        /* 
+        /** 
         * Linux: 
         * get the desktop enivorment and open based on this a new terminal
         */    
