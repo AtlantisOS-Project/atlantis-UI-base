@@ -275,17 +275,40 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     
     // use the advanced custom css provider
     use_adw_provider();
-        
-    // create the main window
+    
+    /**
+    * create the main window 
+    * standard GTK4 Version
+    */
+    /*
     GtkWidget *window = gtk_application_window_new(app);
-    //GtkWindow *window = GTK_WINDOW(gtk_window_new()); // second variante → use adw_init();  
     gtk_window_set_title(GTK_WINDOW(window), _("Test UI Base"));
     gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
-    
-
     // create a box container for the main content
     GtkWidget *content_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_window_set_child(GTK_WINDOW(window), content_box);
+    gtk_widget_set_halign(content_box, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(content_box, GTK_ALIGN_CENTER);
+    gtk_widget_set_hexpand(content_box, TRUE);
+    gtk_widget_set_vexpand(content_box, TRUE);
+    */
+    /**
+    * create the main window 
+    * Libadwaita Version
+    */
+    // create the main window
+    AdwApplicationWindow *window = ADW_APPLICATION_WINDOW(adw_application_window_new(app));
+    // ToolbarView for headerbar and content
+    GtkWidget *toolbar_view = adw_toolbar_view_new();
+	// create headerbar
+    GtkWidget *header_bar = adw_header_bar_new();
+    GtkWidget *title = gtk_label_new(_("Fastboot-Assistant"));
+    adw_header_bar_set_title_widget(ADW_HEADER_BAR(header_bar), title);
+	// add headerbar to toolbar_view
+    adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(toolbar_view), header_bar);
+     
+	// create a box container for the main content
+    GtkWidget *content_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_halign(content_box, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(content_box, GTK_ALIGN_CENTER);
     gtk_widget_set_hexpand(content_box, TRUE);
@@ -361,6 +384,14 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     // add grid to stack
     gtk_stack_add_named(GTK_STACK(stack), home_page, "home_page");
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "home_page");
+	
+	/**
+	* only for libadwaita window version
+	*/
+	// add content_box to toolbar_view
+	adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar_view), content_box);
+	// add toolbar to window
+	adw_application_window_set_content(window, toolbar_view);
 	
 	// present the window
     gtk_window_present(GTK_WINDOW(window));
