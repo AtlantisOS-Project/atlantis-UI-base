@@ -143,12 +143,18 @@ void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body,
     gtk_widget_set_margin_end(content, 16);
     gtk_widget_set_halign(content, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
-
+	/*
     GtkWidget *spinner = gtk_spinner_new();
     gtk_widget_set_size_request(spinner, 150, 150);
     gtk_spinner_start(GTK_SPINNER(spinner));
     gtk_box_append(GTK_BOX(content), spinner);
-
+	*/
+	GtkWidget *spinner = adw_spinner_new();
+	gtk_widget_set_size_request(spinner, 150, 150);
+	//adw_spinner_start(ADW_SPINNER(spinner));
+	//gtk_spinner_start(GTK_SPINNER(spinner));
+	gtk_box_append(GTK_BOX(content), spinner);
+	
     adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), content);
     adw_dialog_present(dialog, parent);
 
@@ -208,11 +214,18 @@ void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char
     gtk_widget_set_margin_end(content, 16);
     gtk_widget_set_halign(content, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
-
+	/*
     GtkWidget *spinner = gtk_spinner_new();
     gtk_widget_set_size_request(spinner, 150, 150);
     gtk_spinner_start(GTK_SPINNER(spinner));
     gtk_box_append(GTK_BOX(content), spinner);
+    */
+    GtkWidget *spinner = adw_spinner_new();
+	gtk_widget_set_size_request(spinner, 150, 150);
+	//adw_spinner_start(ADW_SPINNER(spinner));
+	//gtk_spinner_start(GTK_SPINNER(spinner));
+	gtk_box_append(GTK_BOX(content), spinner);
+
 
     adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), content);
     adw_dialog_present(dialog, parent);
