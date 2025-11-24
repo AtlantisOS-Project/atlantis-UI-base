@@ -274,7 +274,7 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     set_logging_mode(1);
     
     // apply language
-    initialize_i18n();
+    init_language();
     
     // use the advanced custom css provider
     use_adw_provider();

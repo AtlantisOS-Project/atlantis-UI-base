@@ -27,12 +27,6 @@ extern "C" {
 */
 extern const char *LOCALEDIR_PATH;
 
-/**
-* Automtic initialization of internationalization
-*
-*/
-void initialize_i18n();
-
 // function that get the path of the language file
 void set_language_dir(const char *dir);
 // get the language dir

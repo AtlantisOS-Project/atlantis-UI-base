@@ -19,45 +19,45 @@ msgstr ""
 
 #: helper/log/write_log_text.c:46
 msgid "Log Viewer"
-msgstr ""
+msgstr "Log"
 
 #: helper/log/write_log_text.c:113
 msgid "Show Log"
-msgstr ""
+msgstr "Log anziegen"
 
 #: helper/log/write_log_text.c:137
 msgid "Exit"
-msgstr ""
+msgstr "Beenden"
 
 #: design/dialogs/about_dialog.c:74
 msgid "translator-credits"
-msgstr ""
+msgstr "translator-credits"
 
 #: design/dialogs/about_dialog.c:78
 msgid "Documentation"
-msgstr ""
+msgstr "Dokumentation"
 
 #: design/dialogs/about_dialog.c:82
 msgid "Fonts"
-msgstr ""
+msgstr "Schriften"
 
 #: design/dialogs/about_dialog.c:87
 msgid "Special thanks to"
-msgstr ""
+msgstr "Speziellen Dank an"
 
 #: design/dialogs/dialogs.c:30 design/dialogs/dialogs.c:39
 msgid "Information"
-msgstr ""
+msgstr "Informationen"
 
 #: design/dialogs/dialogs.c:31 design/dialogs/dialogs.c:47
 #: design/dialogs/dialogs.c:56 design/dialogs/dialogs.c:72
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: design/dialogs/dialogs.c:55 design/dialogs/dialogs.c:64
 msgid "Error"
-msgstr ""
+msgstr "Fehler"
 
 #: design/dialogs/dialog_multi_progress.c:42
 msgid "Completed."
-msgstr ""
+msgstr "Fertig"
