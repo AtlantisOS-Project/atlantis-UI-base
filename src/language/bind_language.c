@@ -23,6 +23,7 @@ void bind_language_extern(const char *lang)
     // set two paths for the .po files
     const char *locale_paths[] = {
         "./locale",                // build / run in source tree
+        "./po",                    // build / run in source tree
         ".",                      // build / run in source tree
         "/usr/local/share/locale", // self-installed
         "/usr/share/locale"        // system-wide packages
@@ -73,7 +74,8 @@ void initialize_i18n()
     // set two paths for the .po files
     const char *locale_paths[] = {
         "./locale",                // build / run in source tree
-        "./",                      // build / run in source tree
+        "./po",                    // build / run in source tree
+        ".",                      // build / run in source tree
         "/usr/local/share/locale", // self-installed
         "/usr/share/locale"        // system-wide packages
     };
