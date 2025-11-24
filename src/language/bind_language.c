@@ -18,12 +18,12 @@ extern const char *LOCALE_DOMAIN;
 
 // try to bind local dir and .mo files
 // dev mode = direct binding of languages 
-void bind_language(const char *lang)
+void bind_language_extern(const char *lang)
 {
-#ifdef DEV_MODE
     // set two paths for the .po files
     const char *locale_paths[] = {
         "./locale",                // build / run in source tree
+        ".",                      // build / run in source tree
         "/usr/local/share/locale", // self-installed
         "/usr/share/locale"        // system-wide packages
     };
@@ -58,7 +58,43 @@ void bind_language(const char *lang)
         bind_textdomain_codeset(LOCALE_DOMAIN, "UTF-8");
         textdomain(LOCALE_DOMAIN);
     }
-#else
-    LOGI("bind_language(%s) ignored: build without DEV_MODE", lang);
-#endif
+}
+
+
+/**
+* Initializes the gettext/i18n system for the application.
+* * Must be called at the beginning of the main() function.
+*
+* @param domain The name of the text domain (APP_TEXT_DOMAIN).
+* @param locale_dir The path to the .mo files (APP_LOCALE_DIR).
+*/
+void initialize_i18n() 
+{
+    // set two paths for the .po files
+    const char *locale_paths[] = {
+        "./locale",                // build / run in source tree
+        "./",                      // build / run in source tree
+        "/usr/local/share/locale", // self-installed
+        "/usr/share/locale"        // system-wide packages
+    };
+    int found = 0;
+    
+    for (int i = 0; i < (int)(sizeof(locale_paths)/sizeof(locale_paths[0])); i++) 
+    {
+    	// get language
+    	setlocale(LC_ALL, "");
+		// bind text files
+    	bindtextdomain(LOCALE_DOMAIN, locale_paths[i]);
+		// bind codeset
+    	bind_textdomain_codeset(LOCALE_DOMAIN, "UTF-8");
+		// apply gettext
+    	textdomain(LOCALE_DOMAIN);
+    	found = 1;
+        break;
+    }
+    
+    if (!found) 
+    {
+    	LOGE("Error with appling language.");
+    }
 }

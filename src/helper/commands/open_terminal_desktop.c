@@ -66,6 +66,7 @@ void open_terminal_by_desktop(const char *function_command)
         * Linux: 
         * get the desktop enivorment and open based on this a new terminal
         */    
+               
         // GNOME
         if (strstr(desktop, "GNOME") != NULL) 
         {
@@ -91,13 +92,52 @@ void open_terminal_by_desktop(const char *function_command)
         {
             snprintf(cmd, sizeof(cmd), "mate-terminal -- bash -c '%s; exec bash'", function_command);
         } 
-        
-        else 
-        {
-            LOGE("Error: Unsupported desktop environment: %s\n", desktop);
-            fprintf(stderr, "Error: Unsupported desktop environment: %s\n", desktop);
-            return;
-        }
+                
+        // fallback
+		else
+		{
+    		// terminal
+    		const char *fallback_terminals[] = {
+    		    "gnome-terminal",    
+    		    "x-terminal-emulator", // standard terminal link
+    		    "konsole",
+    		    "xfce4-terminal",
+    		    "xterm",
+    		    NULL
+    		};
+
+    		int found_terminal = 0;
+    		for (int i = 0; fallback_terminals[i] != NULL; i++) 
+    		{
+        		// check if terminal is installed
+        		char check_cmd[256];
+        		snprintf(check_cmd, sizeof(check_cmd), "command -v %s > /dev/null 2>&1", fallback_terminals[i]);
+        		if (system(check_cmd) == 0) 
+        		{
+  					// check gnome terminal first
+        		    if (strcmp(fallback_terminals[i], "gnome-terminal") == 0 || strcmp(fallback_terminals[i], "mate-terminal") == 0) 
+        		    {
+        		        snprintf(cmd, sizeof(cmd), "%s -- bash -c '%s; exec bash'", fallback_terminals[i], function_command);
+        		    }
+        		    
+        		    // for other terminals
+        		    else 
+        		    {
+        		        snprintf(cmd, sizeof(cmd), "%s -e bash -c '%s; exec bash'", fallback_terminals[i], function_command);
+        		    }
+        		    
+        		    found_terminal = 1;
+        		    break;
+        		}
+    		}	
+
+    		if (!found_terminal) 
+    		{
+        		LOGE("Error: Unsupported desktop environment (%s) and no known fallback terminal found.\n", desktop);
+        		fprintf(stderr, "Error: Unsupported desktop environment (%s) and no known fallback terminal found.\n", desktop);
+        		return;
+    		}
+		}
         
         result = system(cmd);
     #endif

@@ -22,6 +22,7 @@
 - **design/dialogs/dialogs.c** — Dialog and interaction modules.
 - **helper/file_filter.c** — Helper functions for recurring
 - **helper/get_config_value.c** — Helper functions for recurring tasks.
+- **helper/trim_and_clean.c** – Helper function to trim and clean strings
 - **helper/log/write_log_text.c** — Helper functions for recurring tasks.
 - **helper/log/write_log.c** — Helper functions for recurring tasks.
 - **helper/filesystem/home_dir.c** — Helper functions for recurring tasks.
@@ -35,9 +36,10 @@
 - **helper/commands/open_url.c** — Helper functions for recurring tasks.
 - **helper/commands/open_terminal_desktop.c** — Helper functions for recurring tasks.
 - **helper/commands/execute_command.c** — Helper functions for recurring tasks.
+- **helper/commands/command_exists.c** – Helper function that check if a special command exsists.
 - **language/bind_language.c** — Multilingualism and localization.
 - **language/language.c** — Multilingualism and localization.
 - **test/test.c** – Test function for the UIBase
-- **theme/load_adw_provider.c** — Loading additional CSS Provider and libadwaita themes
+- **theme/load_adw_provideint command_exists(const char *command) r.c** — Loading additional CSS Provider and libadwaita themes
 - **theme/custom_css_adw.c** — Additional CSS Provider 
 

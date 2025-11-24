@@ -108,7 +108,7 @@ int make_path_dirname(const char *filepath)
 
     if (last == buff) 
     {
-        // path such as “/file” → Directory is '/' (exists)
+        // path such as '/file' → Directory is '/' (exists)
         return 0;
     }
 

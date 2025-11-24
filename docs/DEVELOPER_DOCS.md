@@ -22,6 +22,7 @@ For more details, look for the functions in the headers.
 #include <time.h>
 #include <locale.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <pthread.h>
 #include <syslog.h>
 #include <sys/stat.h>
@@ -33,7 +34,7 @@ For more details, look for the functions in the headers.
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <adwaita.h>
-#include <vte/vte.h> 
+#include <vte/vte.h>
 ``` 
 
 
@@ -125,6 +126,10 @@ For more details, look for the functions in the headers.
 
 - `char *get_config_value(const char *filename, const char *key) {`
 
+## `helper/trim_and_clean.c`
+
+- `char *trim_and-clean(char *str) {`
+
 ## `helper/log/write_log_text.c`
 
 - `static void spawn_cb(VteTerminal *terminal, GPid pid, GError *error, gpointer user_data) {`
@@ -196,6 +201,10 @@ For more details, look for the functions in the headers.
 - `void run_command(const char *command) {`
 - `bool run_command_bool(const char *cmd) {`
 - `char *execute_command(const char *command) {`
+
+## `helper/commands/command_exists.c`
+
+- `int command_exists(const char *command) {`
 
 ## `language/bind_language.c`
 

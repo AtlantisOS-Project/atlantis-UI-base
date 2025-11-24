@@ -24,6 +24,7 @@
 #include <time.h>
 #include <locale.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <pthread.h>
 #include <syslog.h>
 #include <sys/stat.h>
@@ -128,7 +129,8 @@ bool run_command_bool(const char *cmd);
 char *execute_command(const char *command);
 // run command with pkexec
 void command_pkexec(const gchar *command);
-
+// check if command exsists
+int command_exists(const char *command);
 /**
 * Get values from a config file
 *
@@ -137,6 +139,11 @@ void command_pkexec(const gchar *command);
 */
 // function that get values from config files
 char *get_config_value(const char *filename, const char *key);
+
+/**
+* Removes leading and trailing spaces/quotation marks from a string
+*/
+char *trim_and_clean(char *str);
 
 /**
 * Load file filter from a config file

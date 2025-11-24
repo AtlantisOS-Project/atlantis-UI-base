@@ -273,6 +273,9 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     // 1 → syslog
     set_logging_mode(1);
     
+    // apply language
+    initialize_i18n();
+    
     // use the advanced custom css provider
     use_adw_provider();
     
@@ -302,7 +305,7 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     GtkWidget *toolbar_view = adw_toolbar_view_new();
 	// create headerbar
     GtkWidget *header_bar = adw_header_bar_new();
-    GtkWidget *title = gtk_label_new(_("Fastboot-Assistant"));
+    GtkWidget *title = gtk_label_new(_("Test UIBase"));
     adw_header_bar_set_title_widget(ADW_HEADER_BAR(header_bar), title);
 	// add headerbar to toolbar_view
     adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(toolbar_view), header_bar);
