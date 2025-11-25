@@ -187,6 +187,9 @@ For more details, look for the functions in the headers.
 - `void command_pkexec(const gchar *command) {`
 - `void command_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
 - `void command_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
+- `void commands_pkexec(const gchar *command) {`
+- `void commands_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
+- `void commands_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
 
 ## `helper/commands/open_url.c`
 
