@@ -141,8 +141,12 @@ GtkWidget* create_password_entry(const char *label_text, const char *placeholder
 */
 // spinner varinate
 void command_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text);
+// variante with multiple commands
+void commands_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text);
 // progressbar variante
 void command_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text);
+// cvariante with multiple commands
+void commands_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text);
 
 #ifdef __cplusplus
 }
