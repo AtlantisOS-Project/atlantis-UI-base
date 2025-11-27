@@ -65,9 +65,9 @@ void set_logging_mode(int syslog_mode)
     // own logging method
     else 
     {
-        char log_dir[512];
-        char log_file[1024];
-        char cwd[PATH_MAX]; // PATH_MAX from limits.h
+        char log_dir[1024];
+        char log_file[2048];
+        char cwd[512]; 
         time_t now = time(NULL);
         struct tm *t = localtime(&now);
         
