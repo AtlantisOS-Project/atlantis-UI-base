@@ -20,6 +20,8 @@ const char *LOCALE_DOMAIN = "test_app";
 const char *DEFAULT_FILTER = "";
 // define the local dir
 const char *LOCALEDIR_PATH = "local/";
+// define debug option for language
+bool debug_lang = false;
 
 // define about infos
 const char *app_icon = "org.example.Typeset";

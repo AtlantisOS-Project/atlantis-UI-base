@@ -36,7 +36,28 @@ const char *get_language_dir(void)
 
 // init local binding
 void init_language(void) 
-{
+{   
+    if (debug_lang) 
+    {
+        LOGW("Using fallback for language.");
+        
+        // try to get to set the env
+        g_setenv("LC_ALL", "en_US.UTF-8", TRUE);
+        g_setenv("LANG", "en_US.UTF-8", TRUE);
+        
+        // set the local to english
+        setlocale(LC_ALL, "en_US.UTF-8"); 
+        
+        // set default path
+        set_language_dir(LOCALEDIR_PATH); 
+        
+        // bind the textdomain
+    	bindtextdomain(LOCALE_DOMAIN, current_localedir);
+    	bind_textdomain_codeset(LOCALE_DOMAIN, "UTF-8");
+    	textdomain(LOCALE_DOMAIN);
+    	return;
+    }
+    
     setlocale(LC_ALL, "");
 
     // check for env = ATL_LOCALDIR
@@ -52,7 +73,7 @@ void init_language(void)
     {
         set_language_dir("./po");
     }
-    
+        
     // default dir
     else 
     {

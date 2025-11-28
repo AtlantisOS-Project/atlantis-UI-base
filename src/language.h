@@ -20,6 +20,11 @@ extern "C" {
 #endif
 
 /**
+* Define the debugging option for language
+*/
+extern bool debug_lang;
+
+/**
 * Define the path to the langauge files
 *
 * Usage:
