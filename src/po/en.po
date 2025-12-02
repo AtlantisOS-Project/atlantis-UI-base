@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-14 13:11+0100\n"
+"POT-Creation-Date: 2025-12-02 15:44+0100\n"
 "PO-Revision-Date: 2025-09-24 10:34+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,15 +17,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: helper/log/write_log_text.c:46
+#: helper/log/write_log_text.c:50
 msgid "Log Viewer"
 msgstr "Log Viewer"
 
-#: helper/log/write_log_text.c:113
+#: helper/log/write_log_text.c:122
 msgid "Show Log"
 msgstr "Show Log"
 
-#: helper/log/write_log_text.c:137
+#: helper/log/write_log_text.c:146
 msgid "Exit"
 msgstr "Exit"
 

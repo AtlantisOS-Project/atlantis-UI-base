@@ -17,6 +17,7 @@
 // use extern configs
 extern int use_syslog;       
 extern const char *LOCALE_DOMAIN;
+GtkApplication* app;
 
 // create new process
 static void spawn_cb(VteTerminal *terminal, GPid pid, GError *error, gpointer user_data)
@@ -38,17 +39,22 @@ static void spawn_cb(VteTerminal *terminal, GPid pid, GError *error, gpointer us
 // create a window, that shows the log
 void log_viewer(void)
 {
-    GtkWidget *window_log;
+    AdwApplicationWindow *log_window = ADW_APPLICATION_WINDOW(adw_application_window_new(app));
     GtkWidget *terminal;
+    
+    // create toolbar for header and content
+    GtkWidget *toolbar_view = adw_toolbar_view_new();
 
-    // create window for the log viewer
-    window_log = gtk_window_new();
-    gtk_window_set_title(GTK_WINDOW(window_log), _("Log Viewer"));
-    gtk_window_set_default_size(GTK_WINDOW(window_log), 800, 600);
+    // create headerbar
+    GtkWidget *header_bar = adw_header_bar_new();
+    GtkWidget *title = gtk_label_new(_("Log Viewer"));
+    adw_header_bar_set_title_widget(ADW_HEADER_BAR(header_bar), title);
+    adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(toolbar_view), header_bar);    
+    gtk_window_set_default_size(GTK_WINDOW(log_window), 800, 600);
+
 
     // create new terminal widget 
     terminal = vte_terminal_new();
-    gtk_window_set_child(GTK_WINDOW(window_log), terminal);
 
     // use journalctl for the output
     // NOTE: 
@@ -77,9 +83,12 @@ void log_viewer(void)
         spawn_cb,               // callback
         NULL                    // user_data
     );
+    
+    adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar_view), terminal);
+	adw_application_window_set_content(log_window, toolbar_view);
 	
 	// show the window
-    gtk_window_present(GTK_WINDOW(window_log));
+    gtk_window_present(GTK_WINDOW(log_window));
 }
 
 // function that kills the program itself
