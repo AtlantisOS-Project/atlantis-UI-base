@@ -1,4 +1,4 @@
-/*
+/**
 * create_entry.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -21,7 +21,9 @@
 #include "helper.h"
 #include "design.h"
 
-//  create normal entry with label
+/** 
+* @brief Create normal entry with label
+*/
 GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out)
 {
     // new box
@@ -58,7 +60,9 @@ GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntr
     return box;
 }
 
-// create password entry with label
+/**
+* @brief Create password entry with label
+*/
 GtkWidget* create_password_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out)
 {
     // new box

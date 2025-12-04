@@ -6,7 +6,7 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-Usage:
+* Usage:
 * 0 = own logging function to /var/log/LOCALE_DOMAIN or 
 * 1 = syslog
 * 
@@ -51,7 +51,9 @@ int map_level_to_syslog(int level)
 }
 
 
-// function that set a new logging mode 
+/** 
+* @brief Function that set a new logging mode 
+*/
 void set_logging_mode(int syslog_mode) 
 {
     use_syslog = syslog_mode;
@@ -143,7 +145,9 @@ void close_logging(void)
     }
 }
 
-// function that create create the message for the logging
+/**
+* @brief Function that create create the message for the logging
+*/
 void log_message(const char *level, int syslog_level, const char *fmt, va_list args) 
 {
     time_t now = time(NULL);
@@ -177,7 +181,9 @@ void log_message(const char *level, int syslog_level, const char *fmt, va_list a
     }
 }
 
-// wrapper: takes variadic arguments and forwards to log_message
+/**
+* @brief Wrapper: takes variadic arguments and forwards to log_message
+*/
 void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...) 
 {
     va_list args;

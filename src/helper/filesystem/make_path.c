@@ -7,7 +7,8 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
 *
-* Creates a complete path by creating missing parent directories
+* @brief Creates a complete path by creating missing parent directories
+*
 * Usage:
 * make_path(dir_path);
 *
@@ -18,7 +19,9 @@
 
 #include "helper.h"
 
-// helper function that create a directory
+/**
+* @brief Helper function that create a directory
+*/
 void make_directory(const char *path) 
 {
     if (mkdir(path, 0755) == -1 && errno != EEXIST) 
@@ -30,7 +33,9 @@ void make_directory(const char *path)
 }
 
 
-// creates the full path 
+/** 
+* @brief Creates the full path 
+*/
 int make_path(const char *path)
 {
     char tmp[PATH_MAX];
@@ -83,7 +88,9 @@ int make_path(const char *path)
     return 0;
 }
 
-// creates parent directory of a file 
+/** 
+* @brief Creates parent directory of a file 
+*/
 int make_path_dirname(const char *filepath)
 {
     char buff[PATH_MAX];
@@ -117,7 +124,9 @@ int make_path_dirname(const char *filepath)
     return make_path(buff);
 }
 
-// same function, but using g_mkdir_with_parents
+/**
+* @brief Same function, but using g_mkdir_with_parents
+*/
 void create_directory(const char *path) 
 {
     if (g_mkdir_with_parents(path, 0755) != 0) 

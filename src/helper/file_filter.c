@@ -17,7 +17,9 @@
 
 #include "helper.h"
 
-// function that load the filter from a config file
+/** 
+* @brief Function that load the filter from a config file
+*/
 GListStore* load_file_filters(const char *config_path)
 {
     if (!config_path || strlen(config_path) == 0) 

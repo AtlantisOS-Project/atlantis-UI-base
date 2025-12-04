@@ -1,4 +1,4 @@
-/*
+/**
 * create_special_icon.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -17,7 +17,9 @@
 #include "helper.h"
 #include "design.h"
 
-// create a button for navigation
+/** 
+* @brief Create a button for navigation
+*/
 GtkWidget *create_button(const char *label, GCallback callback, gpointer data) 
 {
     GtkWidget *button = gtk_button_new_with_label(label);
@@ -25,7 +27,9 @@ GtkWidget *create_button(const char *label, GCallback callback, gpointer data)
     return button;
 }
 
-// create a button with icon
+/** 
+* @brief Create a button with icon
+*/
 GtkWidget *create_button_icon(const char *icon_name, const char *label_text, GCallback callback, gpointer data) 
 {
     GtkWidget *button = gtk_button_new();
@@ -42,7 +46,9 @@ GtkWidget *create_button_icon(const char *icon_name, const char *label_text, GCa
     return button;
 }
 
-// create a button with icon, but without callback
+/**
+* @brief Create a button with icon, but without callback
+*/
 GtkWidget *create_button_icon_no_callback(const char *icon_name, const char *label_text) 
 {
     GtkWidget *button = gtk_button_new();
@@ -58,7 +64,9 @@ GtkWidget *create_button_icon_no_callback(const char *icon_name, const char *lab
     return button;
 }
 
-// create a button with two icons
+/**
+* @brief Create a button with two icons
+*/
 GtkWidget *create_button_two_icon(const char *first_icon, const char *second_icon, const char *label_text, GCallback callback, gpointer data) 
 {
     GtkWidget *button = gtk_button_new();
@@ -81,7 +89,9 @@ GtkWidget *create_button_two_icon(const char *first_icon, const char *second_ico
     return button;
 }
 
-// create a button with an icon and set special position
+/**
+* @brief Create a button with an icon and set special position
+*/
 GtkWidget *create_button_icon_position(const char *icon_name, const char *label_text, GCallback callback, gpointer data, GtkAlign alignment)
 {
     GtkWidget *button = gtk_button_new();

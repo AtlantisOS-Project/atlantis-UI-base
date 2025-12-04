@@ -12,7 +12,9 @@
 
 #include "helper.h"
 
-// check if command exsists
+/**
+* @brief Check if command exsists
+*/
 int command_exists(const char *command) 
 {
     char check_cmd[256];

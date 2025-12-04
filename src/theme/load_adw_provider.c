@@ -18,7 +18,9 @@
 GtkCssProvider *provider_adw = NULL;
 AdwStyleManager *style_manager;
 
-// function that create a css provider
+/** 
+* @brief Function that create a css provider
+*/
 GtkCssProvider* create_css_provider() 
 {
     GtkCssProvider *new_provider = gtk_css_provider_new();
@@ -30,7 +32,9 @@ GtkCssProvider* create_css_provider()
     return new_provider;
 }
 
-// function to unload the css provider
+/**
+* @brief Function to unload the css provider
+*/
 void unload_css_provider(GtkCssProvider *provider) 
 {
     if (provider) 
@@ -39,7 +43,9 @@ void unload_css_provider(GtkCssProvider *provider)
     }
 }
 
-// function to load the css provider with adw themes
+/** 
+* @brief Function to load the css provider with adw themes
+*/
 void load_adw_provider(void) 
 {
     const char *adw_css = get_custom_adw_css();
@@ -47,13 +53,17 @@ void load_adw_provider(void)
 }
 
 
-// function that reload the adw theme
+/** 
+* @brief Function that reload the adw theme
+*/
 void adw_theme_changed(AdwStyleManager *style_manager, GParamSpec *pspec, gpointer user_data) 
 {
     load_adw_provider();  // reload the adw provider
 }
 
-// function that load the adw provider and check for changed theme
+/**
+* @brief Function that load the adw provider and check for changed theme
+*/
 void use_adw_provider(void) 
 {
     // check for the adw provider

@@ -18,7 +18,9 @@
 
 #include "helper.h"
 
-// run a command in terminal via system()
+/**
+* @brief Run a command in terminal via system()
+*/
 void run_command(const char *command) 
 {
     if (command != NULL) 
@@ -28,7 +30,9 @@ void run_command(const char *command)
     }
 }
 
-// run a command and return true or false
+/**
+* @brief Run a command and return true or false
+*/
 bool run_command_bool(const char *cmd) 
 {
     int status = system(cmd);
@@ -36,7 +40,9 @@ bool run_command_bool(const char *cmd)
 }
 
 
-// function to execute a command and capture its output
+/**
+* @brief Function to execute a command and capture its output
+*/
 char *execute_command(const char *command) 
 {
     FILE *fp;

@@ -6,7 +6,7 @@
  *
  * License: GNU GENERAL PUBLIC LICENSE Version 3
  *
- * Run a command in a new terminal
+ * @brief Run a command in a new terminal
  *
  * Usage:
  * open_terminal_by_desktop("echo \"Hello World \" && sleep 5");
@@ -24,7 +24,9 @@
 // max command length
 #define MAX_CMD_LEN 2048
 
-// Create a new terminal and run a command
+/** 
+* @brief Create a new terminal and run a command
+*/
 void open_terminal_by_desktop(const char *function_command) 
 {
     char cmd[MAX_CMD_LEN];

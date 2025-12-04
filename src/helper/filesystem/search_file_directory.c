@@ -7,7 +7,7 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
 *
-* Search if a predefined string exsists in the file of predefined directory
+* @brief Search if a predefined string exsists in the file of predefined directory
 *
 * Usage:
 *  int result = search_file_directory(SOURCES_DIR, SEARCH_STRING); 

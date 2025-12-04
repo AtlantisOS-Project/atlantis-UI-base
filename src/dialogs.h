@@ -27,7 +27,7 @@ typedef void (*CommandFinishedCallback)(const gchar *output, gpointer user_data)
 typedef void (*EntryDialogCallback)(const gchar *text, gpointer user_data);
 
 /**
-* Structure command steps for dialog with multiple commands
+* @brief Structure command steps for dialog with multiple commands
 * 
 * Usage:
 * GSList *commands = NULL;
@@ -55,7 +55,7 @@ typedef struct {
 gboolean pulse_progress(GtkProgressBar *pbar);
 
 /**
-* Show adw alert dialog
+* @brief Show adw alert dialog
 *
 * Usage:
 * show_alert_dialog(widget, "Dialog Title", "Some text in the dialog", "OK");
@@ -64,7 +64,7 @@ gboolean pulse_progress(GtkProgressBar *pbar);
 void show_alert_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label);
 
 /**
-* Multiple dialogs for special operations
+* @brief Multiple dialogs for special operations
 *
 * Usage:
 * show_alert_dialog(widget, "Dialog Title", "Some text in the dialog", "OK");
@@ -91,7 +91,7 @@ void show_error_title_dialog(GtkWidget *parent, const char *title, const char *b
 // show error message dialog with special title and special button
 void show_error_title_button_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label);
 /**
-* Show the adw about dialog
+* @brief Show the adw about dialog
 *
 * Usage:
 * show_about_dialog(GtkWidget *parent);
@@ -132,7 +132,7 @@ extern const char *special_thanks[];
 void show_about_dialog(GtkWidget *parent);
 
 /**
-* Dialogs with spinner / progress bar
+* @brief Dialogs with spinner / progress bar
 *
 * Usage:
 * show_spinner_dialog(GTK_WIDGET(widget), "Update running", "Please wait...", "sleep 5");
@@ -150,12 +150,12 @@ void show_progress_dialog(GtkWidget *parent, const char *title, const char *body
 void show_progress_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data);
 
 /**
-* ADW dialog with entry
+* @brief ADW dialog with entry
 */
 void show_entry_dialog(GtkWidget *parent, const char *title, const char *body, const char *ok_label, const char *cancel_label, const char *entry_label, const char *placeholder, EntryDialogCallback callback, gpointer user_data);
 
 /**
-* ADW dialog with progress that show the steps
+* @brief ADW dialog with progress that show the steps
 *
 * Usage:
 * show_progress_dialog_multi(widget, "System-Update", "This may take some time...", commands);

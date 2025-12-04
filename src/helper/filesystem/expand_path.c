@@ -6,8 +6,7 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-*
-* Expand '~' to $HOME
+* @brief Expand '~' to $HOME
 *
 * Usage:
 *  
@@ -16,7 +15,9 @@
 
 #include "helper.h"
 
-// expand '~' to $HOME
+/**
+* @brief Expand '~' to $HOME
+*/
 char *expand_path(const char *path) 
 {
     if (path[0] != '~') 

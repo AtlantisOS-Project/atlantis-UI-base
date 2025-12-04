@@ -6,7 +6,7 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* Removes leading and trailing spaces/quotation marks from a string
+* @brief Removes leading and trailing spaces/quotation marks from a string
 * 
 * Usage:
 * trim_and_clean(value_buffer);
@@ -16,7 +16,7 @@
 #include "helper.h"
 
 /**
- * Removes leading and trailing spaces/quotation marks from a string
+ * @brief Removes leading and trailing spaces/quotation marks from a string
  * @param str The string to be cleaned up.
  * @return The cleaned string.
  */

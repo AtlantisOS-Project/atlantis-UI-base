@@ -1,17 +1,17 @@
-/*
- * dialogs_entry.c
- *
- * (C) 2025 AtlantisOS Project
- * by @NachtsternBuild
- *
- * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * Dialog with spinner/progress bar for AtlantisOS
- *
- * Usage:
- * show_spinner_dialog(GTK_WIDGET(widget), "Update running", "Please wait...", "sleep 5");
- * show_progress_dialog(GTK_WIDGET(widget), "Installation", "Install package...", "sleep 5");
- */
+/**
+* dialogs_entry.c
+*
+* (C) 2025 AtlantisOS Project
+* by @NachtsternBuild
+*
+* License: GNU GENERAL PUBLIC LICENSE Version 3
+*
+* @brief Dialog with spinner/progress bar for AtlantisOS
+*
+* Usage:
+* show_spinner_dialog(GTK_WIDGET(widget), "Update running", "Please wait...", "sleep 5");
+* show_progress_dialog(GTK_WIDGET(widget), "Installation", "Install package...", "sleep 5");
+*/
 
 #include "dialogs.h"
 #include "helper.h"
@@ -19,7 +19,9 @@
 
 typedef void (*EntryDialogCallback)(const gchar *text, gpointer user_data);
 
-// callback handler for button response
+/**
+* @brief Callback handler for button response
+*/
 static void on_dialog_response(AdwAlertDialog *dialog, const char *response, gpointer user_data)
 {
     struct {
@@ -38,7 +40,9 @@ static void on_dialog_response(AdwAlertDialog *dialog, const char *response, gpo
     g_free(ctx);
 }
 
-// show alert dialog with entry and callback
+/**
+* @brief Show alert dialog with entry and callback
+*/
 void show_entry_dialog(GtkWidget *parent, const char *title, const char *body, const char *ok_label, const char *cancel_label, const char *entry_label, const char *placeholder, EntryDialogCallback callback, gpointer user_data)
 {
     AdwDialog *dialog = adw_alert_dialog_new(title, body);

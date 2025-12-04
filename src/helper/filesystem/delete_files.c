@@ -6,8 +6,8 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* Delete a file in a direector
-* Delete a full path with parents
+* @brief Delete a file in a direector
+* @brief Delete a full path with parents
 *
 * Usage:
 * delete_files_in_dir("/this/path");
@@ -26,7 +26,9 @@
 // max path lenght
 #define MAX_PATH_CHECK 1024
 
-// function to delete file in dir
+/** 
+* @brief Function to delete file in dir
+*/
 void delete_files_in_dir(const char *path) 
 {
     DIR *dir;
@@ -70,7 +72,7 @@ void delete_files_in_dir(const char *path)
 }
 
 /**
- * Checks whether the path is a mount point (i.e., whether its inode differs from the parent inode).
+ * @brief Checks whether the path is a mount point (i.e., whether its inode differs from the parent inode).
  * @param path The path to be checked.
  * @param parent_path The parent path.
  * @return true if it is a mount point, false otherwise.
@@ -103,7 +105,7 @@ static bool is_mount_point(const char *path, const char *parent_path)
 }
 
 /**
-* remove file in dir
+* @brief Remove file in dir
 */
 int remove_file(const char *filepath) 
 {
@@ -125,7 +127,9 @@ int remove_file(const char *filepath)
 }
 
 /**
- * Checks whether the path is a critical system directory.
+ * @brief Checks whether the path is a critical system directory.
+ * 
+ * Note:
  * This is only a basic list!
  *
  * @param path The path to be checked.
@@ -168,8 +172,7 @@ static bool is_critical_system_path(const char *path)
 }
 
 /**
- * Checks whether the path belongs to one of the standard, important
- * home subfolders. This is the part with language dependency.
+ * @brief Checks whether the path belongs to one of the standard, important home subfolders. This is the part with language dependency.
  *
  * @param path The path to be checked.
  * @param home_dir The user's home directory.
@@ -224,9 +227,9 @@ static bool is_standard_home_directory(const char *path, const char *home_dir)
 }
 
 /**
- * Deletes all files in the path. If the directory is empty afterwards,
- * it is deleted and the process is applied recursively to the parent path
- * until a non-empty directory or the home directory is reached.
+ * @brief Deletes all files in the path. If the directory is empty afterwards,
+ *        it is deleted and the process is applied recursively to the parent path
+ *        until a non-empty directory or the home directory is reached.
  *
  * @param path The path in which the files are to be deleted.
  * @param stop_dir The path at which the recursive deletion of the parent should stop (optional, e.g., home directory).
@@ -283,8 +286,6 @@ static void delete_files_and_parents(const char *path, const char *stop_dir)
     
     // close file stream
     closedir(dir);
-
-    // --- Phase 2: Aktuelles Verzeichnis und Eltern rekursiv löschen ---
     
     // check if directory is empty
     dir = opendir(path);
@@ -358,8 +359,7 @@ static void delete_files_and_parents(const char *path, const char *stop_dir)
 }
 
 /**
- * Wrapper function that performs security checks before
- * recursive deletion is started.
+ * @brief Wrapper function that performs security checks before recursive deletion is started.
  *
  * @param path The path where deletion should begin.
  */

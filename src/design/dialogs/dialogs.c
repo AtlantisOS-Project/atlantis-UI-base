@@ -1,4 +1,4 @@
-/*
+/**
 * dialogs.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -6,7 +6,7 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* Multiple dialogs for special operations
+* @brief Multiple dialogs for special operations
 *
 * Usage:
 * show_alert_dialog(widget, "Dialog Title", "Some text in the dialog", "OK");
@@ -24,7 +24,9 @@
 #include "dialogs.h"
 #include "language.h"
 
-// show information dialog
+/**
+* @brief Show information dialog
+*/
 void show_info_dialog(GtkWidget *parent, const char *body)
 {
 	const char *title = _("Information");
@@ -33,7 +35,9 @@ void show_info_dialog(GtkWidget *parent, const char *body)
 	show_alert_dialog(parent, title, body, button_label);
 }
 
-// show information dialog with button title
+/**
+* @brief Show information dialog with button title
+*/
 void show_info_button_dialog(GtkWidget *parent, const char *body, const char *button_label)
 {
 	const char *title = _("Information");
@@ -41,7 +45,9 @@ void show_info_button_dialog(GtkWidget *parent, const char *body, const char *bu
 	show_alert_dialog(parent, title, body, button_label);
 }
 
-// show dialog with title
+/**
+* @brief Show dialog with title
+*/
 void show_dialog_title(GtkWidget *parent, const char *title, const char *body)
 {
 	const char *button_label = _("OK");
@@ -49,7 +55,9 @@ void show_dialog_title(GtkWidget *parent, const char *title, const char *body)
 	show_alert_dialog(parent, title, body, button_label);
 }
 
-// show error dialog
+/**
+* @brief Show error dialog
+*/
 void show_error_dialog(GtkWidget *parent, const char *body)
 {
 	const char *title = _("Error");
@@ -58,7 +66,9 @@ void show_error_dialog(GtkWidget *parent, const char *body)
 	show_alert_dialog(parent, title, body, button_label);
 }
 
-// show error dialog with special button
+/** 
+* @brief Show error dialog with special button
+*/
 void show_error_button_dialog(GtkWidget *parent, const char *body, const char *button_label)
 {
 	const char *title = _("Error");
@@ -66,7 +76,9 @@ void show_error_button_dialog(GtkWidget *parent, const char *body, const char *b
 	show_alert_dialog(parent, title, body, button_label);
 }
 
-// show error message dialog with special title
+/**
+* @brief Show error message dialog with special title
+*/
 void show_error_title_dialog(GtkWidget *parent, const char *title, const char *body)
 {
 	const char *button_label = _("OK");
@@ -76,7 +88,9 @@ void show_error_title_dialog(GtkWidget *parent, const char *title, const char *b
 	g_free((char *)formatted_title);
 }
 
-// show error message dialog with special title and special button
+/**
+* @brief Show error message dialog with special title and special button
+*/
 void show_error_title_button_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label)
 {
 	const char *formatted_title = g_strdup_printf("Error: %s", title);

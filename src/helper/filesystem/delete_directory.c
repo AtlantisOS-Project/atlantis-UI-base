@@ -6,7 +6,7 @@
  *
  * License: GNU GENERAL PUBLIC LICENSE Version 3
  *
- * Check if a directory exsists
+ * @brief Check if a directory exsists
  *
  * Usage:
  * delete_directory("/this/path");
@@ -14,7 +14,9 @@
  
 #include "helper.h"
 
-// delete directroy
+/** 
+* @brief Delete directroy
+*/
 void delete_directory(const char *path)
 {
     if (rmdir(path) == 0)

@@ -6,7 +6,7 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* callbacks from the main UI are received and passed on to the background scripts 
+* @brief Callbacks from the main UI are received and passed on to the background scripts 
 * 
 * Usage:
 * char *update_type = get_conf_value(conf_file, "UPDATE_TYPE");
@@ -16,7 +16,9 @@
 
 #include "helper.h"
 
-// function that get values from config files
+/** 
+* @brief Function that get values from config files
+*/
 char *get_config_value(const char *filename, const char *key) 
 {
     // open the file

@@ -1,16 +1,16 @@
-/*
- * dialog_multi_progress.c
- *
- * (C) 2025 AtlantisOS Project
- * by @NachtsternBuild
- *
- * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * ADW dialog with progress that show the steps
- *
- * Usage:
- * show_progress_dialog_multi(widget, "System-Update", "This may take some time...", commands);
- */
+/**
+* dialog_multi_progress.c
+*
+* (C) 2025 AtlantisOS Project
+* by @NachtsternBuild
+*
+* License: GNU GENERAL PUBLIC LICENSE Version 3
+*
+* @brief ADW dialog with progress that show the steps
+*
+* Usage:
+* show_progress_dialog_multi(widget, "System-Update", "This may take some time...", commands);
+*/
 
 #include "dialogs.h"
 #include "helper.h"
@@ -25,7 +25,9 @@ typedef struct {
     GtkWidget *title_label; 
 } RunData;
 
-// run the update to the main thread
+/**
+* @brief Run the update to the main thread
+*/
 static gboolean update_dialog_description(gpointer data)
 {
     RunData *rdata = (RunData *)data;
@@ -47,7 +49,9 @@ static gboolean update_dialog_description(gpointer data)
 }
 
 
-// create the thread for running the command
+/**
+* @brief Create the thread for running the command
+*/
 static gpointer run_command_thread(gpointer data)
 {
     RunData *rdata = (RunData *)data;
@@ -97,9 +101,9 @@ static gpointer run_command_thread(gpointer data)
 }
 
 
-/*
- * show the dialog with progressbar for multiple commands
- */
+/**
+* @brief Show the dialog with progressbar for multiple commands
+*/
 void show_progress_dialog_multi(GtkWidget *parent, const char *title, const char *body, GSList *commands)
 {
     if (commands == NULL) 

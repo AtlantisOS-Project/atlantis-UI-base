@@ -1,4 +1,4 @@
-/*
+/**
 * dialog.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -6,7 +6,7 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* show adw alert dialog
+* @brief Show adw alert dialog
 *
 * Usage:
 * show_alert_dialog(widget, "Dialog Title", "Some text in the dialog", "OK");
@@ -17,7 +17,9 @@
 #include "dialogs.h"
 #include "language.h"
 
-// show a new adw alert dialog
+/**
+* @brief Show a new adw alert dialog
+*/
 void show_alert_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label)
 {
 	// create new adw dialog

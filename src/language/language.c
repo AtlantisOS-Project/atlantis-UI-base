@@ -1,13 +1,13 @@
 /**
- * language.c
- *
- * (C) Copyright 2025 AtlantisOS Project
- * by @NachtsternBuild
- *
- * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * Provides gettext binding and translation setup
- */
+* language.c
+*
+* (C) Copyright 2025 AtlantisOS Project
+* by @NachtsternBuild
+*
+* License: GNU GENERAL PUBLIC LICENSE Version 3
+*
+* Provides gettext binding and translation setup
+*/
 
 #include "language.h"
 #include "helper.h"
@@ -34,7 +34,9 @@ const char *get_language_dir(void)
     return current_localedir ? current_localedir : LOCALEDIR_PATH;
 }
 
-// init local binding
+/**
+* @brief Init local binding
+*/
 void init_language(void) 
 {   
     if (debug_lang) 

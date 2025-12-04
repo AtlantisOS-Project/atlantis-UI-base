@@ -36,7 +36,9 @@ static void spawn_cb(VteTerminal *terminal, GPid pid, GError *error, gpointer us
     }
 }
 
-// create a window, that shows the log
+/** 
+* @brief Create a window, that shows the log
+*/
 void log_viewer(void)
 {
     AdwApplicationWindow *log_window = ADW_APPLICATION_WINDOW(adw_application_window_new(app));
@@ -91,7 +93,9 @@ void log_viewer(void)
     gtk_window_present(GTK_WINDOW(log_window));
 }
 
-// function that kills the program itself
+/** 
+* @brief Function that kills the program itself
+*/
 void kill_program(GtkButton *button, gpointer user_data)
 {
 	// get the pid of the program
@@ -100,7 +104,9 @@ void kill_program(GtkButton *button, gpointer user_data)
     kill(pid, SIGKILL);
 }
 
-// header that create the popover menu
+/**
+* @brief Header that create the popover menu
+*/
 GtkWidget *create_custom_headerbar(gpointer stack) 
 {    
     /*

@@ -1,5 +1,5 @@
-/*
-* free_wrapper.c
+/**
+* home_page.c
 *
 * (C) Copyright 2025 AtlantisOS Project
 * by @NachtsternBuild
@@ -15,7 +15,9 @@
 #include "helper.h"
 #include "design.h"
 
-// show home page
+/**
+* @brief Show home page
+*/
 void show_home_page(GtkWidget *widget, gpointer stack) 
 {
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "home_page");

@@ -1,4 +1,4 @@
-/*
+/**
 * switch_page.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -15,7 +15,9 @@
 #include "helper.h"
 #include "design.h"
 
-// function to switch pages in the stack 
+/** 
+* @brief Function to switch pages in the stack 
+*/
 void switch_page(GtkWidget *widget, gpointer user_data) 
 {
     GtkStack *stack = GTK_STACK(g_object_get_data(G_OBJECT(widget), "stack"));

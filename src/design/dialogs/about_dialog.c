@@ -1,4 +1,4 @@
-/*
+/**
 * create_special_icon.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -6,7 +6,7 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 *
-* 2. show the adw about dialog
+* @brief Show the adw about dialog
 *
 * Usage:
 * show_about_dialog(GtkWidget *parent);
@@ -19,8 +19,8 @@
 #include "dialogs.h"
 #include "language.h"
 
-/*
-* define some infos for the about page
+/**
+* @brief Define some infos for the about page
 *
 * Note: Define the informations in the main program
 *
@@ -51,7 +51,9 @@ extern const char *documentation_url;
 extern const char *font_usage;
 extern const char *special_thanks[];
 
-// show adw dialog about   
+/**
+* @brief Show adw dialog about
+*/   
 void show_about_dialog(GtkWidget *parent)
 {
     // create the adw about dialog and add a lot of informations

@@ -16,8 +16,12 @@
 // extern config
 extern const char *LOCALE_DOMAIN;
 
-// try to bind local dir and .mo files
-// dev mode = direct binding of languages 
+/** 
+* @brief Try to bind local dir and .mo files
+* 
+* Note:
+* dev mode = direct binding of languages 
+*/
 void bind_language_extern(const char *lang)
 {
     // set two paths for the .po files

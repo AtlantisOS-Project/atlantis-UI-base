@@ -1,4 +1,4 @@
-/*
+/**
 * create_label_icon.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -14,7 +14,9 @@
 #include "helper.h"
 #include "design.h"
 
-// create a label with icon 
+/**
+* @brief Create a label with icon 
+*/
 GtkWidget *create_label_icon(const char *icon_name, const char *label_text)
 {
 	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
@@ -28,7 +30,9 @@ GtkWidget *create_label_icon(const char *icon_name, const char *label_text)
     return box;
 }
 
-// create a label with icon and special position
+/**
+* @brief Create a label with icon and special position
+*/
 GtkWidget *create_label_icon_position(const char *icon_name, const char *label_text, GtkAlign alignment)
 {
 	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);

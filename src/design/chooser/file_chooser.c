@@ -1,4 +1,4 @@
-/*
+/**
 * file_chooser.c
 *
 * (C) Copyright 2025 AtlantisOS Project
@@ -16,7 +16,9 @@
 
 extern const char *DEFAULT_FILTER;
 
-// function for work with the file
+/**
+* @brief Function for work with the file
+*/
 static void file_dialog_response_callback(GtkFileDialog *dialog, GAsyncResult *res, gpointer user_data) 
 {
     g_autoptr(GFile) file = gtk_file_dialog_open_finish(dialog, res, NULL);
@@ -32,7 +34,9 @@ static void file_dialog_response_callback(GtkFileDialog *dialog, GAsyncResult *r
     }
 }
 
-// function for the filechooser dialog
+/**
+* @brief Function for the filechooser dialog
+*/
 void show_file_chooser(GtkWidget *widget, gpointer data) 
 {
     // get the parent window

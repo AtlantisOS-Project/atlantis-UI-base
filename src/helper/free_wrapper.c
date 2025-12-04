@@ -12,7 +12,9 @@
  
 #include "helper.h"
 
-// function to auto free
+/** 
+* @brief Function to auto free
+*/
 void free_wrapper(void *p) 
 { 
     free(*(void **)p); 

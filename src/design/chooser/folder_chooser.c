@@ -1,16 +1,16 @@
-/*
- * folder_chooser.c
- *
- * (C) Copyright 2025 AtlantisOS Project
- * by @NachtsternBuild
- *
- * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * Usage:
- * GtkWidget *btn = create_button("Choose folder", G_CALLBACK(show_folder_chooser), (gpointer)callback_function);
- *
- * callback_function(const char *folder_path);
- */
+/**
+* folder_chooser.c
+*
+* (C) Copyright 2025 AtlantisOS Project
+* by @NachtsternBuild
+*
+* License: GNU GENERAL PUBLIC LICENSE Version 3
+*
+* Usage:
+* GtkWidget *btn = create_button("Choose folder", G_CALLBACK(show_folder_chooser), (gpointer)callback_function);
+*
+* callback_function(const char *folder_path);
+*/
 
 #include "helper.h"
 #include "language.h"
@@ -19,7 +19,9 @@
 // type definition for a function that processes a path
 typedef void (*FolderProcessorFunc)(const char *path);
 
-// function for work with the path
+/**
+* @brief Function for work with the path
+*/
 static void folder_dialog_response_callback(GtkFileDialog *dialog, GAsyncResult *res, gpointer user_data)
 {
     g_autoptr(GFile) folder = gtk_file_dialog_select_folder_finish(dialog, res, NULL);
@@ -38,7 +40,9 @@ static void folder_dialog_response_callback(GtkFileDialog *dialog, GAsyncResult 
     }
 }
 
-// function for the folderchooser dialog
+/**
+* @brief Function for the folderchooser dialog
+*/
 void show_folder_chooser(GtkWidget *widget, gpointer data)
 {
     // get the parent window

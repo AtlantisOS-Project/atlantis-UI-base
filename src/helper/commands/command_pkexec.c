@@ -18,7 +18,9 @@
 #include "helper.h"
 #include "design.h"
 
-// command to run something with pkexec
+/** 
+* @brief Command to run something with pkexec
+*/
 void command_pkexec(const gchar *command) 
 {
 	gchar *full_command = g_strdup_printf("pkexec %s", command);
@@ -29,7 +31,9 @@ void command_pkexec(const gchar *command)
 	g_free(execution_result);
 }
 
-// command to run multiple commands with pkexec
+/**
+* @brief Command to run multiple commands with pkexec
+*/
 void commands_pkexec(const gchar *command)
 {
 	gchar *full_command = g_strdup_printf("pkexec sh -c \"%s\"", command);
@@ -40,7 +44,9 @@ void commands_pkexec(const gchar *command)
 	g_free(execution_result);
 }
 
-// wrapper for running a pkexec command with spinner
+/**
+* @brief Wrapper for running a pkexec command with spinner
+*/
 void command_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text)
 {
 	gchar *full_command = g_strdup_printf("pkexec %s", command);
@@ -49,7 +55,9 @@ void command_pkexec_spinner(GtkWidget *widget, const gchar *command, const char 
 	g_free(full_command);
 }
 
-// wrapper for running a multiple pkexec commands with spinner
+/**
+* @brief Wrapper for running a multiple pkexec commands with spinner
+*/
 void commands_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text)
 {
 	gchar *full_command = g_strdup_printf("pkexec sh -c \"%s\"", command);
@@ -59,7 +67,9 @@ void commands_pkexec_spinner(GtkWidget *widget, const gchar *command, const char
 }
 
 
-// wrapper for running a pkexec command with spinner
+/**
+* @brief Wrapper for running a pkexec command with spinner
+*/
 void command_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text)
 {
 	gchar *full_command = g_strdup_printf("pkexec %s", command);
@@ -68,7 +78,9 @@ void command_pkexec_progressbar(GtkWidget *widget, const gchar *command, const c
 	g_free(full_command);
 }
 
-// wrapper for running a mutliple pkexec commands with spinner
+/**
+* @brief Wrapper for running a mutliple pkexec commands with spinner
+*/
 void commands_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text)
 {
 	gchar *full_command = g_strdup_printf("pkexec sh -c \"%s\"", command);

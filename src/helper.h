@@ -46,7 +46,7 @@ extern "C" {
 #endif
 
 /**
-* Defined in the main Code
+* @brief Defined in the main Code
 *
 * Usage:
 * const char *LOCALE_DOMAIN = "atlupdater";
@@ -58,7 +58,7 @@ extern const char *LOCALE_DOMAIN;
 extern const char *DEFAULT_FILTER;
 
 /** 
-* Makro for autofree the memory 
+* @brief Makro for autofree the memory 
 *
 * Usage:
 * auto_free char *output = execute_command("ls /");
@@ -73,7 +73,7 @@ void free_wrapper(void *p);
 #define auto_free __attribute__((cleanup(free_wrapper)))
 
 /**
-* Filesystem helper
+* @brief Filesystem helper
 */
 // helper function that create a directory
 void make_directory(const char *path);
@@ -105,8 +105,7 @@ int remove_file(const char *filepath);
 char *expand_path(const char *path);
 
 /**
-*
-* Delete a full path with parents
+* @brief Delete a full path with parents
 *
 * Usage:
 * delete_files_with_parent("/other/path"); 
@@ -119,7 +118,7 @@ char *expand_path(const char *path);
 void delete_files_with_parent(const char *path);
 
 /**
-* Helper for running commands
+* @brief Helper for running commands
 */
 // run a command
 void run_command(const char *command);
@@ -132,7 +131,7 @@ void command_pkexec(const gchar *command);
 // check if command exsists
 int command_exists(const char *command);
 /**
-* Get values from a config file
+* @brief Get values from a config file
 *
 * Usage:
 * char *update_type = get_conf_value(conf_file, "UPDATE_TYPE");
@@ -141,12 +140,12 @@ int command_exists(const char *command);
 char *get_config_value(const char *filename, const char *key);
 
 /**
-* Removes leading and trailing spaces/quotation marks from a string
+* @brief Removes leading and trailing spaces/quotation marks from a string
 */
 char *trim_and_clean(char *str);
 
 /**
-* Load file filter from a config file
+* @brief Load file filter from a config file
 *
 * Usage:
 * GListStore *filter_list = load_file_filters("/path/to/filechooser-filters.conf");
@@ -160,7 +159,7 @@ GListStore* load_file_filters(const char *config_path);
 
 
 /**
-* Logging:
+* @brief Logging
 *
 * Usage:
 * 0 = own logging function to /var/log/LOCALE_DOMAIN or 
@@ -181,7 +180,7 @@ GListStore* load_file_filters(const char *config_path);
 */
 
 /**
-* Define the syslog usage
+* @brief Define the syslog usage
 *
 * Usage:
 * int use_syslog = 0; (defined at write_log)
@@ -189,7 +188,7 @@ GListStore* load_file_filters(const char *config_path);
 extern int use_syslog;
 
 /**
-* Main logging functions
+* @brief Main logging functions
 */
 // set a new log mode
 void set_logging_mode(int syslog_mode);
@@ -203,7 +202,7 @@ void log_message(const char *level, int syslog_level, const char *fmt, va_list a
 void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...);
 
 /** 
-* Makros for the logging
+* @brief Makros for the logging
 */
 // own logging vars
 #define LOG_LEVEL_INFO   1
@@ -219,7 +218,7 @@ void log_message_wrap(const char *level, int syslog_level, const char *fmt, ...)
 
 
 /**
-* Log viewer
+* @brief Log viewer
 * 
 * Usage:
 * Add the headerbar to your UI:
@@ -241,7 +240,8 @@ void log_viewer_destroyed(GtkWidget *widget, gpointer user_data);
 GtkWidget* create_custom_headerbar(gpointer stack);
 
 /**
-* Open terminal/URL
+* @brief Open terminal/URL
+*
 * Note: 
 * default OS is linux
 */

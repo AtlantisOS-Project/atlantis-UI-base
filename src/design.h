@@ -28,11 +28,11 @@ extern "C" {
 #define WINDOW_HEIGHT 600
 
 /**
-* Style Setting with libadwaita and CSS
+* @brief Style Setting with libadwaita and CSS
 *
 */
 /**
-* helper functions for libadwaita style and custom CSS
+* @brief Helper functions for libadwaita style and custom CSS
 */
 // the adw_provider
 const char *get_custom_adw_css(void);
@@ -46,7 +46,7 @@ void load_adw_provider(void);
 void adw_theme_changed(AdwStyleManager *style_manager, GParamSpec *pspec, gpointer user_data);
 
 /**
-* use the libadwaita and custom CSS theme
+* @brief Use the libadwaita and custom CSS theme
 *
 * Usage:
 * use-adw_provider();
@@ -54,7 +54,7 @@ void adw_theme_changed(AdwStyleManager *style_manager, GParamSpec *pspec, gpoint
 void use_adw_provider(void);
 
 /**
-* Switch page in the stack
+* @brief Switch page in the stack
 *
 * Usage:
 * g_signal_connect(button_name, "clicked", G_CALLBACK(switch_page), "name_of_next_stack_part");
@@ -68,7 +68,7 @@ void show_home_page(GtkWidget *widget, gpointer stack);
 void switch_page(GtkWidget *widget, gpointer user_data);
 
 /**
-* Creating special labels
+* @brief Creating special labels
 *
 * Usage:
 * create_label_icon("utilities-terminal", "some text");
@@ -80,7 +80,7 @@ GtkWidget *create_label_icon(const char *icon_name, const char *label_text);
 GtkWidget *create_label_icon_position(const char *icon_name, const char *label_text, GtkAlign alignment);
 
 /**
-* Creating special buttons
+* @brief Creating special buttons
 *
 * Usage:
 * create_button("some text", callback, data);
@@ -101,7 +101,7 @@ GtkWidget *create_button_two_icon(const char *main_icon, const char *second_icon
 GtkWidget *create_button_icon_position(const char *icon_name, const char *label_text, GCallback callback, gpointer data, GtkAlign alignment);
 
 /**
-* Create a file chooser
+* @brief Create a file chooser
 *
 * Usage:
 * GtkWidget *btn1 = create_button("label", G_CALLBACK(show_file_chooser), (gpointer)callback_function);
@@ -118,7 +118,7 @@ void show_file_chooser(GtkWidget *widget, gpointer data);
 void show_folder_chooser(GtkWidget *widget, gpointer data);
 
 /**
-* Creating entries
+* @brief Creating entries
 *
 * Usage:
 * 1. Normal entry: 
@@ -137,7 +137,7 @@ GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntr
 GtkWidget* create_password_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out);
 
 /**
-* pkexec command with spinner/progressbar
+* @brief pkexec command with spinner/progressbar
 */
 // spinner varinate
 void command_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text);
