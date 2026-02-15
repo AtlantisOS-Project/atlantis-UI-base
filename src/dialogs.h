@@ -25,6 +25,8 @@ extern "C" {
 typedef void (*CommandFinishedCallback)(const gchar *output, gpointer user_data);
 // callback type for dialog with entry
 typedef void (*EntryDialogCallback)(const gchar *text, gpointer user_data);
+// type run function in background thread
+typedef void (*WorkerFunction)(gpointer user_data);
 
 /**
 * @brief Structure command steps for dialog with multiple commands
@@ -142,6 +144,8 @@ void show_about_dialog(GtkWidget *parent);
 */
 // show dialog with spinner
 void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd);
+// show dialog and run function in the background
+void show_spinner_dialog_function(GtkWidget *parent, const char *title, const char *body, WorkerFunction worker, gpointer user_data);
 // show the dialog with spinner and return the output
 void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data);
 // show dialog with progressbar

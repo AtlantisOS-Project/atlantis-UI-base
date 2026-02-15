@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-02 15:44+0100\n"
+"POT-Creation-Date: 2026-02-15 10:22+0100\n"
 "PO-Revision-Date: 2025-09-24 10:34+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,47 +17,47 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: helper/log/write_log_text.c:50
+#: helper/log/write_log_text.c:52
 msgid "Log Viewer"
 msgstr "Log"
 
-#: helper/log/write_log_text.c:122
+#: helper/log/write_log_text.c:128
 msgid "Show Log"
 msgstr "Log anziegen"
 
-#: helper/log/write_log_text.c:146
+#: helper/log/write_log_text.c:152
 msgid "Exit"
 msgstr "Beenden"
 
-#: design/dialogs/about_dialog.c:74
-msgid "translator-credits"
-msgstr "translator-credits"
-
-#: design/dialogs/about_dialog.c:78
-msgid "Documentation"
-msgstr "Dokumentation"
-
-#: design/dialogs/about_dialog.c:82
-msgid "Fonts"
-msgstr "Schriften"
-
-#: design/dialogs/about_dialog.c:87
-msgid "Special thanks to"
-msgstr "Speziellen Dank an"
-
-#: design/dialogs/dialogs.c:30 design/dialogs/dialogs.c:39
+#: design/dialogs/dialogs.c:32 design/dialogs/dialogs.c:43
 msgid "Information"
 msgstr "Informationen"
 
-#: design/dialogs/dialogs.c:31 design/dialogs/dialogs.c:47
-#: design/dialogs/dialogs.c:56 design/dialogs/dialogs.c:72
+#: design/dialogs/dialogs.c:33 design/dialogs/dialogs.c:53
+#: design/dialogs/dialogs.c:64 design/dialogs/dialogs.c:84
 msgid "OK"
 msgstr "OK"
 
-#: design/dialogs/dialogs.c:55 design/dialogs/dialogs.c:64
+#: design/dialogs/dialogs.c:63 design/dialogs/dialogs.c:74
 msgid "Error"
 msgstr "Fehler"
 
-#: design/dialogs/dialog_multi_progress.c:42
+#: design/dialogs/about_dialog.c:76
+msgid "translator-credits"
+msgstr "translator-credits"
+
+#: design/dialogs/about_dialog.c:80
+msgid "Documentation"
+msgstr "Dokumentation"
+
+#: design/dialogs/about_dialog.c:84
+msgid "Fonts"
+msgstr "Schriften"
+
+#: design/dialogs/about_dialog.c:89
+msgid "Special thanks to"
+msgstr "Speziellen Dank an"
+
+#: design/dialogs/dialog_multi_progress.c:44
 msgid "Completed."
 msgstr "Fertig"

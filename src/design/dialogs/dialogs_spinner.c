@@ -29,6 +29,13 @@ typedef struct {
     guint pulse_id;
 } RunData;
 
+typedef struct {
+	GtkWidget *dialog;
+    WorkerFunction worker;
+    guint pulse_id;
+    gpointer user_data;
+} RunDataFunction;
+
 // helper structure
 typedef struct {
     GtkWidget *dialog;
@@ -88,6 +95,29 @@ static gpointer run_command_thread(gpointer data)
     g_idle_add((GSourceFunc)adw_dialog_force_close, rdata->dialog);
 
     g_free(rdata->cmd);
+    g_free(rdata);
+    return NULL;
+}
+
+/**
+* @brief Create the thread for running the function
+*/
+static gpointer run_function_thread(gpointer data)
+{
+    RunDataFunction *rdata = data;
+
+    // run function instead of bash cmd
+    rdata->worker(rdata->user_data);
+    
+    // stop timer, if exsits
+    if (rdata->pulse_id > 0) 
+    {
+        g_source_remove(rdata->pulse_id);
+	}
+	
+    // close the dialog in the main thread
+    g_idle_add((GSourceFunc)adw_dialog_force_close, rdata->dialog);
+
     g_free(rdata);
     return NULL;
 }
@@ -194,6 +224,65 @@ void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body,
 
     g_thread_new("run_command_thread", run_command_thread, rdata);
 }
+
+/**
+* @brief Spinner Dialog that run a function instead a bash command
+*/
+void show_spinner_dialog_function(GtkWidget *parent, const char *title, const char *body, WorkerFunction worker, gpointer user_data)
+{
+    AdwDialog *dialog = adw_alert_dialog_new(title, body);
+    GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+    gtk_widget_set_margin_top(content, 16);
+    gtk_widget_set_margin_bottom(content, 16);
+    gtk_widget_set_margin_start(content, 16);
+    gtk_widget_set_margin_end(content, 16);
+    gtk_widget_set_halign(content, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
+	
+	guint major = adw_get_major_version();
+    guint minor = adw_get_minor_version();
+	
+	#if ADW_CHECK_VERSION(1,6,0)
+
+    	GtkWidget *spinner;
+    	
+    	if (major > 1 || (major == 1 && minor >= 6))
+    	{
+        	// use libadwaita >= 1.6
+        	spinner = adw_spinner_new();
+        	gtk_widget_set_size_request(spinner, 150, 150);
+    	}
+    
+    	else
+    	{
+        	// compiled with libadwaita >= 1.6, run with <= 1.5
+        	spinner = gtk_spinner_new();
+        	gtk_widget_set_size_request(spinner, 150, 150);
+        	gtk_spinner_start(GTK_SPINNER(spinner));
+    	}
+    	gtk_box_append(GTK_BOX(content), spinner);
+    
+    // compiled with <= 1.5
+    #else 
+    	GtkWidget *spinner = gtk_spinner_new();
+    	gtk_widget_set_size_request(spinner, 150, 150);
+    	gtk_spinner_start(GTK_SPINNER(spinner));
+    	gtk_box_append(GTK_BOX(content), spinner);
+	
+	#endif
+		
+    adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), content);
+    adw_dialog_present(dialog, parent);
+    
+    RunDataFunction *rdata = g_new0(RunDataFunction, 1);
+    rdata->dialog = GTK_WIDGET(dialog);
+    rdata->worker = worker;
+    rdata->pulse_id = 0;
+    rdata->user_data = user_data;
+
+    g_thread_new("run_function_thread", run_function_thread, rdata);
+}
+
 
 /** 
 * @brief Show the dialog with progressbar 
