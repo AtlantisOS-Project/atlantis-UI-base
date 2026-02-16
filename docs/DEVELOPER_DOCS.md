@@ -82,9 +82,11 @@ For more details, look for the functions in the headers.
 
 - `static gchar *run_command_capture_output(const gchar *cmd) {`
 - `static gpointer run_command_thread(gpointer data) {`
+- `static gpointer run_function_thread(gpointer data)`
 - `static gpointer run_command_thread_return(gpointer data) {`
 - `gboolean pulse_progress(GtkProgressBar *pbar) {`
 - `void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd) {`
+- `void show_spinner_dialog_function(GtkWidget *parent, const char *title, const char *body, WorkerFunction worker, gpointer user_data) {`
 - `void show_progress_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd) {`
 - `void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data) {`
 - `void show_progress_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data) {`

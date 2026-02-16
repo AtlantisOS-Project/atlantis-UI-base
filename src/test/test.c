@@ -214,6 +214,25 @@ static void on_entry_submitted(const gchar *text, gpointer user_data)
     g_print("User entered: %s\n", text);
 }
 
+static void my_install_task(gpointer user_data)
+{
+    g_print("Starte Installation...\n");
+    sleep(5);
+    g_print("Fertig.\n");
+}
+
+static void start_test_run_background_function(GtkWidget *widget, gpointer stack)
+{
+	show_spinner_dialog_function(
+    widget,
+    "Installation läuft",
+    "Bitte warten...",
+    my_install_task,
+    NULL);
+
+}
+
+
 static void open_name_dialog(GtkWidget *widget, gpointer stack)
 {
     show_entry_dialog(widget,
@@ -349,6 +368,7 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     GtkWidget *btn9 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Progressbar Return"), G_CALLBACK(test_progressbar_dialog_return), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn10 = create_button_icon_position("pan-start-symbolic", _("Test Dialog Entry"), G_CALLBACK(open_name_dialog), stack, GTK_ALIGN_CENTER);
     GtkWidget *btn11 = create_button_icon_position("pan-start-symbolic", _("Test Multi Progress"), G_CALLBACK(test_multi_progress_dialog), stack, GTK_ALIGN_CENTER);
+    GtkWidget *btn12 = create_button_icon_position("pan-start-symbolic", _("Test Background function"), G_CALLBACK(start_test_run_background_function), stack, GTK_ALIGN_CENTER);
     
     gtk_box_append(GTK_BOX(home_page), btn1);
     gtk_box_append(GTK_BOX(home_page), btn2);
@@ -362,6 +382,7 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     gtk_box_append(GTK_BOX(home_page), btn9);
     gtk_box_append(GTK_BOX(home_page), btn10);
     gtk_box_append(GTK_BOX(home_page), btn11);
+    gtk_box_append(GTK_BOX(home_page), btn12);
     
     // create entry
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
