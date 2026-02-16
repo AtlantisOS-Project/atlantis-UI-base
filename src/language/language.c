@@ -63,7 +63,7 @@ void init_language(void)
     setlocale(LC_ALL, "");
 
     // check for env = ATL_LOCALDIR
-    const char *envdir = g_getenv("ATL_LOCALEDIR");
+    const char *envdir = g_getenv("ATL_LOCALEDIR"); // FIXME
     // set dir by env
     if (envdir && g_file_test(envdir, G_FILE_TEST_IS_DIR)) 
     {
@@ -75,6 +75,25 @@ void init_language(void)
     {
         set_language_dir("./po");
     }
+    
+    // installed as debian package
+    else if (g_file_test("/usr/share/locale", G_FILE_TEST_IS_DIR))
+    {
+    	set_language_dir("/usr/share/locale");
+    }
+    
+    // installed as snap package 
+    else if (getenv("SNAP") != NULL || getenv("SNAP_NAME") != NULL)
+    {
+    	char snap_language[128];
+    	const char *snapenv = g_getenv("SNAP");
+    	if (snapenv == NULL) 
+    	{
+    		snapenv = g_getenv("SNAP_NAME");
+    	} 
+    	snprintf(snap_language, sizeof(snap_language), "%s/usr/share/locale", snapenv);
+    	set_language_dir(snap_language);
+    } 
         
     // default dir
     else 
