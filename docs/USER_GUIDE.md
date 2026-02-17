@@ -24,7 +24,7 @@ make
 
 - Install build and runtime tools with:
 ```bash
-sudo apt install make libadwaita-1-0 libsecret-1-0 libvte-2.91-gtk4-0 ccache gcc libgtk-4-dev desktop-file-utils make dpkg-dev debhelper libsecret-1-dev build-essential libadwaita-1-dev rsync git curl libvte-2.91-gtk4-dev xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils
+sudo apt install make libadwaita-1-0 libsecret-1-0 libvte-2.91-gtk4-0 ccache gcc libgtk-4-dev desktop-file-utils make dpkg-dev debhelper libsecret-1-dev build-essential libadwaita-1-dev rsync git curl libvte-2.91-gtk4-dev xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils libgtk-4-1
 ``` 
 
 ## Project Integration
