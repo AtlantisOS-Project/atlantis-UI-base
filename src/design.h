@@ -13,6 +13,10 @@
 #ifndef DESIGN_H
 #define DESIGN_H
 
+#include <gdk/gdk.h>
+#include <gtk/gtk.h>
+#include <adwaita.h>
+#include <vte/vte.h>
 #include "language.h"
 #include "helper.h"
 #include "dialogs.h"
@@ -147,6 +151,41 @@ void commands_pkexec_spinner(GtkWidget *widget, const gchar *command, const char
 void command_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text);
 // cvariante with multiple commands
 void commands_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text);
+
+/**
+* @brief Log viewer
+* 
+* Usage:
+* Add the headerbar to your UI:
+* GtkWidget *headerbar = create_custom_headerbar(stack);
+
+* Add the box to the stack or the window
+* gtk_box_append(GTK_BOX(content_box), headerbar);
+*/
+// function that open the log 
+void open_log_source();
+// function to write string to the textview 
+void write_to_textview(GtkWidget *text_view, const char *str);
+// function that reads the new logs
+gboolean update_text_view_from_log(gpointer user_data);
+// cleanup when log viewer is closed 
+void log_viewer_destroyed(GtkWidget *widget, gpointer user_data);
+
+// header that create the popover menu
+GtkWidget* create_custom_headerbar(gpointer stack);
+
+/**
+* @brief Load file filter from a config file
+*
+* Usage:
+* GListStore *filter_list = load_file_filters("/path/to/filechooser-filters.conf");
+* // now work with the filter
+* if (filter_list) {
+* 	  gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filter_list));
+* }
+*/
+// function that load the filter from a config file
+GListStore* load_file_filters(const char *config_path);
 
 #ifdef __cplusplus
 }

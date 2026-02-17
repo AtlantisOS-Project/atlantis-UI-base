@@ -16,6 +16,7 @@
 */
 
 #include "helper.h"
+#include "design.h"
 
 /** 
 * @brief Function that load the filter from a config file

@@ -18,6 +18,10 @@ extern "C" {
 
 #pragma once
 
+#include <gdk/gdk.h>
+#include <gtk/gtk.h>
+#include <adwaita.h>
+#include <vte/vte.h>
 #include "language.h"
 #include "helper.h"
 
