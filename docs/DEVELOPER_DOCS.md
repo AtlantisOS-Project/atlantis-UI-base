@@ -36,6 +36,34 @@ For more details, look for the functions in the headers.
 #include <adwaita.h>
 #include <vte/vte.h>
 ``` 
+- If you want no UI use the `helper.h`
+- `helper.h` include this libaries:
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <string.h>
+#include <strings.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <limits.h>
+#include <time.h>
+#include <locale.h>
+#include <fcntl.h>
+#include <ctype.h>
+#include <pthread.h>
+#include <syslog.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <glib.h>
+#include <libintl.h>
+#include <glib/gi18n.h>
+```
+
 
 
 ## `design/create_label_icon.c`
