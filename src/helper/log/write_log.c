@@ -26,7 +26,10 @@
 
 #include "helper.h"
 
-// global int 
+/** 
+* global int 
+* use syslog as default
+*/
 int use_syslog = 0;
 
 // define logfile
@@ -50,20 +53,20 @@ int map_level_to_syslog(int level)
     }
 }
 
-
 /** 
 * @brief Function that set a new logging mode 
 */
 void set_logging_mode(int syslog_mode) 
 {
     use_syslog = syslog_mode;
-	
+    
     // use syslog
     if (use_syslog) 
     {
         openlog(LOCALE_DOMAIN, LOG_PID | LOG_CONS, LOG_USER);
         log_path[0] = '\0';  
     } 
+    
     // own logging method
     else 
     {
@@ -71,57 +74,62 @@ void set_logging_mode(int syslog_mode)
         char log_file[2048];
         char cwd[512]; 
         time_t now = time(NULL);
-        struct tm *t = localtime(&now);
+        struct tm t; // structure at stack
+        
+        // using localtime_r
+        localtime_r(&now, &t);
         
         if (getcwd(cwd, sizeof(cwd)) == NULL)
         {
-        	 perror("getcwd");
+             perror("getcwd");
              exit(EXIT_FAILURE);
-		}
-		
-        // use /var/log
-        //snprintf(log_dir, sizeof(log_dir), "/var/log/%s", LOCALE_DOMAIN);
-        snprintf(log_dir, sizeof(log_dir), "%s/log/%s", cwd, LOCALE_DOMAIN); // for local tests
-        g_print("%s\n", log_dir);
-        // create the log dir 
+        }
+        
+        snprintf(log_dir, sizeof(log_dir), "%s/log/%s", cwd, LOCALE_DOMAIN);
+        
+        // create the logging dir
         if (make_path(log_dir) != 0) 
         {
-            // use ~/.local as fallback
-            //snprintf(log_dir, sizeof(log_dir), "%s/.local/log/%s", getenv("HOME"), LOCALE_DOMAIN);
-            snprintf(log_dir, sizeof(log_dir), "%s/log/%s", cwd, LOCALE_DOMAIN); // for local tests
-            g_print("%s\n", log_dir);
-            // create the dir
-        	make_path(log_dir);
+            snprintf(log_dir, sizeof(log_dir), "%s/log/%s", cwd, LOCALE_DOMAIN);
+            make_path(log_dir);
         }
-		
-        // create the name of the log file
+        
+        // create the logging file
         snprintf(log_file, sizeof(log_file),
                  "%s/%04d-%02d-%02d_%02d-%02d-%02d.log",
                  log_dir,
-                 t->tm_year + 1900,
-                 t->tm_mon + 1,
-                 t->tm_mday,
-                 t->tm_hour,
-                 t->tm_min,
-                 t->tm_sec);
-		
-        // create the log file
-        logfile = fopen(log_file, "a");
-        if (!logfile) 
+                 t.tm_year + 1900,
+                 t.tm_mon + 1,
+                 t.tm_mday,
+                 t.tm_hour,
+                 t.tm_min,
+                 t.tm_sec);
+        
+        // create file with secure permissions
+        int fd = open(log_file, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
+        if (fd == -1) 
         {
-            perror("fopen logfile");
+            perror("open logfile");
             exit(EXIT_FAILURE);
         }
-		
+
+        // convert FILE for fprintf
+        logfile = fdopen(fd, "a");
+        if (!logfile) 
+        {
+            perror("fdopen logfile");
+            close(fd);
+            exit(EXIT_FAILURE);
+        }
+        
         // write every line to the log file
         setvbuf(logfile, NULL, _IOLBF, 0);
-
         // save the path of the log file
         strncpy(log_path, log_file, sizeof(log_path)-1);
-
         g_print("[INFO] Manual logging started: %s\n", log_path);
     }
 }
+
 
 // function that get the path of the log file
 const char *get_log_path(void)
@@ -151,33 +159,44 @@ void close_logging(void)
 void log_message(const char *level, int syslog_level, const char *fmt, va_list args) 
 {
     time_t now = time(NULL);
-    struct tm *tm_info = localtime(&now);
+    struct tm tm_info;
     char time_buf[20];
-    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
-	
-	// using syslog
+    
+    // using save localtime_r
+    localtime_r(&now, &tm_info);
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);
+    
+    // using syslog
     if (use_syslog) 
     {
-    	char buffer[1024];
-    	vsnprintf(buffer, sizeof(buffer), fmt, args);
-    	syslog(map_level_to_syslog(syslog_level), "[%s] %s", level, buffer);
-	}
+        char buffer[1024];
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        syslog(map_level_to_syslog(syslog_level), "[%s] %s", level, buffer);
+    }
     
-    // manual logging
+    // manal logging
     else 
     {
+        // copy the args to use it later again
+        va_list args_copy;
+        
         if (logfile) 
         {
+            va_copy(args_copy, args);
             fprintf(logfile, "[%s] [%s]: ", time_buf, level);
-            vfprintf(logfile, fmt, args);
+            vfprintf(logfile, fmt, args_copy);
             fprintf(logfile, "\n");
             fflush(logfile);
+            va_end(args_copy);
         }
         
-        // ouput to the terminal
+        // terminal output
         g_print("[%s] [%s]: ", time_buf, level);
-        vprintf(fmt, args);
-        g_print("\n");
+                
+        // using vprintf 
+        char *term_buffer = g_strdup_vprintf(fmt, args);
+        g_print("%s\n", term_buffer);
+        g_free(term_buffer);
     }
 }
 

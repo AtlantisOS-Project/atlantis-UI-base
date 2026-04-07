@@ -63,7 +63,7 @@ void init_language(void)
     setlocale(LC_ALL, "");
 
     // check for env = ATL_LOCALDIR
-    const char *envdir = g_getenv("ATL_LOCALEDIR"); // FIXME
+    const char *envdir = g_getenv("ATL_LOCALEDIR");
     // set dir by env
     if (envdir && g_file_test(envdir, G_FILE_TEST_IS_DIR)) 
     {

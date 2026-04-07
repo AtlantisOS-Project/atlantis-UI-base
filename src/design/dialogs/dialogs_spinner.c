@@ -171,7 +171,7 @@ gboolean pulse_progress(GtkProgressBar *pbar)
 */
 void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd)
 {
-    LOGI(cmd);
+    LOGI("%s", cmd);
     
     AdwDialog *dialog = adw_alert_dialog_new(title, body);
     GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
@@ -181,38 +181,11 @@ void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body,
     gtk_widget_set_margin_end(content, 16);
     gtk_widget_set_halign(content, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
-	
-	guint major = adw_get_major_version();
-    guint minor = adw_get_minor_version();
-	
-	#if ADW_CHECK_VERSION(1,6,0)
-
-    	GtkWidget *spinner;
-    	
-    	if (major > 1 || (major == 1 && minor >= 6))
-    	{
-        	// use libadwaita >= 1.6
-        	spinner = adw_spinner_new();
-        	gtk_widget_set_size_request(spinner, 150, 150);
-    	}
-    
-    	else
-    	{
-        	// compiled with libadwaita >= 1.6, run with <= 1.5
-        	spinner = gtk_spinner_new();
-        	gtk_widget_set_size_request(spinner, 150, 150);
-        	gtk_spinner_start(GTK_SPINNER(spinner));
-    	}
-    	gtk_box_append(GTK_BOX(content), spinner);
-    
-    // compiled with <= 1.5
-    #else 
-    	GtkWidget *spinner = gtk_spinner_new();
-    	gtk_widget_set_size_request(spinner, 150, 150);
-    	gtk_spinner_start(GTK_SPINNER(spinner));
-    	gtk_box_append(GTK_BOX(content), spinner);
-	
-	#endif
+		
+  	GtkWidget *spinner;
+   	spinner = adw_spinner_new();
+   	gtk_widget_set_size_request(spinner, 150, 150);   
+   	gtk_box_append(GTK_BOX(content), spinner);
 		
     adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), content);
     adw_dialog_present(dialog, parent);
@@ -238,39 +211,12 @@ void show_spinner_dialog_function(GtkWidget *parent, const char *title, const ch
     gtk_widget_set_margin_end(content, 16);
     gtk_widget_set_halign(content, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
-	
-	guint major = adw_get_major_version();
-    guint minor = adw_get_minor_version();
-	
-	#if ADW_CHECK_VERSION(1,6,0)
-
-    	GtkWidget *spinner;
-    	
-    	if (major > 1 || (major == 1 && minor >= 6))
-    	{
-        	// use libadwaita >= 1.6
-        	spinner = adw_spinner_new();
-        	gtk_widget_set_size_request(spinner, 150, 150);
-    	}
-    
-    	else
-    	{
-        	// compiled with libadwaita >= 1.6, run with <= 1.5
-        	spinner = gtk_spinner_new();
-        	gtk_widget_set_size_request(spinner, 150, 150);
-        	gtk_spinner_start(GTK_SPINNER(spinner));
-    	}
-    	gtk_box_append(GTK_BOX(content), spinner);
-    
-    // compiled with <= 1.5
-    #else 
-    	GtkWidget *spinner = gtk_spinner_new();
-    	gtk_widget_set_size_request(spinner, 150, 150);
-    	gtk_spinner_start(GTK_SPINNER(spinner));
-    	gtk_box_append(GTK_BOX(content), spinner);
-	
-	#endif
 		
+    GtkWidget *spinner;
+   	spinner = adw_spinner_new();
+   	gtk_widget_set_size_request(spinner, 150, 150);
+   	gtk_box_append(GTK_BOX(content), spinner);
+    		
     adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), content);
     adw_dialog_present(dialog, parent);
     
@@ -289,7 +235,7 @@ void show_spinner_dialog_function(GtkWidget *parent, const char *title, const ch
 */
 void show_progress_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd)
 {
-    LOGI(cmd);
+    LOGI("%s", cmd);
     
     AdwDialog *dialog = adw_alert_dialog_new(title, body);
     GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
@@ -322,7 +268,7 @@ void show_progress_dialog(GtkWidget *parent, const char *title, const char *body
 */
 void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data)
 {
-    LOGI(cmd);
+    LOGI("%s", cmd);
 
     AdwDialog *dialog = adw_alert_dialog_new(title, body);
     GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
@@ -332,39 +278,14 @@ void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char
     gtk_widget_set_margin_end(content, 16);
     gtk_widget_set_halign(content, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
-	guint major = adw_get_major_version();
-    guint minor = adw_get_minor_version();
 	
-	#if ADW_CHECK_VERSION(1,6,0)
-
-    	GtkWidget *spinner;
+   	GtkWidget *spinner;
     	
-    	if (major > 1 || (major == 1 && minor >= 6))
-    	{
-        	// use libadwaita >= 1.6
-        	spinner = adw_spinner_new();
-        	gtk_widget_set_size_request(spinner, 200, 200);
-    	}
+    spinner = adw_spinner_new();
+    gtk_widget_set_size_request(spinner, 200, 200);
     
-    	else
-    	{
-        	// compiled with libadwaita >= 1.6, run with <= 1.5
-        	spinner = gtk_spinner_new();
-        	gtk_widget_set_size_request(spinner, 150, 150);
-        	gtk_spinner_start(GTK_SPINNER(spinner));
-    	}
-    	gtk_box_append(GTK_BOX(content), spinner);
+    gtk_box_append(GTK_BOX(content), spinner);
     
-    // compiled with <= 1.5
-    #else 
-    	GtkWidget *spinner = gtk_spinner_new();
-    	gtk_widget_set_size_request(spinner, 150, 150);
-    	gtk_spinner_start(GTK_SPINNER(spinner));
-    	gtk_box_append(GTK_BOX(content), spinner);
-	
-	#endif
-
-
     adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), content);
     adw_dialog_present(dialog, parent);
 
@@ -383,7 +304,7 @@ void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char
 */
 void show_progress_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data)
 {
-    LOGI(cmd);
+    LOGI("%s", cmd);
 
     AdwDialog *dialog = adw_alert_dialog_new(title, body);
     GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);

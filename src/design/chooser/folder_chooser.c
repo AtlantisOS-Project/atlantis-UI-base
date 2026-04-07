@@ -54,8 +54,6 @@ void show_folder_chooser(GtkWidget *widget, gpointer data)
 	
 	// create the folder chooser
     GtkFileDialog *dialog = gtk_file_dialog_new();
-
-    //gtk_file_dialog_set_initial_folder(dialog, g_file_new_for_path(g_get_home_dir()));
 	
 	// show dialog and connect callback
     gtk_file_dialog_select_folder(

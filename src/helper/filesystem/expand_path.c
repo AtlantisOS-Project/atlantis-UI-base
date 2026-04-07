@@ -20,13 +20,30 @@
 */
 char *expand_path(const char *path) 
 {
+    if (path == NULL) return NULL;
+
     if (path[0] != '~') 
     {
         return strdup(path);
     }
+
     const char *home = getenv("HOME");
-    size_t len = strlen(home) + strlen(path);
+    if (home == NULL) 
+    {
+        // fallback if $HOME not set
+        return strdup(path);
+    }
+
+    // get the full the length
+    size_t len = strlen(home) + strlen(path + 1) + 1;
+    
     char *res = malloc(len);
-    sprintf(res, "%s%s", home, path + 1);
+    if (res == NULL) 
+    {
+    	return NULL; 
+    }
+
+    snprintf(res, len, "%s%s", home, path + 1);
+
     return res;
 }
