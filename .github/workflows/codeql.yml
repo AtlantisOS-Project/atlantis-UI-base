@@ -32,7 +32,7 @@ jobs:
         sudo apt install -y libglib2.0-0t64 libgtk-4-1 xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils libadwaita-1-0 libvte-2.91-gtk4-0 libnotify-bin libgtk-4-dev libadwaita-1-dev libsecret-1-dev libglib2.0-dev libnotify-dev pkgconf gcc make libvte-2.91-gtk4-dev ccache gettext
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v6
+      uses: github/codeql-action/init@v5
       with:
         languages: ${{ matrix.language }}
         queries: security-extended,security-and-quality
@@ -44,6 +44,6 @@ jobs:
         make GIT_HTTPS=1
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v6
+      uses: github/codeql-action/analyze@v5
       with:
         category: "/language:${{matrix.language}}"
