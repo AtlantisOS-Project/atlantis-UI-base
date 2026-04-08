@@ -1,5 +1,7 @@
 # atlantis-UI-base
 
+[![CodeQL](https://github.com/AtlantisOS-Project/atlantis-UI-base/actions/workflows/codeql.yml/badge.svg)](https://github.com/AtlantisOS-Project/atlantis-UI-base/actions/workflows/codeql.yml)
+
 - **ATL UIBase is a modular GTK4 + Libadwaita 1.6 user interface library that simplifies the development of modern graphical applications in C.**
 
 **These include:**

@@ -183,7 +183,21 @@ void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body,
     gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
 		
   	GtkWidget *spinner;
-   	spinner = adw_spinner_new();
+  	
+  	/** 
+  	* @brief check for libadwaita 1.6
+  	*
+  	* Since this is only a temporary solution until Snap/Ubuntu 24.04 releases Libadwaita 1.6, 
+  	* a separate package must be built for Ubuntu 24.04.
+  	*/
+    #if ADW_CHECK_VERSION(1, 6, 0)
+        spinner = adw_spinner_new();
+    #else
+        // fallback for libadwaita 1.5
+        spinner = gtk_spinner_new();
+        gtk_spinner_start(GTK_SPINNER(spinner));
+    #endif
+  	
    	gtk_widget_set_size_request(spinner, 150, 150);   
    	gtk_box_append(GTK_BOX(content), spinner);
 		
@@ -213,7 +227,20 @@ void show_spinner_dialog_function(GtkWidget *parent, const char *title, const ch
     gtk_widget_set_valign(content, GTK_ALIGN_CENTER);
 		
     GtkWidget *spinner;
-   	spinner = adw_spinner_new();
+    /** 
+  	* @brief check for libadwaita 1.6
+  	*
+  	* Since this is only a temporary solution until Snap/Ubuntu 24.04 releases Libadwaita 1.6, 
+  	* a separate package must be built for Ubuntu 24.04.
+  	*/
+    #if ADW_CHECK_VERSION(1, 6, 0)
+        spinner = adw_spinner_new();
+    #else
+        // fallback for libadwaita 1.5
+        spinner = gtk_spinner_new();
+        gtk_spinner_start(GTK_SPINNER(spinner));
+    #endif
+    
    	gtk_widget_set_size_request(spinner, 150, 150);
    	gtk_box_append(GTK_BOX(content), spinner);
     		
@@ -281,9 +308,21 @@ void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char
 	
    	GtkWidget *spinner;
     	
-    spinner = adw_spinner_new();
-    gtk_widget_set_size_request(spinner, 200, 200);
+    /** 
+  	* @brief check for libadwaita 1.6
+  	*
+  	* Since this is only a temporary solution until Snap/Ubuntu 24.04 releases Libadwaita 1.6, 
+  	* a separate package must be built for Ubuntu 24.04.
+  	*/
+    #if ADW_CHECK_VERSION(1, 6, 0)
+        spinner = adw_spinner_new();
+    #else
+        // fallback for libadwaita 1.5
+        spinner = gtk_spinner_new();
+        gtk_spinner_start(GTK_SPINNER(spinner));
+    #endif
     
+    gtk_widget_set_size_request(spinner, 200, 200);
     gtk_box_append(GTK_BOX(content), spinner);
     
     adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), content);
