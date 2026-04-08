@@ -11,9 +11,7 @@ on:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:25.10 # Hier kannst du jedes beliebige Image nutzen
+    runs-on: ubuntu-25.10
     permissions:
       actions: read
       contents: read
