@@ -214,22 +214,12 @@ static void on_entry_submitted(const gchar *text, gpointer user_data)
     g_print("User entered: %s\n", text);
 }
 
-static void test_commands(const char *cmd)
-{
-	run_command(cmd);
-	run_command_bool(cmd);
-	char *execution_result = execute_command(cmd);
-	g_print("%s", execution_result);
-}
-
 static void my_install_task(gpointer user_data)
 {
     g_print("Starte Installation...\n");
-    test_commands("sleep 5");
+    system("sleep 5");
     g_print("Fertig.\n");
 }
-
-
 
 static void start_test_run_background_function(GtkWidget *widget, gpointer stack)
 {
@@ -241,7 +231,6 @@ static void start_test_run_background_function(GtkWidget *widget, gpointer stack
     NULL);
 
 }
-
 
 static void open_name_dialog(GtkWidget *widget, gpointer stack)
 {

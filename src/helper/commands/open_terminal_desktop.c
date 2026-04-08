@@ -29,6 +29,10 @@
 */
 void open_terminal_by_desktop(const char *function_command) 
 {
+    if (!function_command)
+    {
+    	return;
+    }
     char cmd[MAX_CMD_LEN];
     int result = 0;
 	
@@ -43,7 +47,7 @@ void open_terminal_by_desktop(const char *function_command)
     {
         // use the cmd.exe to start a new cmd with wsl.exe
 		snprintf(command, sizeof(command), "cmd.exe /C start cmd.exe /K \"wsl.exe %s\"", function_command);
-        run_command(command);
+        system(command);
         return;
     }
 	

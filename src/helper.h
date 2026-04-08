@@ -117,14 +117,16 @@ void delete_files_with_parent(const char *path);
 /**
 * @brief Helper for running commands
 */
+// function that run a command safe 
+bool run_command_safe(char *const argv[], int timeout_sec);
 // run a command
-void run_command(const char *command);
+void run_command(char *const argv[]);
 // run a command and return true or false
-bool run_command_bool(const char *cmd);
+bool run_command_bool(char *const argv[]);
 // run command and read output
-char *execute_command(const char *command);
+char *execute_command(char *const argv[]);
 // run command with pkexec
-void command_pkexec(const gchar *command);
+void command_pkexec(char *const argv[]);
 // check if command exsists
 int command_exists(const char *command);
 /**

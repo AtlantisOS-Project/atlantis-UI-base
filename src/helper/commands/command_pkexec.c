@@ -21,26 +21,26 @@
 /** 
 * @brief Command to run something with pkexec
 */
-void command_pkexec(const gchar *command) 
+void command_pkexec(char *const argv[]) 
 {
-	gchar *full_command = g_strdup_printf("pkexec %s", command);
-	
-	gchar *execution_result = execute_command(full_command);
-	
-	g_free(full_command);
-	g_free(execution_result);
-}
+	int argc = 0;
+    while (argv[argc]) argc++;
 
-/**
-* @brief Command to run multiple commands with pkexec
-*/
-void commands_pkexec(const gchar *command)
-{
-	gchar *full_command = g_strdup_printf("pkexec sh -c \"%s\"", command);
+    char **new_argv = malloc((argc + 2) * sizeof(char*));
+    if (!new_argv) return;
+
+    new_argv[0] = "pkexec";
+
+    for (int i = 0; i < argc; i++)
+    {
+        new_argv[i + 1] = argv[i];
+    }
+
+    new_argv[argc + 1] = NULL;
 	
-	gchar *execution_result = execute_command(full_command);
+	gchar *execution_result = execute_command(new_argv);
 	
-	g_free(full_command);
+	g_free(new_argv);
 	g_free(execution_result);
 }
 

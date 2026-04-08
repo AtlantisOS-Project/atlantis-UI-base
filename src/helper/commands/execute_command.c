@@ -17,95 +17,115 @@
 */
 
 #include "helper.h"
+#define DEFAULT_TIMEOUT 0   // 0 = no timeout
 
 /**
-* @brief Helperfunction to check if the command is safe
+* @brief helper that wait (with optional timeout)
 */
-
-bool is_safe_command(const char *cmd) 
+static bool wait_for_child(pid_t pid, int *exit_status, int timeout_sec)
 {
-    if (!cmd) 
-    {
-    	return false;
-    }
+    int status;
+    int waited = 0;
 
-    // some filters
-    // TODO: 
-    // later more
-    if (strstr(cmd, "&") || strstr(cmd, ";") || strstr(cmd, "|") ||
-        strstr(cmd, "`") || strstr(cmd, "$(")) 
+    while (1)
+    {
+        pid_t result = waitpid(pid, &status, (timeout_sec > 0) ? WNOHANG : 0);
+
+        if (result == pid)
+        {
+            if (WIFEXITED(status))
+            {
+                if (exit_status) 
+                {
+                    *exit_status = WEXITSTATUS(status);
+                }
+                return WEXITSTATUS(status) == 0;
+            }
+            return false;
+        }
+
+        if (result == -1)
+        {
+            return false;
+        }
+
+        // blocking mode
+        if (timeout_sec == 0)
+        {
+            continue;
+        }
+
+        // timeout handling
+        if (waited >= timeout_sec)
+        {
+            kill(pid, SIGKILL);
+            waitpid(pid, NULL, 0);
+            return false;
+        }
+
+        sleep(1);
+        waited++;
+    }
+}
+
+/**
+* @brief function that run a shell command in a safe 
+*/
+bool run_command_safe(char *const argv[], int timeout_sec)
+{
+    if (!argv || !argv[0])
     {
         return false;
+	}
+	
+    pid_t pid = fork();
+
+    if (pid < 0)
+    {
+        return false;
+	}
+	
+    if (pid == 0)
+    {
+        // child
+        // reset signals
+        signal(SIGINT, SIG_DFL);
+        signal(SIGTERM, SIG_DFL);
+
+        execvp(argv[0], argv);
+
+        // only reached on error
+        perror("execvp failed");
+        _exit(127);
     }
 
-    return true;
+    // parent
+    return wait_for_child(pid, NULL, timeout_sec);
 }
+
 
 /**
 * @brief Run a command in terminal via system()
 */
-void run_command(const char *command) 
+void run_command(char *const argv[])
 {
-    if (!command || !is_safe_command(command))
-    {
-        return;
-	}
-	
-    pid_t pid = fork();
-
-    if (pid == 0) 
-    {
-        // child
-        execl("/bin/sh", "sh", "-c", command, (char *)NULL);
-        _exit(127); // if exec returns with error
-    }
-     
-    else if (pid > 0) 
-    {
-        // parent
-        waitpid(pid, NULL, 0);
-    }
+    run_command_safe(argv, DEFAULT_TIMEOUT);
 }
-
 
 /**
 * @brief Run a command and return true or false
 */
-bool run_command_bool(const char *cmd) 
+bool run_command_bool(char *const argv[])
 {
-    if (!cmd || !is_safe_command(cmd))
-    {
-        return false;
-	}
-	
-	// child
-    pid_t pid = fork();
-
-    if (pid == 0) 
-    {
-        execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
-        _exit(127); // if exec returns with error
-    } 
-    
-    else if (pid > 0) 
-    {
-        int status;
-        // parent
-        waitpid(pid, &status, 0);
-
-        return WIFEXITED(status) && WEXITSTATUS(status) == 0;
-    }
-
-    return false;
+    return run_command_safe(argv, DEFAULT_TIMEOUT);
 }
-
 
 /**
 * @brief Function to execute a command and capture its output
 */
-char *execute_command(const char *command) 
+char *execute_command(char *const argv[])
 {
-    if (!command || !is_safe_command(command))
+    if (!argv || !argv[0])
     {
         return NULL;
 	}
@@ -118,27 +138,34 @@ char *execute_command(const char *command)
 	
     pid_t pid = fork();
 
-    if (pid == 0) 
+    if (pid < 0)
+    {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return NULL;
+    }
+
+    if (pid == 0)
     {
         // child
-        close(pipefd[0]); // read end
+        close(pipefd[0]);
 
         dup2(pipefd[1], STDOUT_FILENO);
         dup2(pipefd[1], STDERR_FILENO);
-
         close(pipefd[1]);
 
-        execl("/bin/sh", "sh", "-c", command, (char *)NULL);
+        execvp(argv[0], argv);
         _exit(127);
     }
 
-    close(pipefd[1]); // write end
+    // parent
+    close(pipefd[1]);
 
     size_t capacity = 4096;
     size_t size = 0;
     char *result = malloc(capacity);
 
-    if (!result) 
+    if (!result)
     {
         close(pipefd[0]);
         return NULL;
@@ -147,17 +174,19 @@ char *execute_command(const char *command)
     char buffer[512];
     ssize_t bytes;
 
-    while ((bytes = read(pipefd[0], buffer, sizeof(buffer))) > 0) 
+    while ((bytes = read(pipefd[0], buffer, sizeof(buffer))) > 0)
     {
-        if (size + bytes + 1 > capacity) 
+        if (size + bytes + 1 > capacity)
         {
             capacity *= 2;
-            result = realloc(result, capacity);
-            if (!result) 
+            char *tmp = realloc(result, capacity);
+            if (!tmp)
             {
+                free(result);
                 close(pipefd[0]);
                 return NULL;
             }
+            result = tmp;
         }
 
         memcpy(result + size, buffer, bytes);
@@ -167,7 +196,8 @@ char *execute_command(const char *command)
     result[size] = '\0';
 
     close(pipefd[0]);
-    waitpid(pid, NULL, 0);
+
+    wait_for_child(pid, NULL, DEFAULT_TIMEOUT);
 
     return result;
 }
