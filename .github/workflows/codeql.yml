@@ -27,11 +27,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
-    - name: Check Ubuntu Version
-      run: |
-        lsb_release -a
-        
+              
     - name: Install GTK4 Dependencies
       run: |
         sudo apt update
