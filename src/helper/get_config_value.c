@@ -21,6 +21,17 @@
 */
 char *get_config_value(const char *filename, const char *key) 
 {
+    if (filename == NULL || key == NULL) 
+    {
+        return NULL;
+    }
+
+    if (strstr(filename, "..") != NULL) 
+    {
+        LOGE("Path traversal detected!");
+        return NULL;
+    }
+    
     // open the file
     FILE *fp = fopen(filename, "r");
     if (!fp) 
