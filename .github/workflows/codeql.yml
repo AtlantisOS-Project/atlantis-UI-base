@@ -12,6 +12,8 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:25.10 # Hier kannst du jedes beliebige Image nutzen
     permissions:
       actions: read
       contents: read
@@ -25,7 +27,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
+      
+    - name: Check Ubuntu Version
+      run: |
+        lsb_release -a
+        
     - name: Install GTK4 Dependencies
       run: |
         sudo apt update
