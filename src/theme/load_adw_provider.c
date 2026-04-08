@@ -16,7 +16,6 @@
 #include "design.h"
 
 GtkCssProvider *provider_adw = NULL;
-AdwStyleManager *style_manager;
 
 /** 
 * @brief Function that create a css provider

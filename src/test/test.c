@@ -302,22 +302,6 @@ static void activate_test(GtkApplication* app, gpointer user_data)
     
     /**
     * create the main window 
-    * standard GTK4 Version
-    */
-    /*
-    GtkWidget *window = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(window), _("Test UI Base"));
-    gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
-    // create a box container for the main content
-    GtkWidget *content_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_window_set_child(GTK_WINDOW(window), content_box);
-    gtk_widget_set_halign(content_box, GTK_ALIGN_CENTER);
-    gtk_widget_set_valign(content_box, GTK_ALIGN_CENTER);
-    gtk_widget_set_hexpand(content_box, TRUE);
-    gtk_widget_set_vexpand(content_box, TRUE);
-    */
-    /**
-    * create the main window 
     * Libadwaita Version
     */
     // create the main window
@@ -436,21 +420,3 @@ int main(int argc, char *argv[])
 
     return g_application_run(G_APPLICATION (app), argc, argv);
 }
-
-// alternative main
-/*
-int main(int argc, char *argv[]) 
-{
-    GtkApplication *app;
-    int status;
-
-    app = gtk_application_new("org.test.atlantis.uibase", G_APPLICATION_DEFAULT_FLAGS);
-    g_signal_connect(app, "activate", G_CALLBACK(activate_test), NULL);
-    status = g_application_run(G_APPLICATION(app), argc, argv);
-    g_object_unref(app);
-
-    return status;
-}
-*/
-
-
