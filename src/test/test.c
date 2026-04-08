@@ -1,7 +1,7 @@
 /**
 * test.c
 *
-* (C) Copyright 2025 AtlantisOS Project
+* (C) Copyright 2026 AtlantisOS Project
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
@@ -46,7 +46,7 @@ const char *comments = "This is a very unusable comment in the about";
 const char *website = "https://example.org";
 const char *issue_url = "https://example.org";
 const char *support_url = "https://example.org";
-const char *copyright = "© 2025 AtlantisOS Project";
+const char *copyright = "© 2026 AtlantisOS Project";
 const char *developers[] = {
 	"NachtsternBuild",
 	NULL

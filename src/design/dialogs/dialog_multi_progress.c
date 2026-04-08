@@ -1,7 +1,7 @@
 /**
 * dialog_multi_progress.c
 *
-* (C) 2025 AtlantisOS Project
+* (C) 2026 AtlantisOS Project
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3

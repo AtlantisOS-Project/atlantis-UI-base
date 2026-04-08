@@ -1,7 +1,7 @@
 /**
 * delete_files.c
 *
-* (C) Copyright 2025 AtlantisOS Project
+* (C) Copyright 2026 AtlantisOS Project
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3

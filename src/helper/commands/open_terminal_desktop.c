@@ -1,7 +1,7 @@
 /**
  * open_terminal_desktop.c
  *
- * (C) 2025 AtlantisOS Project
+ * (C) 2026 AtlantisOS Project
  * by @NachtsternBuild
  *
  * License: GNU GENERAL PUBLIC LICENSE Version 3
