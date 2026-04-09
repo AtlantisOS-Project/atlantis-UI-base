@@ -20,6 +20,67 @@
 #define DEFAULT_TIMEOUT 0   // 0 = no timeout
 
 /**
+* @brief helper for whitelisting commands
+*/
+static bool is_allowed_command(const char *cmd)
+{
+    if (!cmd) 
+    {
+    	return false;
+	}
+	
+    // whitelist
+    const char *allowed[] = {
+        "adb",
+        "adb.exe",
+        "fastboot",
+        "fastboot.exe",
+        "ls",
+        "cat",
+        "grep",
+        "curl",
+        "wget", 
+        "unzip",
+        "xz",
+        "tar",
+        "getprop",
+        "pkexec",
+        "bash",
+        "sh",
+        "heimdall",
+        NULL
+    };
+
+    for (int i = 0; allowed[i]; i++)
+    {
+        if (strcmp(cmd, allowed[i]) == 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+* @brief helper that execute a command safe
+*/
+static bool is_safe_executable(const char *cmd)
+{
+    if (!cmd) 
+    {
+    	return false;
+	}
+	
+    // absolute path 
+    if (cmd[0] == '/')
+    {
+        return access(cmd, X_OK) == 0;
+	}
+    return is_allowed_command(cmd);
+}
+
+/**
 * @brief helper that wait (with optional timeout)
 */
 static bool wait_for_child(pid_t pid, int *exit_status, int timeout_sec)
@@ -87,6 +148,16 @@ bool run_command_safe(char *const argv[], int timeout_sec)
 	
     if (pid == 0)
     {
+        // secure PATH
+    	setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin", 1);
+
+    	// validate command
+    	if (!is_safe_executable(argv[0]))
+    	{
+        	fprintf(stderr, "Blocked unsafe command: %s\n", argv[0]);
+        	_exit(127);
+    	}
+
         // child
         // reset signals
         signal(SIGINT, SIG_DFL);
@@ -147,6 +218,17 @@ char *execute_command(char *const argv[])
 
     if (pid == 0)
     {
+        // secure PATH
+    	setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin", 1);
+
+    	// validate command
+    	if (!is_safe_executable(argv[0]))
+    	{
+        	fprintf(stderr, "Blocked unsafe command: %s\n", argv[0]);
+        	_exit(127);
+    	}
+
+        
         // child
         close(pipefd[0]);
 
