@@ -208,9 +208,11 @@ fn switch_to_page(stack: &Stack, target: Page) {
 */
 fn build_ui(app: &adw::Application) {
 	// init syslog
-    init_syslog("test_app").expect("Unable to initialize Syslog");
+    init_syslog(language::LIB_DOMAIN).expect("Unable to initialize Syslog");
     // init language
-    language::init_language("test_app", "./po", false);
+    let test_dir = env!("COMPILED_LOCALE_DIR");
+    language::init_language(language::LIB_DOMAIN, test_dir, false);
+    
     // init style
     use_adw_provider(ADW_CUSTOM_CSS);
     

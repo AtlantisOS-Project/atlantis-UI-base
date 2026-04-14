@@ -15,6 +15,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 
+// Die Domain, die wir in der build.rs gesetzt haben
+pub const LIB_DOMAIN: &str = env!("LIB_DOMAIN");
+
 lazy_static! {
     // at startup creating a empty path
     static ref CURRENT_LOCALEDIR: Mutex<PathBuf> = Mutex::new(PathBuf::new());

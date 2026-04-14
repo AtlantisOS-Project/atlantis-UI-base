@@ -27,3 +27,4 @@ lto = true          # Link Time Optimization (removes unused code across crates)
 codegen-units = 1   # Prevents parallel compilation, but enables better optimization
 panic = "abort"     # Removes the code for stack unwinding (saves a lot of space)
 strip = true
+

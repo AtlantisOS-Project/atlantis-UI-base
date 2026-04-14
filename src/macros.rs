@@ -9,10 +9,11 @@
 * Usage:
 * gettext!("some text");
 */
+
 // macro for gettext
 #[macro_export]
 macro_rules! gettext {
     ($msgid:expr) => {
-        gettextrs::gettext($msgid)
+        gettextrs::dgettext($crate::helper::language::language::LIB_DOMAIN, $msgid)
     };
 }
