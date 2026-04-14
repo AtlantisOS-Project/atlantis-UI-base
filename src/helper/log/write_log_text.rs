@@ -50,27 +50,19 @@ pub fn show_log_viewer(app: &adw::Application, domain: &str) {
     terminal.set_color_bold(Some(&gtk4::gdk::RGBA::new(1.0, 1.0, 1.0, 1.0)));
     terminal.set_scrollback_lines(1000);
 
-    let cmd_str = format!("journalctl -f -n 0 -t {} --output=short", domain);
-    
-    // create the strings
-    let bin = "/bin/sh";
-    let arg_c = "-c";
-    
-    // create the array from the strings
-    let argv = [bin, arg_c, &cmd_str];
+    let cmd_str = format!("echo 'Starting Logging...'; journalctl -f -n 0 -t {} --output=short", domain);
+	let argv = vec![
+	    "/bin/sh".to_string(), 
+	    "-c".to_string(), 
+	    cmd_str
+	];
 
-    // Fenster präsentieren
-    toolbar_view.set_content(Some(&terminal));
-    log_window.set_content(Some(&toolbar_view));
-    log_window.present();
-
-    // Spawn-Aufruf
     terminal.spawn_async(
         vte4::PtyFlags::DEFAULT,
-        None,
-        &argv, // &[&str]
-        &[],   // env
-        glib::SpawnFlags::DEFAULT,
+        None, // Working dir
+        &argv.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+        &[], // Env
+        glib::SpawnFlags::SEARCH_PATH, // use SEARCH_PATH
         || {}, 
         -1,
         None::<&gio::Cancellable>,
@@ -81,6 +73,11 @@ pub fn show_log_viewer(app: &adw::Application, domain: &str) {
             }
         },
     );
+    
+    // present the window
+    toolbar_view.set_content(Some(&terminal));
+    log_window.set_content(Some(&toolbar_view));
+    log_window.present();
 }
 
 

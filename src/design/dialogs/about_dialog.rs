@@ -41,6 +41,7 @@ use gtk4::License;
 /**
 * @brief Structure for all informations in the about dialog
 */
+#[derive(Debug, Clone)]
 pub struct AboutInfo {
     pub app_icon: String,
     pub app_name: String,

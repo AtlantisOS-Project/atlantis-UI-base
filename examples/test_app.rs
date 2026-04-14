@@ -17,6 +17,7 @@ use atlbase::helper::language::language;
 use atlbase::design::utils::create_special_button;
 use atlbase::design::utils::create_entry;
 use atlbase::design::dialogs::dialog;
+use atlbase::design::dialogs::about_dialog::AboutInfo;
 // use the extra gettext macro
 use atlbase::gettext;
 // use this for all preludes from the lib.rs
@@ -99,7 +100,38 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     container.set_valign(Align::Center);
     container.set_hexpand(true);
 	container.set_vexpand(true);
-
+	
+	let info = AboutInfo {
+	    app_icon: "atlantis-os-logo".to_string(),
+	    app_name: "Atlbase Test".to_string(),
+	    developer_name: "NachtsternBuild".to_string(),
+	    version: "2026.1.0".to_string(),
+	    release_notes_version: "1.0.0".to_string(),
+	    release_notes: "<p>Test Release</p>".to_string(),
+	    comments: "Some UI".to_string(),
+	    website: "https://example.org".to_string(),
+	    issue_url: "https://example.org/issues".to_string(),
+	    support_url: "https://example.org/support".to_string(),
+	    copyright: "© 2026 AtlantisOS Project".to_string(),
+	    developers: vec!["NachtsternBuild".to_string(), "OpenSource Contributor".to_string()],
+	    artists: vec!["Gnome DesignTeam".to_string()],
+	    documentation_url: "https://docs.atlantisos.org".to_string(),
+	    font_usage: "Some cool font".to_string(),
+	    special_thanks: vec!["GNOME Team".to_string(), "Rust Community".to_string()],
+	    translator_credits: "Translated by AtlantisOS Project".to_string(),
+	};
+	
+	let info_clone = info.clone();
+	let btn_about = create_special_button::create_button_icon_position(
+		"dialog-information-symbolic",
+		"About Dialog",
+		Align::Center,
+		move |btn| {
+			show_about_dialog(btn, info_clone.clone());
+		}
+	);
+	container.append(&btn_about);
+	
     // Test Dialog Button
     let btn_dialog = create_special_button::create_button_icon_position(
         "dialog-information-symbolic", 
@@ -117,6 +149,7 @@ fn create_home_page(stack: &Stack) -> GtkBox {
         "Test Log", 
         Align::Center,
         move |_| {
+        	println!("Test Log");
             log::info!("UI successful started");
     		log::error!("Critical Error found!");
         }
@@ -224,7 +257,7 @@ fn build_ui(app: &adw::Application) {
 	
 	// set the title for the page
     header_bar.set_title_widget(Some(&Label::new(Some(&gettext!("Test UIBase")))));
-    let custom_header_content = create_custom_headerbar(app, "test_app");
+    let custom_header_content = create_custom_headerbar(app, language::LIB_DOMAIN);
     
     // add the custom headerbar
     header_bar.pack_end(&custom_header_content);

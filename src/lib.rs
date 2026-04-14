@@ -86,7 +86,10 @@ pub mod ui_prelude {
     			folder_chooser::show_folder_chooser,
     		},
     		dialogs::{
-    			about_dialog::show_about_dialog,
+    			about_dialog::{
+    				show_about_dialog,
+    				AboutInfo,
+    			},
     			dialog::show_alert_dialog,
     			dialog_entry::show_entry_dialog, 
     			dialogs_spinner::{
