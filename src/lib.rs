@@ -94,6 +94,7 @@ pub mod ui_prelude {
     			dialog_entry::show_entry_dialog, 
     			dialogs_spinner::{
     				show_spinner_dialog,
+    				IndicatorType,
     			},
     			standard_dialogs::{
     				show_info_dialog,

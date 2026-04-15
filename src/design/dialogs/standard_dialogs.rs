@@ -92,7 +92,8 @@ pub fn show_error_title_dialog(
     show_alert_dialog(
     	parent, 
     	&formatted_title, 
-    	body, &gettext!("OK")
+    	body, 
+    	&gettext!("OK")
     );
 }
 

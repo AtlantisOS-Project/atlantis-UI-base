@@ -12,12 +12,17 @@
 
 use adw::prelude::*;
 use adw::{Application, ApplicationWindow, HeaderBar, ToolbarView};
-use gtk4::{Box as GtkBox, Label, Orientation, Stack, StackTransitionType, Align, glib, Button};
+use gtk4::{Box as GtkBox, Label, Orientation, Stack, StackTransitionType, Align, glib, Button, Grid};
+use std::path::PathBuf;
+
+// atl functions
 use atlbase::helper::language::language;
 use atlbase::design::utils::create_special_button;
 use atlbase::design::utils::create_entry;
 use atlbase::design::dialogs::dialog;
 use atlbase::design::dialogs::about_dialog::AboutInfo;
+use atlbase::design::chooser::file_chooser;
+use atlbase::design::chooser::folder_chooser;
 // use the extra gettext macro
 use atlbase::gettext;
 // use this for all preludes from the lib.rs
@@ -76,6 +81,7 @@ frame {
 pub enum Page {
     Home,
     Settings,
+    StandardDialog
     //UserManagement,
     //Statistics,
     //Logs,
@@ -87,6 +93,7 @@ impl Page {
         match self {
             Page::Home => "home",
             Page::Settings => "settings",
+            Page::StandardDialog => "standard_dialog",
             //Page::UserManagement => "users",
             //Page::Statistics => "stats",
             //Page::Logs => "logs",
@@ -96,11 +103,24 @@ impl Page {
 
 // test page with all the test options
 fn create_home_page(stack: &Stack) -> GtkBox {
-	let container = GtkBox::new(Orientation::Vertical, 0);
+	let container = GtkBox::new(Orientation::Vertical, 12); // spacing between the main groups
     container.set_valign(Align::Center);
     container.set_hexpand(true);
-	container.set_vexpand(true);
+    container.set_vexpand(true);
+    container.set_margin_top(24);
+    container.set_margin_bottom(24);
+    container.set_margin_start(24);
+    container.set_margin_end(24);
+
+    // create a grid
+    let grid = Grid::new();
+    grid.set_column_spacing(10); // spacing between columns
+    grid.set_row_spacing(10);    // spacing between rows
+    grid.set_halign(Align::Center);
+    grid.set_hexpand(true);
+    grid.set_vexpand(true);
 	
+	// about dialog
 	let info = AboutInfo {
 	    app_icon: "atlantis-os-logo".to_string(),
 	    app_name: "Atlbase Test".to_string(),
@@ -130,9 +150,12 @@ fn create_home_page(stack: &Stack) -> GtkBox {
 			show_about_dialog(btn, info_clone.clone());
 		}
 	);
-	container.append(&btn_about);
 	
-    // Test Dialog Button
+	// grid.attach(widget, spalte, zeile, breite, höhe)
+	// grid.attach(widget, column, row, width, height)
+    grid.attach(&btn_about, 0, 0, 1, 1);
+	
+    // test dialog button
     let btn_dialog = create_special_button::create_button_icon_position(
         "dialog-information-symbolic", 
         "Test Dialog", 
@@ -141,9 +164,24 @@ fn create_home_page(stack: &Stack) -> GtkBox {
             dialog::show_alert_dialog(btn, &gettext!("Dialog Titel"), &gettext!("Inhalt des Dialogs"), &gettext!("OK"));
         }
     );
-    container.append(&btn_dialog);
+    grid.attach(&btn_dialog, 1, 0, 1, 1);
     
+    // test filechooser
+	// define callback
+	fn something(pfad: PathBuf) {
+		println!("File: {:?}", pfad);
+	}
+	
+	let btn_test_file_chooser = create_special_button::create_button_icon(
+		"media-zip-symbolic",
+		"Test Filechooser",
+		move |btn| {
+			file_chooser::show_file_chooser(btn, something);
+		}
+	);
+	grid.attach(&btn_test_file_chooser, 2, 0, 1, 1);
     
+    // testing log
     let btn_test_log = create_special_button::create_button_icon_position(
         "dialog-information-symbolic", 
         "Test Log", 
@@ -154,26 +192,95 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     		log::error!("Critical Error found!");
         }
     );
-    container.append(&btn_test_log);
-
-    // Entry    
-    let (username_row, username_entry) = create_entry::create_entry(&gettext!("Username:"), Some(&gettext!("Input Username")));
-    let (password_row, password_entry) = create_entry::create_password_entry(&gettext!("Password:"), Some(&gettext!("Input Password")));
+    grid.attach(&btn_test_log, 0, 1, 1, 1);
     
-    container.append(&username_row);
-    container.append(&password_row);
-
-    // Login Callback
-    let btn_login = Button::with_label(&gettext!("Login"));
-    btn_login.connect_clicked(move |_| {
-        let user = username_entry.text();
-        let pass = password_entry.text();
-        println!("Login Versuch -> User: {}, Pass: {}", user, pass);
-    });
+    // testing spinner dialog
+    let btn_spinner_test = create_special_button::create_button_icon(
+    	"update",
+    	"Test Spinner",
+    	move |btn| {
+    		// get the main window with the button
+        	if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+    			show_spinner_dialog(
+					window,
+  					"System-Update",
+  					"Please wait...",
+  					vec![
+  						"sleep 5".to_string(), 
+  						"echo 'Ready'".to_string()
+  					],
+  					IndicatorType::Spinner 
+  				);
+    		}
+    	}  
+    );
+    grid.attach(&btn_spinner_test, 1, 1, 1, 1);
     
-    container.append(&btn_login);
+    // test filechooser
+	// define callback
+	fn some_folder(path: PathBuf) {
+		println!("Path: {:?}", path);
+	}
+	
+	let btn_test_folder_chooser = create_special_button::create_button_icon(
+		"media-zip-symbolic",
+		"Test Folderchooser",
+		move |btn| {
+			folder_chooser::show_folder_chooser(btn, some_folder);
+		}
+	);
+	grid.attach(&btn_test_folder_chooser, 2, 1, 1, 1);
     
-    let stack_clone = stack.clone(); 
+    // testing progress dialog
+    let btn_progress_test = create_special_button::create_button_icon(
+    	"update",
+    	"Test Progress",
+    	move |btn| {
+    		// get the main window with the button
+        	if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+    			show_spinner_dialog(
+					window,
+  					"System-Update",
+  					"Please wait...",
+  					vec![
+  						"sleep 5".to_string(), 
+  						"echo 'Ready'".to_string()
+  					],
+  					IndicatorType::ProgressBar
+  				);
+    		}
+    	}
+    );
+    grid.attach(&btn_progress_test, 0, 2, 1, 1);
+    
+    // function to test a dialog with entry
+    fn test_entry_call(test: &str) {
+    	println!("{}", test);
+    }
+    
+    let btn_test_entry_dialog = create_special_button::create_button_icon_position(
+    	"error-correct-symbolic",
+    	"Test Entry Dialog",
+    	Align::Center,
+    	move |btn| {
+    		show_entry_dialog(
+    			btn,
+    			"Change Name",
+    			"Add new Name",
+    			"Save",
+    			"Exit",
+    			"Username: ",
+    			"e.g. Donald Duck",
+    			move |name| {
+    				test_entry_call(&name);   			
+    			}
+    		 );
+    	}
+    );
+    grid.attach(&btn_test_entry_dialog, 2, 2, 1, 1);
+    		
+	// function to test stack
+	let stack_clone = stack.clone(); 
     let btn_test_stack = create_special_button::create_button_icon_position(
         "dialog-information-symbolic", 
         "Test Stack", 
@@ -182,17 +289,48 @@ fn create_home_page(stack: &Stack) -> GtkBox {
             switch_to_page(&stack_clone, Page::Settings);
         }
     );
-	container.append(&btn_test_stack);
+	grid.attach(&btn_test_stack, 1, 2, 1, 1);
 	
+    // entry    
+    let (username_row, username_entry) = create_entry::create_entry(&gettext!("Username:"), Some(&gettext!("Input Username")));
+    let (password_row, password_entry) = create_entry::create_password_entry(&gettext!("Password:"), Some(&gettext!("Input Password")));
+    
+    // add the entries to the grid, but use to two columns
+    grid.attach(&username_row, 0, 3, 2, 1);
+    grid.attach(&password_row, 0, 4, 2, 1);
+
+    // login Callback
+    let btn_login = Button::with_label(&gettext!("Login"));
+    btn_login.add_css_class("pill");
+    btn_login.connect_clicked(move |_| {
+        let user = username_entry.text();
+        let pass = password_entry.text();
+        println!("Login Try -> User: {}, Pass: {}", user, pass);
+    });
+    
+	grid.attach(&btn_login, 0, 5, 2, 1);
+    	
+	container.append(&grid);
 	container
 }
 
 // helper funtion for create the stack
 fn create_settings_page(stack: &Stack) -> GtkBox {
-	let container = GtkBox::new(Orientation::Vertical, 0);
+	let container = GtkBox::new(Orientation::Vertical, 12);
 	container.set_valign(Align::Center);
 	container.set_hexpand(true);
 	container.set_vexpand(true);
+	
+	let stack_clone1 = stack.clone();
+	let btn_test_dialogs = create_special_button::create_button_icon_position(
+		"folder-templates-symbolic",
+		"Teste Standard Dialogs",
+		Align::Center,
+		move |_| {
+			switch_to_page(&stack_clone1, Page::StandardDialog);
+		}
+	);
+	container.append(&btn_test_dialogs);
 	
 	let stack_clone = stack.clone();
 	let btn_back = create_special_button::create_button_icon_position(
@@ -204,6 +342,97 @@ fn create_settings_page(stack: &Stack) -> GtkBox {
 		}
 	);
 	container.append(&btn_back);
+	container
+}
+
+// testing all the standard dialogs
+fn create_test_standard_dialogs(stack: &Stack) -> GtkBox {
+	let container = GtkBox::new(Orientation::Vertical, 12);
+	container.set_valign(Align::Center);
+	container.set_hexpand(true);
+	container.set_vexpand(true);
+		
+	let stack_clone1 = stack.clone();	
+	let btn1 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Dialog 1",
+		move |_| {
+			show_info_dialog(&stack_clone1, "test");
+		}
+	);
+	container.append(&btn1);
+	
+	let stack_clone2 = stack.clone();
+	let btn2 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Dialog 2",
+		move |_| {
+			show_info_button_dialog(&stack_clone2, "test", "TEST");
+		}
+	);
+	container.append(&btn2);
+	
+	let stack_clone3 = stack.clone();
+	let btn3 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Dialog 3",
+		move |_| {
+			show_dialog_title(&stack_clone3, "Test", "test");
+		}
+	);
+	container.append(&btn3);
+	
+	let stack_clone4 = stack.clone();
+	let btn4 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Dialog 4",
+		move |_| {
+			show_error_dialog(&stack_clone4, "test");
+		}
+	);
+	container.append(&btn4);
+	
+	let stack_clone5 = stack.clone();
+	let btn5 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Dialog 5",
+		move |_| {
+			show_error_button_dialog(&stack_clone5, "test", "TEST");
+		}
+	);
+	container.append(&btn5);
+	
+	let stack_clone6 = stack.clone();
+	let btn6 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Dialog 6",
+		move |_| {
+			show_error_title_dialog(&stack_clone6, "Test", "test");
+		}
+	);
+	container.append(&btn6);
+	
+	let stack_clone7 = stack.clone();
+	let btn7 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Dialog 7",
+		move |_| {
+			show_error_title_button_dialog(&stack_clone7, "Test", "test", "TEST");
+		}
+	);
+	container.append(&btn7);
+			
+	let stack_clone = stack.clone();
+	let btn_back = create_special_button::create_button_icon_position(
+		"folder-templates-symbolic",
+		"Back",
+		Align::Center,
+		move |_| {
+			switch_to_page(&stack_clone, Page::Settings);
+		}
+	);
+	container.append(&btn_back);
+	
 	container
 }
 
@@ -223,6 +452,7 @@ fn switch_to_page(stack: &Stack, target: Page) {
         let widget = match target {
             Page::Home => create_home_page(stack),
             Page::Settings => create_settings_page(stack),
+            Page::StandardDialog => create_test_standard_dialogs(stack),
             //Page::UserManagement => create_users_page(stack),
             //Page::Statistics => create_stats_page(stack),
             //Page::Logs => create_logs_page(stack),

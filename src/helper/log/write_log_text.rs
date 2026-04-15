@@ -111,6 +111,7 @@ pub fn create_custom_headerbar(app: &adw::Application, domain: &'static str) -> 
     button1.set_child(Some(&hbox1));
     button1.set_tooltip_text(Some(&gettext!("Show Log")));
     button1.set_halign(Align::Start);
+    button1.add_css_class("pill");
     
     let app_clone = app.clone();
     button1.connect_clicked(move |_| {
@@ -134,6 +135,7 @@ pub fn create_custom_headerbar(app: &adw::Application, domain: &'static str) -> 
     button2.set_child(Some(&hbox2));
     button2.set_tooltip_text(Some(&gettext!("Kill App")));
     button2.set_halign(Align::Start);
+    button2.add_css_class("pill");
     
     button2.connect_clicked(|_| {
         kill_program();

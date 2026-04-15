@@ -49,6 +49,8 @@ where
         .spacing(12)
         .margin_top(18)
         .margin_bottom(18)
+        .margin_start(18)
+        .margin_end(18)
         .build();
 
     let body_label = Label::builder()
@@ -63,7 +65,8 @@ where
         .hexpand(true)
         .activates_default(true) // enter start standard button
         .build();
-
+	entry.add_css_class("pill");
+	
     let row = ActionRow::builder()
         .title(entry_label)
         .activatable_widget(&entry)
@@ -79,10 +82,13 @@ where
         .build();
     
     let btn_cancel = Button::with_label(cancel_label);
+    btn_cancel.add_css_class("destructive-action");
+    btn_cancel.add_css_class("pill");
     header_bar.pack_start(&btn_cancel);
 
     let btn_ok = Button::with_label(ok_label);
     btn_ok.add_css_class("suggested-action");
+    btn_ok.add_css_class("pill");
     header_bar.pack_end(&btn_ok);
 
     toolbar_view.add_top_bar(&header_bar);

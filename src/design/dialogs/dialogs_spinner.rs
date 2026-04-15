@@ -85,6 +85,7 @@ pub fn show_spinner_dialog(
     root_box.set_margin_bottom(24);
     root_box.set_margin_start(24);
     root_box.set_margin_end(24);
+    root_box.set_halign(Align::Center);
 
     let label_title = Label::builder()
         .label(title)
@@ -111,6 +112,10 @@ pub fn show_spinner_dialog(
     	IndicatorType::ProgressBar => {
     	    let progress_bar = ProgressBar::builder()
     	        .pulse_step(0.1)
+    	        .halign(Align::Center)
+    	        .valign(Align::Center)
+    	        .width_request(150)
+    	        .height_request(50)
     	        .build();
         
     	    root_box.append(&progress_bar);
@@ -133,18 +138,18 @@ pub fn show_spinner_dialog(
 
     // check the signal from the background thread
     let dialog_to_close = dialog.clone();
-    gtk4::glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+    gtk4::glib::timeout_add_local(std::time::Duration::from_millis(25), move || {
         // try_recv() does not block
         match rx.try_recv() {
             Ok(_success) => {
-                dialog_to_close.close();
+                dialog_to_close.force_close();
                 gtk4::glib::ControlFlow::Break // stop polling
             }
             Err(mpsc::TryRecvError::Empty) => {
                 gtk4::glib::ControlFlow::Continue // Not finished yet; continue checking
             }
             Err(mpsc::TryRecvError::Disconnected) => {
-                dialog_to_close.close();
+                dialog_to_close.force_close();
                 gtk4::glib::ControlFlow::Break
             }
         }

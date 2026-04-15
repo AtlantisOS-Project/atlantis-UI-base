@@ -22,7 +22,7 @@ use gtk4::{FileDialog, Window, Button};
 use std::path::PathBuf;
 use crate::gettext;
 
-type FolderProcessorFunc = fn(PathBuf);
+pub type FolderProcessorFunc = fn(PathBuf);
 
 /**
 * @brief Callback for closing the dialog
