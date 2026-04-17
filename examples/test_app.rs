@@ -504,21 +504,22 @@ fn switch_to_page(stack: &Stack, target: Page) {
 */
 fn build_ui(app: &adw::Application) {
 	// init syslog
-    init_syslog(language::LIB_DOMAIN).expect("Unable to initialize Syslog");
+	let test_domain = "atl_test";
+    init_syslog(test_domain).expect("Unable to initialize Syslog");
     // init language
     let test_dir = env!("COMPILED_LOCALE_DIR");
-    language::init_language(language::LIB_DOMAIN, test_dir, false);
+    language::init_language(test_domain, test_dir, false);
     
     // init style
-    //use_adw_provider(ADW_CUSTOM_CSS);
+    use_adw_provider(ADW_CUSTOM_CSS);
     
     // test using a config file
     // set a config
-    if let Err(e) = set_config("atl_test", "theme", "dark") {
+    if let Err(e) = set_config(test_domain, "theme", "dark") {
         eprintln!("Error at saving: {}", e);
     }
     // get a config
-    match get_config("atl_test", "theme") {
+    match get_config(test_domain, "theme") {
          Some(val) => println!("Found: {}", val),
          None => println!("Key not found!"),
     }   
@@ -541,7 +542,7 @@ fn build_ui(app: &adw::Application) {
 	
 	// set the title for the page
     header_bar.set_title_widget(Some(&Label::new(Some(&gettext!("Test UIBase")))));
-    let custom_header_content = create_custom_headerbar(app, language::LIB_DOMAIN);
+    let custom_header_content = create_custom_headerbar(app, test_domain);
     
     // add the custom headerbar
     header_bar.pack_end(&custom_header_content);

@@ -14,15 +14,22 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 
-// get the domain from the build.rs
-pub const LIB_DOMAIN: &str = env!("LIB_DOMAIN");
-
 lazy_static! {
-    // at startup creating a empty path
+    /// Global variable storing the current path to the translation files (.mo).
+    /// Set at runtime by `init_language` or `set_language_dir`.
     static ref CURRENT_LOCALEDIR: Mutex<PathBuf> = Mutex::new(PathBuf::new());
+
+    /// Global variable for the current text domain (usually the project name).
+    /// Prevents reliance on compile-time environment variables.
+    static ref CURRENT_DOMAIN: Mutex<String> = Mutex::new(String::new());
 }
 
-// function to set the default langauge dir
+/// Sets the path to the locale directory manually.
+/// 
+/// The path is only applied if it exists and is a directory.
+/// 
+/// ### Arguments
+/// * `dir` - A string slice pointing to the directory containing the translations.
 pub fn set_language_dir(dir: &str) {
     let path = Path::new(dir);
     if path.is_dir() {
@@ -31,12 +38,17 @@ pub fn set_language_dir(dir: &str) {
     }
 }
 
-// function that returns the current language dir
+/// Returns a copy of the currently set locale directory.
 pub fn get_language_dir() -> PathBuf {
     CURRENT_LOCALEDIR.lock().unwrap().clone()
 }
 
-/// Init the gettext system
+/// Returns the currently registered text domain.
+pub fn get_current_domain() -> String {
+    CURRENT_DOMAIN.lock().unwrap().clone()
+}
+
+/// Init the getlet mut d = CURRENT_DOMAIN.lock().unwrap();
 /// ### Notes:
 /// - The domain for the app control comes from build.rs
 ///
@@ -47,6 +59,9 @@ pub fn get_language_dir() -> PathBuf {
 /// language::init_language(language::LIB_DOMAIN, test_dir, false);
 /// ```
 pub fn init_language(domain: &str, default_dir: &str, debug_lang: bool) {
+    let mut d = CURRENT_DOMAIN.lock().unwrap();
+    *d = domain.to_string();
+    
     // for debugging
     if debug_lang {
     	// Note: Use this only for debugging

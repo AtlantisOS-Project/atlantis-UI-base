@@ -16,6 +16,9 @@
 #[macro_export]
 macro_rules! gettext {
     ($msgid:expr) => {
-        gettextrs::dgettext($crate::helper::language::language::LIB_DOMAIN, $msgid)
+        gettextrs::dgettext(
+            &$crate::helper::language::language::get_current_domain(), 
+            $msgid
+        )
     };
 }
