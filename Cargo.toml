@@ -3,6 +3,20 @@ name = "atlbase"
 version = "0.1.0"
 edition = "2024"
 
+description = "ATL UIBase is a modular GTK4 + Libadwaita 1.6 user interface library that simplifies the development of modern graphical applications in Rust."
+readme = "README.md"
+
+homepage = "https://github.com/AtlantisOS-Project/atlantis-UI-base"
+repository = "https://github.com/AtlantisOS-Project/atlantis-UI-base"
+
+license = "GPL-3.0"
+
+include = [
+    "src/**",
+    "LICENSE*",
+    "README.md"
+]
+
 [dependencies]
 gtk4 = { version = "0.11", features = ["v4_20"]}
 shlex = "1.3"
