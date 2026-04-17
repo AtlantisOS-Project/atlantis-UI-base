@@ -36,6 +36,9 @@ desktop.ini
 *.out
 *.class
 *.jar
+/target
+vendor/
+/vendor
 
 #
 # build direcotries
