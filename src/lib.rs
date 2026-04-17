@@ -1,3 +1,4 @@
+//! Functions of the main library that incorporate all functions
 /**
 * lib.rs
 *
@@ -5,11 +6,13 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* use atlbase::*;
 */
-
+/// AtlBase
+/// ### Usage:
+///
+/// ```rust
+/// use atlbase::*;
+/// ```
 pub mod helper;
 pub mod design;
 pub mod macros;
@@ -33,12 +36,12 @@ pub mod prelude {
     				set_config,
     			},
     			application_environment::{
+    				AppEnvironment,
     				get_execution_environment,
     				check_application_environment,
     			},
     		},
     		file::{
-    			file_filter::load_file_filters,
     			get_config_value::get_config_value,
     			trim_and_clean::trim_and_clean,
     			add_line_file::add_line_file,
@@ -63,6 +66,7 @@ pub mod prelude {
     				make_path_dirname,
     			},
     			search_file_directory::search_file_directory,
+    			search_string_name::search_string_file,
     		},
     		language::language::{
     			set_language_dir,

@@ -1,3 +1,4 @@
+//! Function that show the logs from syslog in a extra window
 /**
 * write_log_text.rs
 *
@@ -5,7 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
 */
 
 use adw::prelude::*;
@@ -17,19 +17,18 @@ use vte4::TerminalExt;
 use std::process;
 use crate::gettext;
 
-/*
-// callback process by started terminal
-fn handle_spawn_result(result: Result<glib::Pid, glib::Error>) {
-    match result {
-        Ok(pid) => println!("Process started, PID={:?}", pid), // {:?} for PID
-        Err(err) => eprintln!("Error starting the process: {}", err.message()),
-    }
-}
-*/
-
-/** 
-* @brief Create a window, that shows the log
-*/
+/// Create a window, that shows the log
+/// ### Usage:
+///
+/// ```rust
+/// let button1 = Button::new();
+/// button1.set_child(Some(&hbox1));
+/// button1.set_tooltip_text(Some(&gettext!("Show Log"))); 
+/// let app_clone = app.clone();
+/// button1.connect_clicked(move |_| {
+///    show_log_viewer(&app_clone, domain);
+/// });
+/// ```
 pub fn show_log_viewer(app: &adw::Application, domain: &str) {
     let log_window = ApplicationWindow::builder()
         .application(app)
@@ -88,9 +87,19 @@ fn kill_program() {
     process::exit(0); 
 }
 
-/**
-* @brief Header that create the popover menu
-*/
+/// Header that create the popover menu
+/// ### Usage:
+///
+/// ```rust
+/// let toolbar_view = ToolbarView::new();
+/// toolbar_view.set_vexpand(true);
+/// toolbar_view.set_hexpand(true);
+/// let header_bar = HeaderBar::new();
+/// header_bar.set_title_widget(Some(&Label::new(Some(&gettext!("Test UIBase")))));
+/// let custom_header_content = create_custom_headerbar(app, language::LIB_DOMAIN);
+/// header_bar.pack_end(&custom_header_content);
+/// toolbar_view.add_top_bar(&header_bar);
+/// ``` 
 pub fn create_custom_headerbar(app: &adw::Application, domain: &'static str) -> GtkBox {
     let headerbar_box = GtkBox::new(Orientation::Horizontal, 0);
     let menu_button = MenuButton::new();

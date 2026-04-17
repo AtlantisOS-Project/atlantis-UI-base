@@ -1,3 +1,4 @@
+//! Function to show a dialog with a Libadwaita spinner
 /**
 * dialogs_spinner.rs
 *
@@ -5,22 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief Multiple dialogs for special operations
-*
-* Usage:
-*  button.connect_clicked(glib::clone!(@weak window => move |_| {
-*  	show_spinner_dialog(
-*		&window,
-*  		"System-Update",
-*  		"Please wait...",
-*  		vec![
-*  			"sleep 2".to_string(), 
-*  			"echo 'Ready'".to_string()
-*  		],
-*  		IndicatorType::ProgressBar // or IndicatorType::Spinner
-*  	);
-*  }));
 */
 
 use adw::prelude::*;
@@ -62,9 +47,23 @@ fn run_commands_thread(commands: Vec<String>, tx: mpsc::Sender<bool>) {
     });
 }
 
-/**
-* @brief Function that show a dialog with spinner/progressbar
-*/
+/// Function that show a dialog with spinner/progressbar
+/// ### Usage:
+///
+/// ```rust
+///  button.connect_clicked(glib::clone!(@weak window => move |_| {
+///  	show_spinner_dialog(
+///		&window,
+///  		"System-Update",
+///  		"Please wait...",
+///  		vec![
+///  			"sleep 2".to_string(), 
+///  			"echo 'Ready'".to_string()
+///  		],
+///  		IndicatorType::ProgressBar // or IndicatorType::Spinner
+///  	);
+///  }));
+/// ```
 pub fn show_spinner_dialog(
     parent: &adw::ApplicationWindow,
     title: &str,
@@ -142,14 +141,14 @@ pub fn show_spinner_dialog(
         // try_recv() does not block
         match rx.try_recv() {
             Ok(_success) => {
-                dialog_to_close.force_close();
+                dialog_to_close.force_close(); // force closing the dialog
                 gtk4::glib::ControlFlow::Break // stop polling
             }
             Err(mpsc::TryRecvError::Empty) => {
                 gtk4::glib::ControlFlow::Continue // Not finished yet; continue checking
             }
             Err(mpsc::TryRecvError::Disconnected) => {
-                dialog_to_close.force_close();
+                dialog_to_close.force_close(); // force closing the dialog
                 gtk4::glib::ControlFlow::Break
             }
         }

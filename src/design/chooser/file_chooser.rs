@@ -1,3 +1,4 @@
+//! Function that show a file chooser
 /**
 * file_chooser.rs
 *
@@ -5,17 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* let btn1 = Button::with_label("File?:");
-* // define callback
-* fn something(pfad: PathBuf) {
-*     println!("File: {:?}", pfad);
-* }
-* // connect signal
-* btn1.connect_clicked(move |b| {
-*     show_file_chooser(b, something);
-* });
 */
 
 use gtk4::prelude::*;
@@ -44,9 +34,20 @@ fn handle_file_response(
     }
 }
 
-/**
-* @brief Function for the filechooser dialog
-*/
+/// Function for the filechooser dialog
+/// ### Usage:
+///
+/// ```rust
+/// let btn1 = Button::with_label("File?:");
+/// // define callback
+/// fn something(pfad: PathBuf) {
+///     println!("File: {:?}", pfad);
+/// }
+/// // connect signal
+/// btn1.connect_clicked(move |b| {
+///     show_file_chooser(b, something);
+/// });
+/// ``` 
 pub fn show_file_chooser(button: &Button, process_func: FileProcessorFunc) {
     let root = button.root();
     let parent_window = root.and_then(|r| r.downcast::<Window>().ok());

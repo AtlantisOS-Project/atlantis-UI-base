@@ -1,3 +1,4 @@
+//! macro for gettext
 /**
 * macros.rs
 *
@@ -5,12 +6,13 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* gettext!("some text");
 */
-
-// macro for gettext
+/// Define gettext Macro
+/// ### Usage:
+///
+/// ```rust
+/// gettext!("some text");
+/// ```
 #[macro_export]
 macro_rules! gettext {
     ($msgid:expr) => {

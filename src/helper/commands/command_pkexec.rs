@@ -1,3 +1,4 @@
+//! Run a command with pkexec in the shell
 /**
  * command_pkexec.rs
  *
@@ -5,20 +6,19 @@
  * by @NachtsternBuild
  *
  * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * Usage:
- * * command_pkexec():
- * fn main() {
- *  command_pkexec(&["ls", "/root"]);
- * }
  */
 
 use std::process::Command;
 
-/**
- * @brief run a command with pkexec
- * * @param args: list of arguments (e.g. ["apt", "update"])
- */
+/// Command with pkexec
+/// ### Usage:
+/// args are list of arguments (e.g. ["apt", "update"])
+///
+/// ```rust
+/// fn main() {
+/// command_pkexec(&["ls", "/root"]);
+/// }
+/// ```
 pub fn command_pkexec(args: &[&str]) {
     // create a new process
     let output = Command::new("pkexec")
@@ -42,5 +42,3 @@ pub fn command_pkexec(args: &[&str]) {
         }
     }
 }
-
-// TODO: UI Varianten

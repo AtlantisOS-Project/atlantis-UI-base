@@ -1,3 +1,4 @@
+//! Function that apply extern CSS style 
 /**
  * load_adw_provider.rs
  *
@@ -26,9 +27,21 @@ fn load_adw_provider_from_string(css_data: &str) {
     });
 }
 
-/**
- * @brief Init the CSS ADW provider 
- */
+/// Init the CSS ADW provider
+/// ### Usage:
+///
+/// ```rust
+/// pub const ADW_CUSTOM_CSS: &str = r#"
+/// window {
+///    background-color: @theme_bg_color;
+///    color: @theme_fg_color;
+///    padding: 12px;
+///    font-size: 14px;
+///    border: 2px solid @theme_bg_color;
+///    border-radius: 35px;
+/// }"#;
+/// use_adw_provider(ADW_CUSTOM_CSS); 
+/// ```
 pub fn use_adw_provider(css_content: &str) {
     let new_provider = CssProvider::new();
 

@@ -1,3 +1,4 @@
+//! Function that create a folder chooser
 /**
 * folder_chooser.rs
 *
@@ -5,16 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* let folder_btn = Button::with_label("Folder?:");
-* fn handle_folder(path: PathBuf) {
-*    println!("path: {:?}", path);
-* }
-* // connect button
-* folder_btn.connect_clicked(move |btn| {
-*    show_folder_chooser(btn, handle_folder);
-* });
 */
 
 use gtk4::prelude::*;
@@ -43,9 +34,19 @@ fn handle_folder_response(
     }
 }
 
-/**
-* @brief Function for the folderchooser dialog
-*/
+/// Function for the folderchooser dialog
+/// ### Usage:
+///
+/// ```rust
+/// let folder_btn = Button::with_label("Folder?:");
+/// fn handle_folder(path: PathBuf) {
+///    println!("path: {:?}", path);
+/// }
+/// // connect button
+/// folder_btn.connect_clicked(move |btn| {
+///    show_folder_chooser(btn, handle_folder);
+/// });
+/// ```
 pub fn show_folder_chooser(button: &Button, process_func: FolderProcessorFunc) {
     // get the root window
     let root = button.root();

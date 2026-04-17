@@ -291,7 +291,7 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     );
 	grid.attach(&btn_test_stack, 1, 2, 1, 1);
 	
-    // entry    
+    // entry    Die Bourne Identität
     let (username_row, username_entry) = create_entry::create_entry(&gettext!("Username:"), Some(&gettext!("Input Username")));
     let (password_row, password_entry) = create_entry::create_password_entry(&gettext!("Password:"), Some(&gettext!("Input Password")));
     
@@ -321,6 +321,20 @@ fn create_settings_page(stack: &Stack) -> GtkBox {
 	container.set_hexpand(true);
 	container.set_vexpand(true);
 	
+	// test run a command
+	let status = run_command(&["echo", "test apt update..."]);
+	match status {
+	    Ok(s) => println!("Ends with code: {}", s),
+        Err(e) => eprintln!("Error: {}", e),
+    }
+	
+	// test capture output of a command
+	match capture_command_output(&["date"]) {
+		Ok(out) => println!("The output was: {}", out.trim()),
+        Err(e) => eprintln!("Error during capture: {}", e),
+	}
+	
+	// stack switch to the standard dialogs
 	let stack_clone1 = stack.clone();
 	let btn_test_dialogs = create_special_button::create_button_icon_position(
 		"folder-templates-symbolic",
@@ -332,6 +346,25 @@ fn create_settings_page(stack: &Stack) -> GtkBox {
 	);
 	container.append(&btn_test_dialogs);
 	
+	// test the pkexec dialog
+	let btn_test_pkexec_dialog = create_special_button::create_button_icon_position(
+		"ephy-shield-safe-symbolic",
+		"Teste pkexec dialog",
+		Align::Center,
+		move |btn| {
+			if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+				command_pkexec_spinner(
+					window,
+					"ls /root && sleep 2",
+					"Test pkexec dilaog",
+					"Testing."
+				);
+			}
+		}
+	);
+	container.append(&btn_test_pkexec_dialog);
+		
+	// back to the homepage
 	let stack_clone = stack.clone();
 	let btn_back = create_special_button::create_button_icon_position(
 		"dialog-information-symbolic",
@@ -477,7 +510,28 @@ fn build_ui(app: &adw::Application) {
     language::init_language(language::LIB_DOMAIN, test_dir, false);
     
     // init style
-    use_adw_provider(ADW_CUSTOM_CSS);
+    //use_adw_provider(ADW_CUSTOM_CSS);
+    
+    // test using a config file
+    // set a config
+    if let Err(e) = set_config("atl_test", "theme", "dark") {
+        eprintln!("Error at saving: {}", e);
+    }
+    // get a config
+    match get_config("atl_test", "theme") {
+         Some(val) => println!("Found: {}", val),
+         None => println!("Key not found!"),
+    }   
+    
+    // get the app enviroment
+    const SEARCH_STRING: &str = "fastboot-assistant";
+	const SOURCES_DIR: &str = "/etc/apt/sources.list.d";
+	let current_env = check_application_environment(SEARCH_STRING, SOURCES_DIR);   
+	match current_env {
+       AppEnvironment::Flatpak => println!("Action for Flatpak"),
+       AppEnvironment::Ppa => println!("Action for PPA"),
+       _ => println!("Other enviroment"),
+    }
     
     // add a toolbar
     let toolbar_view = ToolbarView::new();

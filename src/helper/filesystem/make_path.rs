@@ -1,3 +1,4 @@
+//! Creates a complete path by creating missing parent directories
 /**
 * make_path.rs
 *
@@ -5,33 +6,20 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-*
-* @brief Creates a complete path by creating missing parent directories
-*
-* Usage:
-* fn main() {
-*    let target = "/tmp/atlantis/config/settings.toml";
-*    if let Err(e) = make_path_dirname(target) {
-*        eprintln!("Fehler: {}", e);
-*    } else {
-*        println!("Parent-Verzeichnisse für {:?} sind bereit.", target);
-*    }
-*    create_directory("/tmp/atlantis/logs/sys");
-* }
-*
-* Notes: 
-* @param path: The path to be created.
-* @return 0 on success, -1 on error.
 */
 
 use std::path::Path;
 use std::io;
 use std::fs;
 
-/**
-* @brief Create missing parent directories
-*/
+/// Create missing parent directories
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    create_directory("/tmp/atlantis/logs/sys");
+/// }
+/// ```
 pub fn create_directory<P: AsRef<Path>>(path: P) {
     let p = path.as_ref();
     match fs::create_dir_all(p) {
@@ -40,16 +28,31 @@ pub fn create_directory<P: AsRef<Path>>(path: P) {
     }
 }
 
-/**
-* @brief Create a path and returns the success or not
-*/
+/// Create a path and returns the success or not
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    make_path("/tmp/atlantis/logs/sys");
+/// }
+/// ```
 pub fn make_path<P: AsRef<Path>>(path: P) -> io::Result<()> {
     fs::create_dir_all(path)
 }
 
-/**
-* @brief Create the parent directory from a file
-*/
+/// Create the parent directory from a file
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    let target = "/tmp/atlantis/config/settings.toml";
+///    if let Err(e) = make_path_dirname(target) {
+///        eprintln!("Error: {}", e);
+///    } else {
+///        println!("Parent-Directory {:?} are ready.", target);
+///    }
+/// }
+/// ```
 pub fn make_path_dirname<P: AsRef<Path>>(filepath: P) -> io::Result<()> {
     let path = filepath.as_ref();
     

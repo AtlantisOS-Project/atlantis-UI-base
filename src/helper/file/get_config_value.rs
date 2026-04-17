@@ -1,3 +1,4 @@
+//! Function to get a value from a config file
 /**
 * get_config_value.rs
 *
@@ -5,27 +6,25 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief This get the all values from a config file
-* 
-* Usage:
-* fn main() {
-*    let conf_file = "config.conf";
-*    if let Some(update_type) = get_config_value(conf_file, "UPDATE_TYPE") {
-*        println!("Update Type: {}", update_type);
-*    } else {
-*        println!("Value not found.");
-*    }
-* }
 */
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-/** 
-* @brief Function that get values from config files
-*/
+/// Function that get values from config files (file.conf)
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    let conf_file = "config.conf";
+///    if let Some(update_type) = get_config_value(conf_file, "UPDATE_TYPE") {
+///        println!("Update Type: {}", update_type);
+///    } else {
+///        println!("Value not found.");
+///    }
+/// }
+/// ```
 pub fn get_config_value<P: AsRef<Path>>(filename: P, key: &str) -> Option<String> {
     let path = filename.as_ref();
 

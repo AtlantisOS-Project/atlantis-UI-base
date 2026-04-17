@@ -1,27 +1,27 @@
+//! Function expand '~' to $HOME
 /**
- * search_file_directory.rs
+ * expand_path.rs
  *
  * (C) Copyright 2026 AtlantisOS Project
  * by @NachtsternBuild
  *
  * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * @brief Expand '~' to $HOME
- *
- * fn main() {
- *   let local_conf = "~/config/settings.toml";
- *   let expanded = expand_path(local_conf);  
- *   println!("Original: {}", local_conf);
- *   println!("Expanded: {:?}", expanded);
- * }
  */
 
 use std::env;
 use std::path::{Path, PathBuf};
 
-/**
- * @brief Expand '~' to $HOME
- */
+/// Expand '~' to $HOME
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///   let local_conf = "~/config/settings.toml";
+///   let expanded = expand_path(local_conf);  
+///   println!("Original: {}", local_conf);
+///   println!("Expanded: {:?}", expanded);
+/// }
+/// ```
 pub fn expand_path<P: AsRef<Path>>(path: P) -> PathBuf {
     let p = path.as_ref();
 

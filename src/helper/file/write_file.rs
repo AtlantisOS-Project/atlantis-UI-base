@@ -1,3 +1,4 @@
+//! Function that write a file
 /**
 * write_file.rs
 *
@@ -11,11 +12,18 @@ use directories::UserDirs;
 use std::fs;
 use std::path::PathBuf;
 
-/**
-* @brief Function that write a file
-* None = Home as Base
-* Some = define a other base
-*/
+/// Function that write a file
+/// ### Note:
+/// - None = Home as Base
+/// - Some = define a other base
+///
+/// ### Usage:
+///
+/// ```rust
+/// fn main {
+/// 	let create_file = write_file("rsyslog.conf", &content, Some(PathBuf::from("/")), &["etc"]);
+/// }
+/// ```
 pub fn write_file(filename: &str, content: &str, base_path: Option<PathBuf>, path_list: &[&str]) -> std::io::Result<()> {
 	// create base path
 	let mut full_path = match base_path {

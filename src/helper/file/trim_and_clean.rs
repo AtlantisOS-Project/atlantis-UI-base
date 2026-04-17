@@ -1,3 +1,4 @@
+//! Removes leading and trailing spaces/quotation marks from a string
 /**
 * trim_and_clean.rs
 *
@@ -5,21 +6,19 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief Removes leading and trailing spaces/quotation marks from a string
-* 
-* Usage:
-* fn main() {
-*    let input = "  \"Hello AtlantisOS\"  ";
-*    let cleaned = trim_and_clean(input);
-*    println!("Input: |{}|", input);
-*    println!("Output: |{}|", cleaned);
-*}
 */
 
-/**
- * @brief Removes leading and trailing spaces/quotation marks from a string
- */
+/// Removes leading and trailing spaces/quotation marks from a string
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    let input = "  \"Hello AtlantisOS\"  ";
+///    let cleaned = trim_and_clean(input);
+///    println!("Input: |{}|", input);
+///    println!("Output: |{}|", cleaned);
+/// }
+/// ```
 pub fn trim_and_clean(s: &str) -> &str {
     // remove empty space
     let mut trimmed = s.trim();

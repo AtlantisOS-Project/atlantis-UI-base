@@ -1,3 +1,4 @@
+//! Provides gettext binding and translation setup
 /**
 * language.rs
 *
@@ -5,8 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Provides gettext binding and translation setup
 */
 
 use gettextrs::{bind_textdomain_codeset, bindtextdomain, setlocale, textdomain, LocaleCategory};
@@ -15,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 
-// Die Domain, die wir in der build.rs gesetzt haben
+// get the domain from the build.rs
 pub const LIB_DOMAIN: &str = env!("LIB_DOMAIN");
 
 lazy_static! {
@@ -37,9 +36,16 @@ pub fn get_language_dir() -> PathBuf {
     CURRENT_LOCALEDIR.lock().unwrap().clone()
 }
 
-/**
-* @brief Init the gettext system 
-*/
+/// Init the gettext system
+/// ### Notes:
+/// - The domain for the app control comes from build.rs
+///
+/// ### Usage:
+///
+/// ```rust
+/// let test_dir = env!("COMPILED_LOCALE_DIR");
+/// language::init_language(language::LIB_DOMAIN, test_dir, false);
+/// ```
 pub fn init_language(domain: &str, default_dir: &str, debug_lang: bool) {
     // for debugging
     if debug_lang {

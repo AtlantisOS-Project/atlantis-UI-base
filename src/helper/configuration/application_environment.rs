@@ -1,3 +1,4 @@
+//! Functions to get the execution enviroment
 /**
 * application_environment.rs
 *
@@ -5,26 +6,16 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* fn main() {
-*	const SEARCH_STRING: &str = "fastboot-assistant";
-*	const SOURCES_DIR: &str = "/etc/apt/sources.list.d";
-*   let current_env = check_application_environment()    
-*   match current_env {
-*       AppEnvironment::Flatpak => println!("Aktion für Flatpak"),
-*       AppEnvironment::Ppa => println!("Aktion für PPA"),
-*       _ => println!("Andere Umgebung"),
-*    }
-* }
 */
 
-use std::fs;
 use std::path::Path;
 use std::process;
 use std::env;
+use crate::helper::filesystem::search_string_name::search_string_file;
 
-// define the posible running env
+/// Define the posible running enviroment
+/// ### Note:
+/// - Typedefinition of the return type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppEnvironment {
     Flatpak,
@@ -34,27 +25,13 @@ pub enum AppEnvironment {
     Unknown,
 }
 
-// helper that search for a string in a filename in a directory
-fn has_ppa_file(directory: &str, search: &str) -> Result<bool, std::io::Error> {
-    let path = Path::new(directory);
-    if !path.exists() {
-        return Ok(false);
-    }
-
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        if let Some(name) = entry.file_name().to_str() {
-            if name.contains(search) {
-                return Ok(true);
-            }
-        }
-    }
-    Ok(false)
-}
-
-/**
-* @brief Function that test the execution env
-*/
+/// Function that test the execution enviroment
+/// ### Usage:
+///
+/// ```rust
+/// let env_str = get_execution_environment();
+/// println!("The app runs in the environment: **{}**", env_str);
+/// ``` 
 pub fn get_execution_environment() -> String {
     // check for flatpak
     if Path::new("/.flatpak-info").exists() {
@@ -70,9 +47,20 @@ pub fn get_execution_environment() -> String {
     return "native".to_string()
 }
 
-/**
-* @brief Function that run the execution environment
-*/
+/// ## Function that run the execution environment
+/// ### Usage:
+///
+/// ```
+/// fn main() {
+///	  const SEARCH_STRING: &str = "fastboot-assistant";
+///	  const SOURCES_DIR: &str = "/etc/apt/sources.list.d";
+///   let current_env = check_application_environment(SEARCH_STRING, SOURCES_DIR);    
+///   match current_env {
+///       AppEnvironment::Flatpak => println!("Action for Flatpak"),
+///       AppEnvironment::Ppa => println!("Action for PPA"),
+///       _ => println!("Other enviroment"),
+///    }
+/// }
 pub fn check_application_environment(search_string: &str, source_dir: &str) -> AppEnvironment {
     let env_str = get_execution_environment();
     println!("The app runs in the environment: **{}**", env_str);
@@ -83,7 +71,7 @@ pub fn check_application_environment(search_string: &str, source_dir: &str) -> A
         _ => {
             // PPA/DEB logic
             println!("Running as PPA/DEB");
-            match has_ppa_file(source_dir, search_string) {
+            match search_string_file(source_dir, search_string) {
                 Ok(true) => AppEnvironment::Ppa,
                 Ok(false) => {
                     println!("Running local DEB package.");

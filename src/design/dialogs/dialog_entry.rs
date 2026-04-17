@@ -1,3 +1,4 @@
+//! Show a GTK4 dialog with Entry
 /**
 * dialogs_entry.rs
 *
@@ -5,31 +6,32 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief Dialog with spinner/progress bar for AtlantisOS
-*
-* Usage:
-* let btn = gtk4::Button::with_label("Input?");
-* btn.connect_clicked(move |b| {
-*    show_entry_dialog(
-*        b,
-*        "Change Name",
-*        "Add new name",
-*        "Save",
-*        "Exit",
-*        "Username:",
-*        "z.B. Test",
-*        Box::new(|name| {
-*            println!("Username {}", name);
-*        }),
-*    );
-* });
 */
 
 use adw::prelude::*;
 use adw::{ActionRow, Dialog, HeaderBar, ToolbarView};
 use gtk4::{Box as GtkBox, Button, Entry, Label, Orientation};
 
+/// Show a Dialog with Entry
+/// ### Usage:
+/// 
+/// ```rust
+/// let btn = gtk4::Button::with_label("Input?");
+/// btn.connect_clicked(move |b| {
+///    show_entry_dialog(
+///        b,
+///        "Change Name",
+///        "Add new name",
+///        "Save",
+///        "Exit",
+///        "Username:",
+///        "e.g. Test",
+///        Box::new(|name| {
+///            println!("Username {}", name);
+///        }),
+///    );
+/// });
+/// ```
 pub fn show_entry_dialog<F>(
     parent: &impl IsA<gtk4::Widget>,
     title: &str,

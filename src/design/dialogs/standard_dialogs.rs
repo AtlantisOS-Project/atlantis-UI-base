@@ -1,3 +1,4 @@
+//! Some predefined dialogs based on show_alert_dialog
 /**
 * standard_dialogs.rs
 *
@@ -5,8 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief Multiple dialogs for special operations
 */
 
 use adw::prelude::*;
@@ -14,7 +13,7 @@ use gtk4::Widget;
 use crate::design::dialogs::dialog::show_alert_dialog;
 use crate::gettext;
 
-// show dialog with standard title
+/// Show dialog with standard title
 pub fn show_info_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str
@@ -27,7 +26,7 @@ pub fn show_info_dialog(
     );
 }
 
-// show dialog with individual text button
+/// Show dialog with individual text button
 pub fn show_info_button_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str, 
@@ -41,7 +40,7 @@ pub fn show_info_button_dialog(
     );
 }
 
-// show dialog with individual title and standard button
+/// Show dialog with individual title and standard button
 pub fn show_dialog_title(
 	parent: &impl IsA<Widget>, 
 	title: &str, 
@@ -55,7 +54,7 @@ pub fn show_dialog_title(
     );
 }
 
-// show standard error dialog
+/// Show standard error dialog
 pub fn show_error_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str
@@ -68,7 +67,7 @@ pub fn show_error_dialog(
     );
 }
 
-// show error dialog with special button
+/// Show error dialog with special button
 pub fn show_error_button_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str, 
@@ -82,7 +81,7 @@ pub fn show_error_button_dialog(
     );
 }
 
-// show a error dialog with extra title
+/// Show a error dialog with extra title
 pub fn show_error_title_dialog(
 	parent: &impl IsA<Widget>, 
 	title: &str, 
@@ -97,7 +96,7 @@ pub fn show_error_title_dialog(
     );
 }
 
-// show a error dialog with title and spcial button
+/// Show a error dialog with title and spcial button
 pub fn show_error_title_button_dialog(
     parent: &impl IsA<Widget>, 
     title: &str, 

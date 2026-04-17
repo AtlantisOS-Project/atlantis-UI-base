@@ -1,3 +1,4 @@
+//! Function to add a line at the end of a file
 /**
 * add_line_file.rs
 *
@@ -11,17 +12,26 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
 
-/**
-* @brief Function that add a special line at the end of a file
-*/
+/// Function that add a special line at the end of a file
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    let file_path = "test.txt";
+///    let new_line = "Some content";
+///    let create_backup = true;
+///    match add_line_file(&create_backup, file_path, new_line) {
+///        Ok(_) => println!("Success!"),
+///        Err(e) => eprintln!("Some errors: {}", e),
+///    }
+/// }
+/// ```
 pub fn add_line_file(create_backup: &bool, path: &str, line: &str) -> std::io::Result<()> {
 	if !Path::new(&path).exists() {
-		return Err(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("{} not found.", path),
-        ));
+		// create the file if it not exists
+		fs::write(path, line)?;
 	}
-	
+		
 	let mut content = String::new();
 	fs::File::open(path)?.read_to_string(&mut content)?;
 	

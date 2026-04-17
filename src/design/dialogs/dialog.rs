@@ -1,3 +1,4 @@
+//! Create a Libadwaita Alert dialog
 /**
 * dialog.rs
 *
@@ -24,9 +25,20 @@ use adw::prelude::*;
 use adw::{AlertDialog, ResponseAppearance};
 use gtk4::Widget;
 
-/**
-* @brief Show a new adw alert dialog
-*/
+/// Show a new adw alert dialog
+/// ### Usage:
+///
+/// ```rust
+/// let my_button = gtk4::Button::with_label("Click me");
+/// my_button.connect_clicked(move |btn| {
+///    show_alert_dialog(
+///        btn, 
+///        "System Update", 
+///        "New Update is there.", 
+///        "OK"
+///    );
+/// });
+/// ```
 pub fn show_alert_dialog(
     parent: &impl IsA<Widget>, 
     title: &str, 

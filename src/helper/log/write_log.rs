@@ -1,3 +1,4 @@
+//! Function to Log everything with Syslog
 /**
 * write_log.rs
 *
@@ -5,16 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* 
-* fn main() {
-*	 // init with app_name (LOCAL_DOMAIN)
-*	 // const LOCAL_DOMAIN: &str = "atlantis-ui";
-*    init_syslog("atlantis-ui").expect("Unable to initialize Syslog");
-*    log::info!("UI successful started");
-*    log::error!("Critical Error found!");
-* }
 */
 
 use syslog::{Facility, Formatter3164};
@@ -60,9 +51,19 @@ impl log::Log for SyslogLogger {
     fn flush(&self) {}
 }
 
-/**
-* @brief Function that init syslog logging
-*/
+/// Function that init syslog logging
+/// ### Note:
+/// - The logging require Syslog
+///
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    init_syslog("atlantis-ui").expect("Unable to initialize Syslog");
+///    log::info!("UI successful started");
+///    log::error!("Critical Error found!");
+/// }
+/// ``` 
 pub fn init_syslog(app_name: &str) -> Result<(), log::SetLoggerError> {
     let logger = SyslogLogger {
         app_name: app_name.to_string(),

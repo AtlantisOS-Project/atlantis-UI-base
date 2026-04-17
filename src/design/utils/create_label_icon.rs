@@ -1,3 +1,4 @@
+//! Function that create a label with icon
 /**
 * create_label_icon.rs
 *
@@ -20,9 +21,13 @@
 use gtk4::prelude::*;
 use gtk4::{Align, Box as GtkBox, Image, Label, Orientation};
 
-/**
-* @brief Function that create label with an icon
-*/
+/// Function that create label with an icon
+/// Usage:
+///
+/// ```rust
+/// let terminal_info = create_label_icon("utilities-terminal", "Open Terminal");
+/// vbox.append(&terminal_info);
+/// ```
 pub fn create_label_icon(icon_name: &str, label_text: &str) -> GtkBox {
     // standard align start
     create_label_icon_position(
@@ -32,9 +37,17 @@ pub fn create_label_icon(icon_name: &str, label_text: &str) -> GtkBox {
     )
 }
 
-/**
-* @brief Function that create a boc with icon label and special position
-*/
+/// Function that create a boc with icon label and special position
+/// Usage:
+///
+/// ```rust
+/// let centered_info = create_label_icon_position(
+///    "dialog-information", 
+///    "System ready", 
+///    gtk4::Align::Center
+/// );
+/// vbox.append(&centered_info);
+/// ```
 pub fn create_label_icon_position(
     icon_name: &str, 
     label_text: &str, 

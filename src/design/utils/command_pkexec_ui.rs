@@ -1,3 +1,4 @@
+//! Function show a spinner dialog, that run pkexec command
 /**
 * command_pkexec.rs
 *
@@ -10,7 +11,7 @@
 use crate::design::dialogs::dialogs_spinner::show_spinner_dialog;
 use crate::design::dialogs::dialogs_spinner::IndicatorType;
 
-// run pkexec command with spinner
+/// Run pkexec command with spinner
 pub fn command_pkexec_spinner(
     parent: &adw::ApplicationWindow,
     command: &str,
@@ -21,7 +22,7 @@ pub fn command_pkexec_spinner(
     show_spinner_dialog(parent, title, text, vec![full_command], IndicatorType::Spinner);
 }
 
-// run pkexec commands with spinner
+/// Run pkexec commands with spinner
 pub fn commands_pkexec_spinner(
     parent: &adw::ApplicationWindow,
     commands: &str,
@@ -32,7 +33,7 @@ pub fn commands_pkexec_spinner(
     show_spinner_dialog(parent, title, text, vec![full_command], IndicatorType::Spinner);
 }
 
-// run pkexec command with progressbar
+/// Run pkexec command with progressbar
 pub fn command_pkexec_progressbar(
     parent: &adw::ApplicationWindow,
     command: &str,
@@ -43,7 +44,7 @@ pub fn command_pkexec_progressbar(
     show_spinner_dialog(parent, title, text, vec![full_command], IndicatorType::ProgressBar);
 }
 
-// run pkexec commands with progressbar
+/// Run pkexec commands with progressbar
 pub fn commands_pkexec_progressbar(
     parent: &adw::ApplicationWindow,
     commands: &str,

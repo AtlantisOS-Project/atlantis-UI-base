@@ -1,3 +1,4 @@
+//! Functions to delete files in a directory
 /**
 * delete_files.rs
 *
@@ -5,14 +6,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief Delete a file in a direector
-* @brief Delete a full path with parents
-*
-* Notes:
-* Warning: This code deletes an entire path until it finds a stop point.
-* Warning: If no stop point is defined, files and directories that should not be deleted will be deleted.
-* Warning: Never use this code to delete foreign or non-program directories.
 */
 
 use std::fs;
@@ -89,10 +82,17 @@ fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
     false
 }
 
-/**
-* @brief Function that remove directory
-* Note: Delete only the file
-*/
+/// Function that remove directory
+/// ### Notes: 
+/// - **Delete only the file**
+///
+/// ### Usage:
+/// 
+/// ```rust
+/// fn main {
+/// let test_file = "/tmp/test_file_path/test.txt";
+/// 	delete_files_in_dir(test_file);
+/// }
 pub fn delete_files_in_dir(path: &Path) {
     let entries = match fs::read_dir(path) {
         Ok(e) => e,
@@ -116,9 +116,20 @@ pub fn delete_files_in_dir(path: &Path) {
     }
 }
 
-/**
-* @brief Function that remove a file and empty parent directories too
-*/
+/// Function that remove a file and empty parent directories too
+/// ### Notes:
+/// - **Warning:** This code deletes an entire path until it finds a stop point.
+/// - **Warning:** If no stop point is defined, files and directories that should not be deleted will be deleted.
+/// - **Warning:** Never use this code to delete foreign or non-program directories.
+///
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    let base_path = "temp_data/projects/old_project/cache";
+///	   let file_path = format!("{}/temp_log.txt", base_path);
+///    delete_files::delete_files_with_parents(base_path);
+/// }
 pub fn delete_files_and_parents(path: &Path, stop_dir: &Option<PathBuf>) {
     if let Some(stop) = stop_dir {
         if path == stop { 
@@ -161,9 +172,21 @@ pub fn delete_files_and_parents(path: &Path, stop_dir: &Option<PathBuf>) {
     }
 }
 
-/**
-* @brief Wrapper with securtiy warnings 
-*/
+/// Function that remove a file and empty parent directories too
+/// ### Notes:
+/// - **Warning:** This code deletes an entire path until it finds a stop point.
+/// - **Warning:** If no stop point is defined, files and directories that should not be deleted will be deleted.
+/// - **Warning:** Never use this code to delete foreign or non-program directories.
+/// - **This is the wrapper with security warnings**
+///
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    let base_path = "temp_data/projects/old_project/cache";
+///	   let file_path = format!("{}/temp_log.txt", base_path);
+///    delete_files::delete_files_with_parent(base_path);
+/// }
 pub fn delete_files_with_parent(path_str: &str) {
     println!("[WARN] Warning: This code deletes an entire path until it finds a stop point.");
     

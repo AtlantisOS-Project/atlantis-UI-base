@@ -1,3 +1,4 @@
+//! Check if a command exists
 /**
 * command_exists.c
 *
@@ -5,17 +6,20 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* if (command_exists("cd") != 0) {}
 */
+
 
 use std::env;
 use std::path::Path;
 
-/**
-* @brief Check if command exsists
-*/
+/// Command exists
+/// ### Usage:
+///
+/// ```rust
+/// if command_exists_native("cd") {
+/// 	println!("cd exists");
+/// }
+/// ```
 pub fn command_exists_native(command: &str) -> bool {
     // check if the path is absolute
     if Path::new(command).is_absolute() {

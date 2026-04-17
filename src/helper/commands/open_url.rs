@@ -1,3 +1,4 @@
+//! Open a URL in the default browser
 /**
  * open_url.rs
  *
@@ -5,15 +6,17 @@
  * by @NachtsternBuild
  *
  * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * Open a URL on the system
- *
- * Usage:
- * fn main() {
- *  let target = "google.com";  
- *  open_url(target);
- * }
  */
+
+/// Open a URL in the browser
+/// ### Usage:
+///
+/// ```rust	
+/// fn main() {
+///  let target = "google.com";  
+///  open_url(target);
+/// }
+/// ```
 pub fn open_url(url: &str) {
     // check if url is empty
     if url.is_empty() {

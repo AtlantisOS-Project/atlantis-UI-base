@@ -1,3 +1,4 @@
+//! Functions to create special button
 /**
 * create_special_button.rs
 *
@@ -5,27 +6,12 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* // simple button
-* let btn = create_button("Save", |_| {
-*     println!("Save clicked");
-* });
-* // button with data from outside
-* let label_to_change = Label::new(Some("Hello"));
-* let btn_icon = create_button_icon(
-*    "document-save", 
-*    "Change", 
-*    glib::clone!(@weak label_to_change => move |_| {
-*        label_to_change.set_text("Text changed");
-*    })
-* );
 */
 
 use gtk4::prelude::*;
 use gtk4::{Align, Box as GtkBox, Button, Image, Label, Orientation};
 
-// create a button with label and callback
+/// Create a button with label and callback
 pub fn create_button<F>(label: &str, callback: F) -> Button 
 where 
     F: Fn(&Button) + 'static 
@@ -37,7 +23,7 @@ where
     button
 }
 
-// create a button with icon and label
+/// Create a button with icon and label
 pub fn create_button_icon<F>(icon_name: &str, label_text: &str, callback: F) -> Button
 where 
     F: Fn(&Button) + 'static
@@ -47,7 +33,7 @@ where
     button
 }
 
-// create a button with icon an dno callback
+/// Create a button with icon an dno callback
 pub fn create_button_icon_no_callback(icon_name: &str, label_text: &str) -> Button {
     let button = Button::new();
     button.add_css_class("pill");             // pill form
@@ -67,7 +53,7 @@ pub fn create_button_icon_no_callback(icon_name: &str, label_text: &str) -> Butt
     button
 }
 
-// create a button with two icons
+/// Create a button with two icons
 pub fn create_button_two_icon<F>(
     first_icon: Option<&str>, 
     second_icon: &str, 
@@ -97,7 +83,7 @@ where
     button
 }
 
-// create a button with icon and special position
+/// Create a button with icon and special position
 pub fn create_button_icon_position<F>(
     icon_name: &str, 
     label_text: &str, 

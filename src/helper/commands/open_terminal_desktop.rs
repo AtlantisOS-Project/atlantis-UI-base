@@ -1,3 +1,4 @@
+//! Open a terminal by the desktop
 /**
  * open_terminal_desktop.rs
  *
@@ -5,37 +6,26 @@
  * by @NachtsternBuild
  *
  * License: GNU GENERAL PUBLIC LICENSE Version 3
- *
- * @brief Run a command in a new terminal
- *
- * Usage:
- * fn main() {
- *   open_terminal_by_desktop("echo 'Hello Atlantis'; sleep 5");
- * }
- * 
- * Note:
- * default OS is linux
  */
 
 use std::env;
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
+use crate::prelude::command_exists_native;
 
-// check if the command already exists
-fn command_exists(cmd: &str) -> bool {
-    Command::new("sh")
-        .arg("-c")
-        .arg(format!("command -v {}", cmd))
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
-}
-
-/**
- * @brief Open a terminal and run in this terminal a command
- */
+/// Open a terminal and run in this terminal a command
+/// ### Notes:
+/// - This feature can be built for Linux, macOS, and Windows; the default is Linux. Other operating systems are not supported.
+/// - This feature supports WSL
+/// - The spawn_command() automatically receives the operating system type
+///
+/// ### Usage
+///
+/// ```rust
+/// fn main() {
+///   open_terminal_by_desktop("echo 'Hello Atlantis'; sleep 5");
+/// }
+/// ```
 pub fn open_terminal_by_desktop(function_command: &str) {
     if function_command.is_empty() {
         return;
@@ -103,7 +93,7 @@ fn spawn_terminal(func_cmd: &str) {
 
         let mut found = None;
         for (t, a) in fallbacks {
-            if command_exists(t) {
+            if command_exists_native(t) {
                 found = Some((t, a));
                 break;
             }

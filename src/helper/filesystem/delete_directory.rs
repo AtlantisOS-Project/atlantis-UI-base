@@ -1,3 +1,4 @@
+//! Remove a empty directory
 /**
 * delete_directory.rs
 *
@@ -5,22 +6,20 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief Rmeove a empty directory
-*
-* Usage:
-* fn main() {
-*    delete_directory("/tmp/test_dir");
-* }
 */
 
 use std::fs;
 use std::path::Path;
 use std::process;
 
-/** 
-* @brief Delete directroy
-*/
+/// Delete directroy
+/// ### Usage:
+///
+/// ```rust
+/// fn main() {
+///    delete_directory("/tmp/test_dir");
+/// }
+/// ```
 pub fn delete_directory<P: AsRef<Path>>(path: P) {
     let path_ref = path.as_ref();
 
