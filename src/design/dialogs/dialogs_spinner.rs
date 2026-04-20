@@ -15,6 +15,7 @@ use std::process::Command;
 use std::thread;
 use std::sync::mpsc;
 
+/// Define the indicator type for dialogs, i.e., whether to use an ADW spinner or a GTK progress bar.
 pub enum IndicatorType {
     Spinner,
     ProgressBar,

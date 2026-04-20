@@ -100,6 +100,9 @@ pub mod ui_prelude {
     				show_spinner_dialog,
     				IndicatorType,
     			},
+    			dialog_function::{
+    				show_task_dialog,
+    			},
     			standard_dialogs::{
     				show_info_dialog,
     				show_info_button_dialog,

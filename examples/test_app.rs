@@ -309,6 +309,45 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     });
     
 	grid.attach(&btn_login, 0, 5, 2, 1);
+	
+	// functions to test the a spinner/porgressbar dialog that run a function
+	fn test_function_dialog(val1: &str, val2: &str) -> bool {
+		let status = run_command(&["sleep", "5"]);
+		match status {
+	    	Ok(s) => println!("Ends with code: {}", s),
+        	Err(e) => eprintln!("Error: {}", e),
+    	}
+		println!("Value 1: {}", val1);
+		println!("Value 2: {}", val2);
+		true
+	}
+	
+	let test1 = "Content".to_string();
+	let test2 = "Other Content".to_string();
+	
+	let btn_test_function_dialog = create_special_button::create_button_icon_position(
+        "alacarte-symbolic",
+        "Test Dialog that run function",
+        Align::Center,
+        move |btn| {
+            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+                let p1 = test1.clone(); 
+                let p2 = test2.clone();
+
+                show_task_dialog(
+                    window, 
+                    "System Update",
+                    "Please wait...",
+                    IndicatorType::ProgressBar, // IndicatorType::Spinner
+                    move || { 
+                        test_function_dialog(&p1, &p2)
+                    }
+                );
+            }
+        }
+    );
+    grid.attach(&btn_test_function_dialog, 2, 3, 1, 1);
+	
     	
 	container.append(&grid);
 	container
