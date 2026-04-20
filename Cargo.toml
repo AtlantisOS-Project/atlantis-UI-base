@@ -1,6 +1,6 @@
 [package]
 name = "atlbase"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 description = "ATL UIBase is a modular GTK4 + Libadwaita 1.6 user interface library that simplifies the development of modern graphical applications in Rust."
