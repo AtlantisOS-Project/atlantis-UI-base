@@ -1,4 +1,7 @@
-//! Function that check a directory exists
+//! Simple checks for the existence of files and directories.
+//!
+//! This module provides lightweight utilities to determine whether a path 
+//! exists on the file system and whether it is of the expected type.
 /**
  * directory_exists.rs
  *
@@ -10,8 +13,15 @@
 
 use std::path::Path;
 
-/// Check if directory exists
-/// ### Usage:
+/// Checks whether a path exists and is a directory.
+///
+/// This function is more restrictive than a simple existence check, as it returns `false` 
+/// if the path exists but is a regular file.
+///
+/// # Arguments
+/// * `path` - The path to check (accepts `&str`, `String`, `PathBuf`).
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {
@@ -25,8 +35,15 @@ pub fn directory_exists<P: AsRef<Path>>(path: P) -> bool {
     p.exists() && p.is_dir()
 }
 
-/// Check if file exsists
-/// ### Usage:
+/// Checks whether a file or directory exists at the specified path.
+///
+/// Unlike `directory_exists`, this function only checks for 
+/// physical presence on the disk, regardless of file type.
+///
+/// # Arguments
+/// * `path` - The path to be checked.
+///
+/// # Usage:
 ///
 /// ```rust
 /// Usage:

@@ -1,4 +1,7 @@
-//! Function to get the $HOME path
+//! Centralized determination of the user's home directory.
+//!
+//! This module ensures that the path to the home directory ($HOME) 
+//! is available. 
 /**
 * home_dir.rs
 *
@@ -12,8 +15,21 @@ use std::env;
 use std::path::{PathBuf};
 use std::process;
 
-/// Function that get the path to $HOME or quit with error 
-/// #### Usage:
+/// Determines the path to the current user's home directory.
+///
+/// The function reads the `$HOME` environment variable. If this variable is not 
+/// set, an error message is displayed and the program terminates, 
+/// as safe operation cannot be guaranteed without this basic information.
+///
+/// # Return Value
+/// Returns a [PathBuf] containing the absolute path to the home directory.
+///
+/// # Error Handling
+/// If `$HOME` is not defined:
+/// - Output an error message with the prefix `[ERROR]` to `stderr`.
+/// - Terminate the process with exit code `1`.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {

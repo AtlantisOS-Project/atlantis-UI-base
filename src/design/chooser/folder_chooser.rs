@@ -1,4 +1,8 @@
-//! Function that create a folder chooser
+//! Abstraction for directory selection.
+//!
+//! This module encapsulates the logic of the `gtk4::FileDialog` for selecting folders.
+//! It ensures that the selection process is asynchronous and that the UI
+//! does not block during this time.
 /**
 * folder_chooser.rs
 *
@@ -13,11 +17,13 @@ use gtk4::{FileDialog, Window, Button};
 use std::path::PathBuf;
 use crate::gettext;
 
+/// Type alias for functions that process a selected directory path.
 pub type FolderProcessorFunc = fn(PathBuf);
 
-/**
-* @brief Callback for closing the dialog
-*/
+/// Internal handler for the result of the directory selection.
+///
+/// This function evaluates the asynchronous result, extracts the system path,
+/// and passes it to the provided [FolderProcessorFunc].
 fn handle_folder_response(
     res: Result<gio::File, glib::Error>, 
     process_func: FolderProcessorFunc
@@ -34,8 +40,20 @@ fn handle_folder_response(
     }
 }
 
-/// Function for the folderchooser dialog
-/// ### Usage:
+/// Opens a dialog for selecting a directory.
+///
+/// Unlike the file selection dialog, this dialog allows only the selection
+/// of folders. It is displayed modally over the window of the button that called it.
+///
+/// # Arguments
+/// * `button` - The trigger for the dialog; used to determine the parent window.
+/// * `process_func` - The callback that is called with the [PathBuf] after a successful selection.
+///
+/// # Functionality
+/// Internally uses `FileDialog::select_folder`. The result is processed asynchronously, 
+/// so that the application can continue to respond to user interactions.
+///
+/// # Usage:
 ///
 /// ```rust
 /// let folder_btn = Button::with_label("Folder?:");

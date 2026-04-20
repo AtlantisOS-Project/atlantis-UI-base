@@ -1,4 +1,7 @@
-//! Show a Libadwaita About Dialog
+//! Provides the standardized "About" dialog.
+//!
+//! This module uses `adw::AboutDialog` to display consistent metadata about the application,
+//! licensing, and contributors.
 /**
 * about_dialog.rs
 *
@@ -13,34 +16,59 @@ use adw::{AboutDialog};
 use gtk4::Widget;
 use gtk4::License;
 
-/**
-* @brief Structure for all informations in the about dialog
-*/
+/// Contains all metadata to be displayed in the “About” dialog.
+///
+/// This structure serves as a container for passing the various pieces of information
+/// to the [show_about_dialog] function in a clear and organized manner.
 #[derive(Debug, Clone)]
 pub struct AboutInfo {
+    /// Name of the app icon (from the icon theme or path)
     pub app_icon: String,
+    /// The display name of the application
     pub app_name: String,
+    /// Primary developer or organization
     pub developer_name: String,
+    /// Current program version
     pub version: String,
+    /// Version of the current release notes
     pub release_notes_version: String,
+    /// Brief summary of changes (Markup allowed)
     pub release_notes: String,
+    /// A brief description of the application
     pub comments: String,
+    /// Official website of the application
     pub website: String,
+    /// URL to the issue tracker (e.g., GitHub/GitLab Issues)
     pub issue_url: String,
+    /// Link to support resources
     pub support_url: String,
+    /// Copyright string (e.g., “© 2026 AtlantisOS Project”)
     pub copyright: String,
+    /// List of contributing developers
     pub developers: Vec<String>,
+    /// Graphic artists and designers
     pub artists: Vec<String>,
+    /// Link to online documentation
     pub documentation_url: String,
+    /// Information about fonts used and their licenses
     pub font_usage: String,
+    /// Special acknowledgments
     pub special_thanks: Vec<String>,
+    /// Credits for translators
     pub translator_credits: String,
 }
 
-/// Show adw dialog about
-/// ### Note:
-/// - Define the informations in the main program
-/// ### Usage:
+/// Opens a Libadwaita "About" dialog with the specified information.
+///
+/// The dialog is displayed modally relative to the `parent` widget (usually the main window).
+/// It automatically includes sections for legal information, contributors, and acknowledgments.
+///
+/// # Arguments
+///
+/// * `parent` - The widget from which the dialog is "presented".
+/// * `info` - An [AboutInfo] instance containing the data to be displayed.
+///
+/// # Usage:
 ///
 /// ```rust
 /// let info = AboutInfo {

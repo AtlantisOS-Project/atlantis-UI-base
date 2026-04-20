@@ -1,4 +1,8 @@
-//! Creates a complete path by creating missing parent directories
+//! Automated creation of directory structures.
+//!
+//! This module provides functions to ensure that paths exist. 
+//! It handles the recursive creation of parent directories, both for 
+//! pure directory paths and for paths that point to files.
 /**
 * make_path.rs
 *
@@ -12,8 +16,15 @@ use std::path::Path;
 use std::io;
 use std::fs;
 
-/// Create missing parent directories
-/// ### Usage:
+/// Creates a directory and all missing parent directories (recursively).
+///
+/// This function operates in “fire-and-forget” mode and logs success or 
+/// errors directly to the console.
+///
+/// # Arguments
+/// * `path` - The path to be created (accepts `&str`, `String`, `Path`, etc.).
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {
@@ -28,8 +39,15 @@ pub fn create_directory<P: AsRef<Path>>(path: P) {
     }
 }
 
-/// Create a path and returns the success or not
-/// ### Usage:
+/// Creates a path recursively and returns the result of the operation.
+///
+/// Unlike `create_directory`, there is no automatic logging here; 
+/// error handling is the responsibility of the caller.
+///
+/// # Return value
+/// An [io::Result<()>] that confirms the success of the operation or describes the IO error.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {
@@ -40,8 +58,15 @@ pub fn make_path<P: AsRef<Path>>(path: P) -> io::Result<()> {
     fs::create_dir_all(path)
 }
 
-/// Create the parent directory from a file
-/// ### Usage:
+/// Extracts the parent directory of a file path and creates it recursively.
+///
+/// This function is ideal when you have the path to a file (e.g., a config file) 
+/// and want to ensure that the folder where the file should be located exists.
+///
+/// # Arguments
+/// * `filepath` - The full path to the file.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {

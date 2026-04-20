@@ -1,4 +1,8 @@
-//! A dialog that run function
+//! Dialog-driven background processes.
+//!
+//! This module provides a convenient way to execute time-consuming operations
+//! in a background thread while displaying a 
+//! non-closable dialog with a progress bar to the user.
 /**
 * dialog_function.rs
 *
@@ -15,69 +19,95 @@ use std::thread;
 use std::sync::mpsc;
 use crate::design::dialogs::dialogs_spinner::IndicatorType;
 
-// Startet die übergebene Funktion in einem Hintergrund-Thread
+/// Runs a function in a dedicated background thread.
+///
+/// The function's result (`bool`) is returned to the
+/// UI's main loop via a channel.
 fn run_task_thread<F>(task: F, tx: mpsc::Sender<bool>) 
 where 
     F: FnOnce() -> bool + Send + 'static 
 {
     thread::spawn(move || {
         let success = task();
-        // Ergebnis an den Main-Loop senden
+        // return sucess to the main loop
         let _ = tx.send(success);
     });
 }
 
-/// Zeigt einen Dialog, während eine Rust-Funktion im Hintergrund läuft
+/// Displays a modal dialog while a Rust function runs in the background.
 ///
-/// ### Usage:
-/// #### Example with code in the call
+/// The dialog prevents user interactions with the main window until the 
+/// background task is complete. Once the task is finished,
+/// the dialog closes automatically.
+///
+/// # Arguments
+///
+/// * `parent` - The parent `adw::ApplicationWindow` to which the dialog is docked.
+/// * `title` - The dialog's title (displayed in bold within the content).
+/// * `message` - An explanatory text for the user.
+/// * `indicator` - The type of progress indicator ([IndicatorType::Spinner] or [IndicatorType::ProgressBar]).
+/// * `task` - A closure or function that runs in the background. Must be `Send`.
+///
+/// # Usage:
+/// #### Usage with an inline closure:
 /// ```rust
 /// button.connect_clicked(glib::clone!(@weak window => move |_| {
 ///    show_task_dialog(
 ///        &window,
-///        "Datenverarbeitung",
-///        "Berechne komplexe Daten...",
+///        "Some Dialog",
+///        "Complex data...",
 ///        IndicatorType::Spinner,
 ///        || {
-///            // Hier steht dein Rust-Code
-///            // Beispiel: Eine schwere Berechnung oder Datei-IO
 ///            std::thread::sleep(std::time::Duration::from_secs(3));
 ///            
-///            let ergebnis = 42; // Deine Logik hier
-///            println!("Berechnung fertig: {}", ergebnis);
+///            let solution = 42; 
+///            println!("Ready: {}", solution);
 ///
-///            true // Gibt Erfolg (true/false) zurück
+///            true 
 ///        }
 ///    );
 /// }));
 /// ```
 ///
-/// #### Example with function call
+/// #### Use with an existing function and variable capture:
 ///
 /// ```rust
-/// button.connect_clicked(glib::clone!(@weak window => move |_| {
-///    // Falls diese Variablen Strings oder Pfade sind:
-///    let p1 = partition1.clone(); 
-///    let p2 = partition2.clone();
-///    let img = image_name.clone();
+/// fn test_function_dialog(val1: &str, val2: &str) -> bool {
+///		let status = run_command(&["sleep", "5"]);
+///		match status {
+///	    	Ok(s) => println!("Ends with code: {}", s),
+///        	Err(e) => eprintln!("Error: {}", e),
+///    	}
+///		println!("Value 1: {}", val1);
+///		println!("Value 2: {}", val2);
+///		true
+///	}
+///	
+///	let test1 = "Content".to_string();
+///	let test2 = "Other Content".to_string();
+///	
+///	let btn_test_function_dialog = create_special_button::create_button_icon_position(
+///        "alacarte-symbolic",
+///        "Test Dialog that run function",
+///        Align::Center,
+///        move |btn| {
+///            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+///                let p1 = test1.clone(); 
+///                let p2 = test2.clone();
 ///
-///    show_task_dialog(
-///        &window,
-///        "System wird geflasht",
-///        "Bitte das Gerät nicht ausschalten...",
-///        IndicatorType::ProgressBar,
-///        move || { // <--- WICHTIG: 'move' für den Thread-Transfer
-///            // Hier wird die eigentliche Arbeit erledigt
-///            let result = flash_image(p1, p2, img, optional_flags);
-///            
-///            // Wenn flash_image() z.B. einen Result zurückgibt, 
-///            // wandeln wir das in einen bool für den Dialog um:
-///            result.is_ok() 
+///                show_task_dialog(
+///                    window, 
+///                    "System Update",
+///                    "Please wait...",
+///                    IndicatorType::ProgressBar, // IndicatorType::Spinner
+///                    move || { 
+///                        test_function_dialog(&p1, &p2)
+///                    }
+///                );
+///            }
 ///        }
 ///    );
-/// }));
 /// ```
-
 pub fn show_task_dialog<F>(
     parent: &adw::ApplicationWindow,
     title: &str,
@@ -87,7 +117,7 @@ pub fn show_task_dialog<F>(
 ) where 
     F: FnOnce() -> bool + Send + 'static 
 {
-    // Dialog Erstellung
+    // create the dialog
     let dialog = Dialog::builder()
         .title(title)
         .content_width(400)
@@ -141,7 +171,7 @@ pub fn show_task_dialog<F>(
     
     let (tx, rx) = mpsc::channel::<bool>();
 
-    // Starte die übergebene Rust-Funktion
+    // start the function
     run_task_thread(task, tx);
 
     let dialog_to_close = dialog.clone();

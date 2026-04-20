@@ -1,4 +1,8 @@
-//! Functions to create special button
+//! Specialized buttons for the AtlantisOS user interface.
+//!
+//! This module provides tools for creating buttons that already 
+//! comply with the AtlantisOS design guide (pill shape, accent colors) and 
+//! support complex layouts such as icons.
 /**
 * create_special_button.rs
 *
@@ -11,7 +15,13 @@
 use gtk4::prelude::*;
 use gtk4::{Align, Box as GtkBox, Button, Image, Label, Orientation};
 
-/// Create a button with label and callback
+/// Creates a standard button with text and a callback.
+///
+/// The button automatically receives the CSS classes `pill` and `suggested-action`.
+///
+/// # Arguments
+/// * `label` - The text on the button.
+/// * `callback` - The function that is executed when the button is clicked.
 pub fn create_button<F>(label: &str, callback: F) -> Button 
 where 
     F: Fn(&Button) + 'static 
@@ -23,7 +33,12 @@ where
     button
 }
 
-/// Create a button with icon and label
+/// Creates a button with an icon and text without an initial callback.
+///
+/// Useful when the callback is to be assigned later or conditionally.
+///
+/// # Return value
+/// A [gtk4::Button] in pill design with a [GtkBox] as a child element.
 pub fn create_button_icon<F>(icon_name: &str, label_text: &str, callback: F) -> Button
 where 
     F: Fn(&Button) + 'static
@@ -33,7 +48,15 @@ where
     button
 }
 
-/// Create a button with icon an dno callback
+/// Creates a button with up to two icons, text, and a callback.
+///
+/// Allows the combination of two symbols (e.g., status icon + arrow) 
+/// before the label text.
+///
+/// # Arguments
+/// * `first_icon` - An optional first icon (`Some(“name”)` or `None`).
+/// * `second_icon` - The primary icon.
+/// * `label_text` - The button text.
 pub fn create_button_icon_no_callback(icon_name: &str, label_text: &str) -> Button {
     let button = Button::new();
     button.add_css_class("pill");             // pill form
@@ -53,7 +76,15 @@ pub fn create_button_icon_no_callback(icon_name: &str, label_text: &str) -> Butt
     button
 }
 
-/// Create a button with two icons
+/// Creates a button with up to two icons, text, and a callback.
+///
+/// Allows the combination of two symbols (e.g., status icon + arrow) 
+/// before the label text.
+///
+/// # Arguments
+/// * `first_icon` - An optional first icon (`Some(“name”)` or `None`).
+/// * `second_icon` - The primary icon.
+/// * `label_text` - The button text.
 pub fn create_button_two_icon<F>(
     first_icon: Option<&str>, 
     second_icon: &str, 
@@ -83,7 +114,13 @@ where
     button
 }
 
-/// Create a button with icon and special position
+/// Creates an icon button with specific content alignment.
+///
+/// Allows you to align the content (icon + text) within the button,
+/// for example, centered or to the left.
+///
+/// # Arguments
+/// * `alignment` - The horizontal alignment of the content ([gtk4::Align]).
 pub fn create_button_icon_position<F>(
     icon_name: &str, 
     label_text: &str, 

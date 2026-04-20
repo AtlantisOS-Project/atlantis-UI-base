@@ -1,4 +1,7 @@
-//! Show a GTK4 dialog with Entry
+//! A modern Libadwaita input dialog for text queries.
+//!
+//! This module provides a standardized dialog with a text field
+//! that integrates seamlessly into the AtlantisOS design language.
 /**
 * dialogs_entry.rs
 *
@@ -12,8 +15,32 @@ use adw::prelude::*;
 use adw::{ActionRow, Dialog, HeaderBar, ToolbarView};
 use gtk4::{Box as GtkBox, Button, Entry, Label, Orientation};
 
-/// Show a Dialog with Entry
-/// ### Usage:
+/// Creates and displays a dialog with an input field (`Entry`).
+///
+/// The dialog uses an `adw::ToolbarView` for a consistent look and feel
+/// and employs the modern "pill" design for buttons and input fields.
+///
+/// # How it works
+/// - Confirmation is performed via the `ok_label` button or the Enter key.
+/// - Upon success, the `on_submit` callback is called with the current text content.
+/// - The dialog closes automatically after clicking "Cancel" or "Save".
+///
+/// # Arguments
+///
+/// * `parent` - The widget to which the dialog is attached.
+/// * `title` - The title in the dialog header.
+/// * `body` - An explanatory text above the input field.
+/// * `ok_label` - Text for the confirmation button (e.g., "Save").
+/// * `cancel_label` - Text for the cancel button (e.g., "Cancel").
+/// * `entry_label` - Label of the `ActionRow` containing the input field.
+/// * `placeholder` - Gray placeholder text within the empty text field.
+/// * `on_submit` - A callback closure that processes the entered `String`.
+///
+/// # Return Value
+///
+/// Returns the [adw::Dialog] instance in case further manipulation (e.g., signals) is required.
+///
+/// # Usage:
 /// 
 /// ```rust
 /// let btn = gtk4::Button::with_label("Input?");

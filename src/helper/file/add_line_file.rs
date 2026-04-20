@@ -1,4 +1,7 @@
-//! Function to add a line at the end of a file
+//! Utility for safely appending to text files.
+//!
+//! This module allows you to add a line to the end of a file, including 
+//! duplicate checking and optional backup creation.
 /**
 * add_line_file.rs
 *
@@ -12,8 +15,24 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
 
-/// Function that add a special line at the end of a file
-/// ### Usage:
+/// Adds a specific line to the end of a file if it does not yet exist.
+///
+/// This function is particularly useful for configuration files where 
+/// entries must not appear more than once.
+///
+/// # How it works
+/// 1. **Existence check:** If the file does not exist, it is created with the line.
+/// 2. **Duplicate check:** The file is read. If the line (trimmed) already 
+///    exists, the operation is aborted to avoid redundancy.
+/// 3. **Backup:** If `create_backup` is true, a `.bak` copy is created.
+/// 4. **Write:** The line is appended to the file in append mode.
+///
+/// # Arguments
+/// * `create_backup` - Whether to create a backup copy of the original file.
+/// * `path` - The path to the destination file.
+/// * `line` - The text content to be added.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {

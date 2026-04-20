@@ -1,4 +1,8 @@
-//! Function to read and write a TOML configuration file
+//! Management of TOML configuration files for AtlantisOS applications.
+//!
+//! This module uses the `confy` and `serde` crates to 
+//! persistently store and read simple key-value pairs 
+//! in the user's default configuration directory (e.g., `~/.config/`).
 /**
 * toml_config.rs
 *
@@ -11,14 +15,29 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
-/// Structure the strings for saving configurations
+/// Data structure for AtlantisOS configurations.
+///
+/// Uses a [HashMap] to flexibly store various configuration keys 
+/// and their values as strings.
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct AtlConfigs {
+	/// Internal storage for key-value pairs.
     data: HashMap<String, String>,
 }
 
-/// Function that set the key-value pair and save the file
-/// ### Usage:
+/// Reads a value from an application's configuration file.
+///
+/// Loads the configuration file based on the application name. If the file 
+/// does not exist, a default empty structure is used.
+///
+/// # Arguments
+/// * `app_name` - The name of the application (determines the file name/directory).
+/// * `key` - The name of the configuration key being searched for.
+///
+/// # Return Value
+/// Returns `Some(String)` if the key exists, otherwise `None`.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {
@@ -33,8 +52,22 @@ pub fn get_config(app_name: &str, key: &str) -> Option<String> {
     cfg.data.get(key).cloned()
 }
 
-/// Function that read a value to a key from the configuration file
-/// ### Usage:
+/// Saves or updates a value in the configuration file.
+///
+/// First loads the current state of the file, adds the new key-value pair 
+/// or overwrites an existing one, and then writes the entire structure 
+/// back to the hard drive.
+///
+/// # Arguments
+/// * `app_name` - The name of the application (determines the storage location at `~/.config/app_name`).
+/// * `key` - The identifier for the setting.
+/// * `value` - The value to be saved.
+///
+/// # Error Handling
+/// Returns a [confy::ConfyError] if file permissions are missing or 
+/// serialization fails.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {

@@ -1,4 +1,8 @@
-//! Functions to get the execution enviroment
+//! Identification of the application runtime environment.
+//!
+//! This module detects whether the application is running as an isolated package (Flatpak, Snap) 
+//! or as a native system package (PPA, local DEB). This is 
+//! essential for correctly adjusting paths and permissions at runtime.
 /**
 * application_environment.rs
 *
@@ -13,20 +17,28 @@ use std::process;
 use std::env;
 use crate::helper::filesystem::search_string_name::search_string_file;
 
-/// Define the posible running enviroment
-/// ### Note:
-/// - Typedefinition of the return type
+/// Defines the possible runtime environments for the application.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppEnvironment {
+    /// Runs within a Flatpak sandbox.
     Flatpak,
+    /// Runs as a Snap package.
     Snap,
+    /// Installation via a registered PPA (Personal Package Archive).
     Ppa,
+    /// Installation as a manually installed, local DEB package.
     LocalDeb,
+    /// Unknown or unidentifiable environment.
     Unknown,
 }
 
-/// Function that test the execution enviroment
-/// ### Usage:
+/// Retrieves the name of the current runtime environment as a string.
+///
+/// This function performs simple file system and environment variable checks
+/// to distinguish between the most common sandbox formats.
+///
+/// # Return value
+/// Returns "flatpak", "snap", or "native".
 ///
 /// ```rust
 /// let env_str = get_execution_environment();
@@ -47,8 +59,24 @@ pub fn get_execution_environment() -> String {
     return "native".to_string()
 }
 
-/// ## Function that run the execution environment
-/// ### Usage:
+/// Analyzes the application's detailed installation source.
+///
+/// If the application runs natively, this function searches the APT source lists
+/// to distinguish between a PPA source and a locally installed package.
+///
+/// # Arguments
+/// * `search_string` - The identifier of the application in the sources lists (e.g., “fastboot-assistant”).
+/// * `source_dir` - The directory of the APT lists (usually `/etc/apt/sources.list.d`).
+///
+/// # Return Value
+/// Returns an instance of [AppEnvironment].
+///
+/// # Error Handling
+/// If access to the system directories fails, an error message
+/// is printed and the process terminates with status `1`, since the environment is critical
+/// for the program's subsequent execution.
+///
+/// # Usage:
 ///
 /// ```
 /// fn main() {

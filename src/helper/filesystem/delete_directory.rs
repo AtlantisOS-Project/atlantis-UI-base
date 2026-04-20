@@ -1,4 +1,8 @@
-//! Remove a empty directory
+//! Utility for removing empty directories.
+//!
+//! This module provides a simple interface for deleting directories. 
+//! Since it uses `std::fs::remove_dir`, the operation will fail as a safety measure 
+//! if the directory is not empty.
 /**
 * delete_directory.rs
 *
@@ -12,8 +16,22 @@ use std::fs;
 use std::path::Path;
 use std::process;
 
-/// Delete directroy
-/// ### Usage:
+/// Deletes a directory from the file system.
+///
+/// This function is designed as a "simple" delete command. It **does not** 
+/// delete contents recursively. If the folder contains files or subfolders, an 
+/// error is returned and the program terminates.
+///
+/// # Safety & Error Handling
+/// - **Program Termination:** In case of an error (e.g., missing permissions or 
+///   non-empty folder), the function outputs an error message to `stderr` 
+///   and terminates the entire process with status `1`.
+/// - **Generic paths:** Accepts anything that implements `AsRef<Path>` (strings, PathBuf, etc.).
+///
+/// # Arguments
+/// * `path` - The path to the directory to be deleted.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {
@@ -32,6 +50,7 @@ pub fn delete_directory<P: AsRef<Path>>(path: P) {
                 "Error deleting directory {:?}: {} (Note: Only empty directories can be deleted.)",
                 path_ref, e
             );
+            // since this is often a critical cleanup step, we exit if errors occur
             process::exit(1);
         }
     }

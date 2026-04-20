@@ -1,4 +1,8 @@
-//! Function to get a value from a config file
+//! Extraction of values from traditional configuration files.
+//!
+//! This module parses files in the `KEY=VALUE` or `KEY=“VALUE”` format.
+//! It is designed to be robust against whitespace and provides
+//! built-in security mechanisms against unauthorized file system access.
 /**
 * get_config_value.rs
 *
@@ -12,8 +16,25 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-/// Function that get values from config files (file.conf)
-/// ### Usage:
+/// Searches for a specific key in a configuration file and returns the corresponding value.
+///
+/// The function supports both simple values and strings 
+/// enclosed in quotes.
+///
+/// # Security
+/// The function includes **path traversal protection**. Paths containing `..` 
+/// are rejected for security reasons to prevent access to files outside 
+/// the intended scope.
+///
+/// # Arguments
+/// * `filename` - The path to the configuration file (implements `AsRef<Path>`).
+/// * `key` - The name of the variable/key (e.g., “HOSTNAME”).
+///
+/// # Return Value
+/// Returns `Some(String)` with the found value or `None` if the 
+/// key was not found or an error occurred.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {

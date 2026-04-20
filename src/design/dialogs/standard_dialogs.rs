@@ -1,4 +1,7 @@
-//! Some predefined dialogs based on show_alert_dialog
+//! Predefined standard dialogs for common use cases.
+//!
+//! This module provides wrapper functions for [show_alert_dialog] to display consistent 
+//! informational and error messages with localized labels.
 /**
 * standard_dialogs.rs
 *
@@ -13,7 +16,14 @@ use gtk4::Widget;
 use crate::design::dialogs::dialog::show_alert_dialog;
 use crate::gettext;
 
-/// Show dialog with standard title
+/// Displays a standard information dialog.
+///
+/// Uses the static title "Information" and an "OK" button.
+/// Both texts are automatically localized.
+///
+/// # Arguments
+/// * `parent` - The parent widget.
+/// * `body` - The message text to display.
 pub fn show_info_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str
@@ -26,7 +36,12 @@ pub fn show_info_dialog(
     );
 }
 
-/// Show dialog with individual text button
+/// Displays an information dialog with a custom button.
+///
+/// Useful when the confirmation requires a verb other than "OK" (e.g., "Understood").
+///
+/// # Arguments
+/// * `button_label` - The button label (should ideally already be localized).
 pub fn show_info_button_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str, 
@@ -40,7 +55,7 @@ pub fn show_info_button_dialog(
     );
 }
 
-/// Show dialog with individual title and standard button
+/// Displays an information dialog with a custom title and a default "OK" button.
 pub fn show_dialog_title(
 	parent: &impl IsA<Widget>, 
 	title: &str, 
@@ -54,7 +69,10 @@ pub fn show_dialog_title(
     );
 }
 
-/// Show standard error dialog
+/// Displays a standard error dialog.
+///
+/// Uses the localized title "Error" and an "OK" button.
+/// This dialog should be used for general program errors.
 pub fn show_error_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str
@@ -67,7 +85,7 @@ pub fn show_error_dialog(
     );
 }
 
-/// Show error dialog with special button
+/// Displays an error dialog with a custom button.
 pub fn show_error_button_dialog(
 	parent: &impl IsA<Widget>, 
 	body: &str, 
@@ -81,7 +99,12 @@ pub fn show_error_button_dialog(
     );
 }
 
-/// Show a error dialog with extra title
+/// Displays a detailed error dialog with a specific subtitle.
+///
+/// The title is formatted as "Error: {Your Title}".
+///
+/// # Example
+/// If `title` is "Network Timeout", the heading will appear as "Error: Network Timeout".
 pub fn show_error_title_dialog(
 	parent: &impl IsA<Widget>, 
 	title: &str, 
@@ -96,7 +119,9 @@ pub fn show_error_title_dialog(
     );
 }
 
-/// Show a error dialog with title and spcial button
+/// Displays a detailed error dialog with a custom title and a custom button.
+///
+/// This is the most flexible type of error dialog available in the standard presets.
 pub fn show_error_title_button_dialog(
     parent: &impl IsA<Widget>, 
     title: &str, 

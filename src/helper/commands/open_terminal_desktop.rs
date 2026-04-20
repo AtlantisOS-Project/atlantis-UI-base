@@ -1,4 +1,7 @@
-//! Open a terminal by the desktop
+//! Automated terminal interaction for various desktop environments.
+//!
+//! This module detects the current operating system and desktop environment (e.g., GNOME, KDE, WSL),
+//! selects the appropriate terminal emulator, and executes a specific command within it.
 /**
  * open_terminal_desktop.rs
  *
@@ -13,13 +16,18 @@ use std::path::Path;
 use std::process::Command;
 use crate::prelude::command_exists_native;
 
-/// Open a terminal and run in this terminal a command
-/// ### Notes:
-/// - This feature can be built for Linux, macOS, and Windows; the default is Linux. Other operating systems are not supported.
-/// - This feature supports WSL
-/// - The spawn_command() automatically receives the operating system type
+/// Opens a new terminal window and executes a command in it.
 ///
-/// ### Usage
+/// This function is the core component for CLI interactions within the GUI. 
+/// It ensures that the terminal remains open after execution (`exec bash`).
+///
+/// # Supported Environments
+/// - **Linux:** Detects GNOME, KDE, MATE, Cinnamon, LXDE/LXQT, and provides fallbacks such as `xterm`.
+/// - **macOS:** Uses AppleScript (`osascript`) to control Terminal.app.
+/// - **Windows:** Uses `cmd.exe /K`.
+/// - **WSL:** Detects a Windows Subsystem environment and launches the Windows Terminal from within Linux.
+///
+/// # Usage
 ///
 /// ```rust
 /// fn main() {

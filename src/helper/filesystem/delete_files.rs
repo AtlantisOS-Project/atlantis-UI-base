@@ -1,4 +1,16 @@
-//! Functions to delete files in a directory
+//! Advanced deletion utilities with recursive parent cleanup.
+//!
+//! This module provides functions for cleaning up directories. A key 
+//! feature is the ability to delete directory hierarchies “from the bottom up,” 
+//! as long as the directories are empty.
+//!
+//! # Safety Notes
+//! The functions include strict safeguards to prevent the deletion of:
+//! - System-critical paths (`/bin`, `/etc`, etc.)
+//! - Mount points (partitions/network drives)
+//! - Standard user directories (Pictures, Documents, etc.)
+//! Nevertheless, this module should only be used for application-specific data 
+//!
 /**
 * delete_files.rs
 *
@@ -12,20 +24,21 @@ use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
+/// List of paths that must never be deleted recursively.
 const CRITICAL_PATHS: &[&str] = &[
     "/", "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", 
     "/sys", "/dev", "/lib", "/boot", "/root"
 ];
 
+/// Standard folders in the home directory that are protected.
 const STANDARD_HOME_FOLDERS: &[&str] = &[
     "Desktop", "Documents", "Downloads", "Music", 
     "Pictures", "Videos", "Public", "Templates", 
     ".config", ".local"
 ];
 
-/**
-* @brief Checks if the path is a mount point 
-*/
+/// Checks whether a path is a mount point.
+/// Compares the device ID of the path with that of the parent directory.
 fn is_mount_point(path: &Path) -> bool {
     let parent = match path.parent() {
         Some(p) => p,
@@ -44,9 +57,7 @@ fn is_mount_point(path: &Path) -> bool {
     false
 }
 
-/**
-* @brief Checks if the directory is a critical system path
-*/
+/// Checks whether the path belongs to a protected system directory.
 fn is_critical_system_path(path: &Path) -> bool {
     if let Some(path_str) = path.to_str() {
         for prefix in CRITICAL_PATHS {
@@ -59,9 +70,7 @@ fn is_critical_system_path(path: &Path) -> bool {
     false
 }
 
-/**
-* @brief Checks if the directory is a /home directoy
-*/
+/// Checks whether the path is a standard user folder to prevent data loss.
 fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
     let home = match home_dir {
         Some(h) => h,
@@ -82,11 +91,11 @@ fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
     false
 }
 
-/// Function that remove directory
-/// ### Notes: 
-/// - **Delete only the file**
+/// Deletes all regular files within a directory.
 ///
-/// ### Usage:
+/// Subdirectories remain untouched.
+///
+/// # Usage:
 /// 
 /// ```rust
 /// fn main {
@@ -116,13 +125,12 @@ pub fn delete_files_in_dir(path: &Path) {
     }
 }
 
-/// Function that remove a file and empty parent directories too
-/// ### Notes:
-/// - **Warning:** This code deletes an entire path until it finds a stop point.
-/// - **Warning:** If no stop point is defined, files and directories that should not be deleted will be deleted.
-/// - **Warning:** Never use this code to delete foreign or non-program directories.
+/// Core logic for recursively deleting files and empty parent directories.
 ///
-/// ### Usage:
+/// Works its way up the directory tree until a directory is no longer empty 
+/// or a safety mechanism (stop directory, system path) is triggered.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {
@@ -172,17 +180,20 @@ pub fn delete_files_and_parents(path: &Path, stop_dir: &Option<PathBuf>) {
     }
 }
 
-/// Function that remove a file and empty parent directories too
-/// ### Notes:
-/// - **Warning:** This code deletes an entire path until it finds a stop point.
-/// - **Warning:** If no stop point is defined, files and directories that should not be deleted will be deleted.
-/// - **Warning:** Never use this code to delete foreign or non-program directories.
-/// - **This is the wrapper with security warnings**
+/// Convenience wrapper for deleting a path, including empty parent directories.
 ///
-/// ### Usage:
+/// Initializes security prompts and sets the home directory as the default stopping point.
+///
+/// # Warning
+/// This function deletes the entire path hierarchy upward, provided there are no 
+/// other files within it. Never apply to other users' directories!
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {
+///    // Deletes the file in 'cache' and removes 'cache', 'old_project', and 'projects' 
+///    // if doing so leaves them empty.
 ///    let base_path = "temp_data/projects/old_project/cache";
 ///	   let file_path = format!("{}/temp_log.txt", base_path);
 ///    delete_files::delete_files_with_parent(base_path);

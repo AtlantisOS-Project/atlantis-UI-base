@@ -1,4 +1,8 @@
-//! Removes leading and trailing spaces/quotation marks from a string
+//! Utility for cleaning up strings.
+//!
+//! This module provides functions to remove unnecessary spaces and 
+//! enclosing quotation marks from strings, which is particularly important when parsing 
+//! user input or configuration values.
 /**
 * trim_and_clean.rs
 *
@@ -8,8 +12,23 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
 
-/// Removes leading and trailing spaces/quotation marks from a string
-/// ### Usage:
+/// Removes leading and trailing whitespace as well as enclosing quotation marks.
+///
+/// The function operates efficiently on string slices (`&str`), so no 
+/// new string allocations in memory are required.
+///
+/// # How it works
+/// 1. First, all whitespace at the beginning and end is removed (`trim`).
+/// 2. If the remaining text begins **and** ends with `"`, these 
+///    two characters are removed.
+///
+/// # Arguments
+/// * `s` - The string to be cleaned.
+///
+/// # Return Value
+/// A cleaned string slice.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {

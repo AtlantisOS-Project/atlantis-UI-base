@@ -1,3 +1,7 @@
+//! Identification of configuration and source files based on their names.
+//!
+//! This module is primarily used to determine whether specific 
+//! repository entries (PPAs) or software sources are stored on the system.
 /**
 * search_string_name.rs
 *
@@ -10,8 +14,26 @@
 use std::fs;
 use std::path::Path;
 
-/// Helper that search for a string in a filename in a directory
-/// ### Usage:
+/// Searches a directory for a file whose name contains a specific string.
+///
+/// This function is used within AtlantisOS to validate the installation source 
+/// of the application (e.g., searching for "fastboot-assistant" in the APT sources).
+///
+/// # How it works
+/// 1. First checks whether the target directory exists. If not, `Ok(false)` is returned.
+/// 2. Iterates over all entries in the directory.
+/// 3. Compares the filename with the search term.
+///
+/// # Arguments
+/// * `directory` - The path to the directory (e.g., `/etc/apt/sources.list.d`).
+/// * `search` - The substring to search for in the filename.
+///
+/// # Return Value
+/// * `Ok(true)` - A matching file was found.
+/// * `Ok(false)` - No file matches the pattern, or the directory does not exist.
+/// * `Err(std::io::Error)` - Access to the directory was denied or failed.
+///
+/// # Usage:
 /// 
 /// ```rust
 /// match search_string_file(source_dir, search_string) {

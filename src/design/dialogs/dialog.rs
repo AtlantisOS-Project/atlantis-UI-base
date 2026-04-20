@@ -1,4 +1,7 @@
-//! Create a Libadwaita Alert dialog
+//! Utility tools for displaying Libadwaita alert dialogs.
+//!
+//! This module wraps the creation of `adw::AlertDialog` to display simple 
+//! notifications or confirmations with minimal boilerplate code.
 /**
 * dialog.rs
 *
@@ -25,8 +28,25 @@ use adw::prelude::*;
 use adw::{AlertDialog, ResponseAppearance};
 use gtk4::Widget;
 
-/// Show a new adw alert dialog
-/// ### Usage:
+/// Displays a standard Libadwaita alert dialog.
+///
+/// An alert dialog is ideal for short messages that require the user's attention 
+/// without requiring complex input.
+///
+/// # How it works
+/// - The dialog uses a **Heading** and a **Body**.
+/// - A single response button is added.
+/// - The button is automatically marked as `Suggested` (highlighted),
+///   as this is typically the expected user action.
+///
+/// # Arguments
+///
+/// * `parent` - The widget (usually a button or window) to which the dialog is attached.
+/// * `title` - The concise heading of the dialog (Heading).
+/// * `body` - The more detailed informational text (Body).
+/// * `button_label` - The label of the confirmation button (e.g., “Understood” or “OK”).
+///
+/// # Usage:
 ///
 /// ```rust
 /// let my_button = gtk4::Button::with_label("Click me");

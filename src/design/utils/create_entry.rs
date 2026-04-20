@@ -1,4 +1,7 @@
-//! Function that create an entry
+//! Utility tools for quickly creating input fields.
+//!
+//! This module provides functions for grouping text and password inputs directly with 
+//! a labeled `Label` in a horizontal container.
 /**
 * create_entry.rs
 *
@@ -11,14 +14,27 @@
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Entry, Label, Orientation, Align};
 
-/// Function that create a textfield with label at a box
-/// ### Usage:
+/// Creates a text input field with a preceding label.
+///
+/// This function combines a `Label` and an `Entry` in a horizontal `GtkBox`.
+/// The input field is configured to fill the available horizontal space.
+///
+/// # Return Value
+/// Returns a tuple:
+/// 1. `GtkBox`: The container that is inserted into the UI layout (e.g., a `VBox`).
+/// 2. `Entry`: The actual input widget for connecting signals or retrieving text.
+///
+/// # Arguments
+/// * `label_text` - The text displayed to the left of the field.
+/// * `placeholder` - An optional placeholder text within the field.
+///
+/// # Usage:
 ///
 /// ```rust
 /// Usage:
 /// // normal entry
 /// let (username_row, username_entry) = create_entry(
-///    "USername:", 
+///    "Username:", 
 ///     Some("Enter your username: ")
 /// );
 /// vbox.append(&username_row);
@@ -55,7 +71,15 @@ pub fn create_entry(label_text: &str, placeholder: Option<&str>) -> (GtkBox, Ent
     (box_container, entry)
 }
 
-/// Function that create a password entry
+/// Creates a password-protected input field with a label.
+///
+/// This function internally uses [create_entry], but configures the `Entry`
+/// so that the input remains hidden (default character: `*`).
+///
+/// # Arguments
+/// * `label_text` - The text for the label (e.g., "Password:").
+/// * `placeholder` - Optional placeholder text (e.g., "••••••••").
+///
 /// ### Usage:
 ///
 /// ```rust

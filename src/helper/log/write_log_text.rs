@@ -1,4 +1,8 @@
-//! Function that show the logs from syslog in a extra window
+//! Graphical display of system logs within the application.
+//!
+//! This module allows messages captured via Syslog/Journald 
+//! to be displayed directly in a window. It uses the VTE library to embed a 
+//! terminal widget that reads `journalctl` in real time.
 /**
 * write_log_text.rs
 *
@@ -17,8 +21,16 @@ use vte4::TerminalExt;
 use std::process;
 use crate::gettext;
 
-/// Create a window, that shows the log
-/// ### Usage:
+/// Opens a new window displaying the syslog entries for the current domain.
+///
+/// This function asynchronously starts a `journalctl` process filtered on the 
+/// specified `domain` and immediately displays new entries.
+///
+/// # Arguments
+/// * `app` - The active Libadwaita app instance.
+/// * `domain` - The text domain or program name to filter by.
+///
+/// # Usage:
 ///
 /// ```rust
 /// let button1 = Button::new();
@@ -80,15 +92,24 @@ pub fn show_log_viewer(app: &adw::Application, domain: &str) {
 }
 
 
-/** 
-* @brief Function that kills the program itself
-*/
+/// Closes the application immediately.
 fn kill_program() {
     process::exit(0); 
 }
 
-/// Header that create the popover menu
-/// ### Usage:
+/// Creates a customized header bar with a popover menu.
+///
+/// The menu contains options to open the log viewer and to quit 
+/// the application. Ideal for integration into the main view.
+///
+/// # Arguments
+/// * `app` - The active Libadwaita app instance.
+/// * `domain` - The domain for the log filter.
+///
+/// # Return Value
+/// A `GtkBox` that can be inserted into a headerbar as a widget.
+///
+/// # Usage:
 ///
 /// ```rust
 /// let toolbar_view = ToolbarView::new();

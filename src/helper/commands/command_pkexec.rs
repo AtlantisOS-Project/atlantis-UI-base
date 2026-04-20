@@ -1,4 +1,8 @@
-//! Run a command with pkexec in the shell
+//! Direct execution of privileged commands via `pkexec`.
+//!
+//! This module provides a lightweight interface for executing system commands with 
+//! root privileges, capturing the output (`stdout`), and 
+//! handling error conditions (`stderr`) cleanly.
 /**
  * command_pkexec.rs
  *
@@ -10,8 +14,27 @@
 
 use std::process::Command;
 
-/// Command with pkexec
-/// ### Usage:
+/// Executes a command with elevated privileges via `pkexec` and waits for it to finish.
+///
+/// This function blocks the current thread until the command (and 
+/// user authentication) is complete. It is particularly suitable 
+/// for CLI tools or background tasks that do not require direct 
+/// UI feedback (such as a spinner).
+///
+/// # Arguments
+/// * `args` - A slice of string references containing the command and its parameters.
+///
+/// # How it works
+/// 1. Starts a new process using the `pkexec` program.
+/// 2. Passes the argument list to the process.
+/// 3. Captures the complete output after the process terminates.
+///
+/// # Error Handling
+/// - On success, the contents of `stdout` are output with the prefix `[INFO]`.
+/// - If the command fails (exit code != 0), `stderr` is printed with the prefix `[ERROR]`.
+/// - If `pkexec` itself cannot be started, an error message is printed to the standard error output.
+///
+/// # Usage:
 /// args are list of arguments (e.g. ["apt", "update"])
 ///
 /// ```rust

@@ -1,4 +1,8 @@
-//! Search if a predefined string exsists in the file of predefined directory
+//! Search for filenames within a directory.
+//!
+//! This module searches the filenames in a specified directory for 
+//! a substring. It is useful for checking whether files exist 
+//! whose full names are not known exactly.
 /**
 * search_file_directory.c
 *
@@ -11,13 +15,21 @@
 use std::fs;
 use std::path::Path;
 
-/// Checks whether a string appears in the name of a file within a directory
-/// ### Notes:
-/// - Ok(true): File exists
-/// - Ok(false): File not exists
-/// - Err(e): Error with reading the file
+/// Checks whether a search term appears in the name of a file within a directory.
 ///
-/// ### Usage:
+/// The function scans the directory flat (not recursively) and compares 
+/// each filename with the passed `search_string`.
+///
+/// # Arguments
+/// * `directory` - The path to the directory to be searched (accepts `&str`, `PathBuf`, etc.).
+/// * `search_string` - The string to search for in the filename.
+///
+/// # Return Value
+/// * `Ok(true)` - At least one file contains the search term in its name.
+/// * `Ok(false)` - No file matches the search criteria.
+/// * `Err(std::io::Error)` - Error accessing the directory.
+///
+/// # Usage:
 /// 
 /// ```rust
 /// fn main() {

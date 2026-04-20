@@ -1,4 +1,9 @@
-//! Provides gettext binding and translation setup
+//! Localization and translation management via gettext.
+//!
+//! This module encapsulates the `gettextrs` bindings and automates the search for 
+//! translation files (.mo). It supports various installation layouts 
+//! (standard Linux, Snap, local development) and provides thread-safe access 
+//! to the current configuration.
 /**
 * language.rs
 *
@@ -15,21 +20,16 @@ use std::sync::Mutex;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    /// Global variable storing the current path to the translation files (.mo).
-    /// Set at runtime by `init_language` or `set_language_dir`.
+    /// Global variable storing the current path to the locale directory.
     static ref CURRENT_LOCALEDIR: Mutex<PathBuf> = Mutex::new(PathBuf::new());
 
     /// Global variable for the current text domain (usually the project name).
-    /// Prevents reliance on compile-time environment variables.
     static ref CURRENT_DOMAIN: Mutex<String> = Mutex::new(String::new());
 }
 
-/// Sets the path to the locale directory manually.
+/// Manually sets the path to the directory containing the translation files.
 /// 
-/// The path is only applied if it exists and is a directory.
-/// 
-/// ### Arguments
-/// * `dir` - A string slice pointing to the directory containing the translations.
+/// The path is only applied if it exists in the file system and is a directory.
 pub fn set_language_dir(dir: &str) {
     let path = Path::new(dir);
     if path.is_dir() {
@@ -48,11 +48,26 @@ pub fn get_current_domain() -> String {
     CURRENT_DOMAIN.lock().unwrap().clone()
 }
 
-/// Init the getlet mut d = CURRENT_DOMAIN.lock().unwrap();
-/// ### Notes:
-/// - The domain for the app control comes from build.rs
+/// Initializes the gettext system and automatically searches for the best translation directory.
 ///
-/// ### Usage:
+/// # How it works
+/// The function prioritizes paths in the following order:
+/// 1. Environment variable `ATL_LOCALEDIR`
+/// 2. Local directory `./po` (for development)
+/// 3. The passed `default_dir`
+/// 4. System-wide directory `/usr/share/locale`
+/// 5. Specific paths within a **Snap sandbox**
+///
+/// # Arguments
+/// * `domain` - The application’s text domain (e.g., "atlantis-shell").
+/// * `default_dir` - A fallback directory (often determined via `build.rs`).
+/// * `debug_lang` - If `true`, the language is hard-coded to `en_US.UTF-8`.
+///
+/// # Security
+/// The use of `unsafe` for `env::set_var` is necessary in debug mode, 
+/// since environment variables cannot be modified in a thread-safe manner.
+///
+/// # Usage:
 ///
 /// ```rust
 /// let test_dir = env!("COMPILED_LOCALE_DIR");

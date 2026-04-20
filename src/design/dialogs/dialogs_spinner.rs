@@ -1,4 +1,8 @@
-//! Function to show a dialog with a Libadwaita spinner
+//! Provides progress indicators for system commands.
+//!
+//! This module allows you to run a list of shell commands in the background
+//! while displaying a non-closable dialog with a spinner or 
+//! a progress bar to the user.
 /**
 * dialogs_spinner.rs
 *
@@ -15,15 +19,22 @@ use std::process::Command;
 use std::thread;
 use std::sync::mpsc;
 
-/// Define the indicator type for dialogs, i.e., whether to use an ADW spinner or a GTK progress bar.
+/// Specifies the type of progress indicator in the dialog.
 pub enum IndicatorType {
+	/// A circular, indefinite loading indicator (Libadwaita Spinner).
     Spinner,
+    /// A horizontal bar that indicates activity by moving back and forth (Pulse).
     ProgressBar,
 }
 
-/**
-* @brief Function that run shell commands in a background thread and send signal to the gtk main loop
-*/
+/// Executes a list of shell commands in a background thread.
+///
+/// The commands are executed one after another. As soon as a command fails,
+/// the chain is terminated and `false` is sent to the main thread.
+///
+/// # Platform-specific behavior
+/// - **Windows:** Uses `cmd /C` for execution.
+/// - **Unix/Linux:** Uses `sh -c` for execution.
 fn run_commands_thread(commands: Vec<String>, tx: mpsc::Sender<bool>) {
     thread::spawn(move || {
         let mut all_success = true;
@@ -48,8 +59,20 @@ fn run_commands_thread(commands: Vec<String>, tx: mpsc::Sender<bool>) {
     });
 }
 
-/// Function that show a dialog with spinner/progressbar
-/// ### Usage:
+/// Displays a modal dialog while a list of system commands is being executed.
+///
+/// The dialog cannot be closed manually by the user (`can_close(false)`).
+/// It closes automatically once all commands have completed or an error occurs.
+///
+/// # Arguments
+///
+/// * `parent` - The application's main window.
+/// * `title` - Title of the dialog.
+/// * `message` - Information text for the user (e.g., "System is updating...").
+/// * `commands` - A vector of strings that are interpreted as shell commands.
+/// * `indicator` - The visual style ([IndicatorType]).
+///
+/// # Usage:
 ///
 /// ```rust
 ///  button.connect_clicked(glib::clone!(@weak window => move |_| {

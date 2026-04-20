@@ -1,4 +1,8 @@
-//! Function to Log everything with Syslog
+//! System-wide logging via the syslog service.
+//!
+//! This module implements a logger for the `log` crate that forwards messages 
+//! directly to the Unix syslog daemon. This enables centralized 
+//! error management and monitoring within AtlantisOS.
 /**
 * write_log.rs
 *
@@ -12,18 +16,21 @@ use syslog::{Facility, Formatter3164};
 use log::{LevelFilter, Metadata, Record};
 use std::process;
 
-/**
-* @brief implement to use syslog for logging
-*/
+/// Internal structure for implementing the `log::Log` trait.
+/// 
+/// Stores the application name to uniquely identify log entries.
 struct SyslogLogger {
     app_name: String,
 }
 
 impl log::Log for SyslogLogger {
+	/// Determines which log levels are processed.
+    /// In AtlantisOS, all levels up to and including `Debug` are logged.
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= log::Level::Debug
     }
-
+	
+	/// Sends a log message to the syslog daemon.
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             // create a code formatter
@@ -51,11 +58,18 @@ impl log::Log for SyslogLogger {
     fn flush(&self) {}
 }
 
-/// Function that init syslog logging
-/// ### Note:
-/// - The logging require Syslog
+/// Initializes syslog logging for the current application.
 ///
-/// ### Usage:
+/// After calling this function, standard macros such as `info!()`, 
+/// `warn!()`, or `error!()` can be used to log messages system-wide.
+///
+/// # Arguments
+/// * `app_name` - The name under which the logs should appear in the system (e.g., in `/var/log/syslog`).
+///
+/// # Error Handling
+/// Returns a `SetLoggerError` if a logger has already been registered for this process.
+///
+/// # Usage:
 ///
 /// ```rust
 /// fn main() {

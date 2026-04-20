@@ -1,22 +1,24 @@
-//! Functions of the main library that incorporate all functions
-/**
-* lib.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
-/// AtlBase
-/// ### Usage:
-///
-/// ```rust
-/// use atlbase::*;
-/// ```
+//! # AtlBase - The central system library of the AtlantisOS project
+//!
+//! `atlbase` provides a comprehensive collection of tools for 
+//! operating system development, ranging from low-level file system operations to 
+//! modern UI components based on Libadwaita.
+//!
+//! ## Structure
+//! The library is divided into two main sections:
+//! * **prelude**: Contains logic functions (commands, configuration, file system, logging).
+//! * **ui_prelude**: Contains graphical components (dialogs, widgets, themes).
+
 pub mod helper;
 pub mod design;
 pub mod macros;
 
+/// The `prelude` module provides quick access to all non-graphical utility functions.
+///
+/// # Usage
+/// ```rust
+/// use atlbase::prelude::*;
+/// ```
 pub mod prelude {
 	pub use crate::{
     	helper::{
@@ -78,6 +80,12 @@ pub mod prelude {
     };
 }
 
+/// The `ui_prelude` module bundles all graphical tools and dialogs for Libadwaita apps.
+///
+/// # Usage
+/// ```rust
+/// use atlbase::ui_prelude::*;
+/// ```
 pub mod ui_prelude {
     pub use crate::{
     	helper::log::write_log_text::{
