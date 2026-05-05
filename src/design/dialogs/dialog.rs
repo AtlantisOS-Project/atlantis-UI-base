@@ -9,19 +9,6 @@
 * by @NachtsternBuild
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* @brief Show adw alert dialog
-*
-* Usage:
-* let my_button = gtk4::Button::with_label("Click me");
-* my_button.connect_clicked(move |btn| {
-*    show_alert_dialog(
-*        btn, 
-*        "System Update", 
-*        "New Update is there.", 
-*        "OK"
-*    );
-* });
 */
 
 use adw::prelude::*;

@@ -347,6 +347,26 @@ fn create_home_page(stack: &Stack) -> GtkBox {
         }
     );
     grid.attach(&btn_test_function_dialog, 2, 3, 1, 1);
+    
+    let btn_test_image_function = create_special_button::create_button_icon_position(
+    	"accessories-camera-symbolic",
+    	"Test Image Dialog",
+    	Align::Center,
+    	move |btn| {
+    		if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+    			show_image_dialog(
+        			window,
+         			"Preview",
+         			"Here is the selected image:",
+         			"Done",
+        			"assets/test.jpg",
+        			400,
+        			400
+     			);
+     		}
+    	}
+    );
+    grid.attach(&btn_test_image_function, 2, 4, 1, 1);
 	
     	
 	container.append(&grid);
