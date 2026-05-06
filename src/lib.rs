@@ -48,6 +48,12 @@ pub mod prelude {
     			trim_and_clean::trim_and_clean,
     			add_line_file::add_line_file,
     			write_file::write_file,
+    			temp_app_file::{
+    				write_to_temp,
+    				read_from_temp,
+    				remove_line_from_temp,
+    				clear_temp_file,
+    			},
     		},
     		filesystem::{
     			delete_directory::delete_directory,

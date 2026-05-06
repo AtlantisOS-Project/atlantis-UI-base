@@ -22,10 +22,13 @@ pub mod standard_dialogs;
 /// Dialogs for executing and monitoring background tasks.
 pub mod dialog_function;
 
+/// Displaying media content in dialogs.
 pub mod image_dialog;
 
 // Re-Exports 
 pub use standard_dialogs::*;
-pub use about_dialog::show_about_dialog;
-pub use dialog::show_alert_dialog; 
-pub use image_dialog::show_image_dialog;
+pub use about_dialog::*;
+pub use dialog::*; 
+pub use image_dialog::*;
+pub use dialog_entry::*;
+pub use dialogs_spinner::*;

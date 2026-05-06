@@ -21,8 +21,8 @@ pub mod open_terminal_desktop;
 pub mod open_url;
 
 // Re-Export
-pub use command_exists::command_exists_native;
-pub use command_pkexec::command_pkexec;
-pub use execute_command::{run_command, capture_command_output};
-pub use open_terminal_desktop::open_terminal_by_desktop;
-pub use open_url::open_url;
+pub use command_exists::*;
+pub use command_pkexec::*;
+pub use execute_command::*;
+pub use open_terminal_desktop::*;
+pub use open_url::*;

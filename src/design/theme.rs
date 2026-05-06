@@ -8,4 +8,4 @@
 pub mod load_adw_provider;
 
 // Re-Export
-pub use load_adw_provider::use_adw_provider;
+pub use load_adw_provider::*;

@@ -16,8 +16,12 @@ pub mod write_file;
 /// Allows individual lines to be appended to existing files.
 pub mod add_line_file;
 
+/// Managing a temporary file that exists only for the duration of the application.
+pub mod temp_app_file;
+
 // Re-Export
-pub use trim_and_clean::trim_and_clean;
-pub use get_config_value::get_config_value;
-pub use write_file::write_file;
-pub use add_line_file::add_line_file;
+pub use trim_and_clean::*;
+pub use get_config_value::*;
+pub use write_file::*;
+pub use add_line_file::*;
+pub use temp_app_file::*;

@@ -33,8 +33,6 @@ use std::path::Path;
 /// # Examples
 ///
 /// ```rust
-/// use your_crate::show_image_dialog;
-///
 /// // A medium-sized dialog with a JPG image
 /// show_image_dialog(
 ///     &main_window,

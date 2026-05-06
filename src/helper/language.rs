@@ -9,4 +9,4 @@
 pub mod language;
 
 // Re-Export
-pub use language::{init_language, get_language_dir, set_language_dir, get_current_domain};
+pub use language::*;

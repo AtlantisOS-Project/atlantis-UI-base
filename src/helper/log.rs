@@ -11,5 +11,5 @@ pub mod write_log;
 pub mod write_log_text;
 
 // Re-Export
-pub use write_log::init_syslog;
-pub use write_log_text::{show_log_viewer, create_custom_headerbar};
+pub use write_log::*;
+pub use write_log_text::*;

@@ -11,5 +11,5 @@ pub mod file_chooser;
 pub mod folder_chooser;
 
 // Re-Export
-pub use file_chooser::show_file_chooser;
-pub use folder_chooser::show_folder_chooser;
+pub use file_chooser::*;
+pub use folder_chooser::*;

@@ -168,8 +168,8 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     
     // test filechooser
 	// define callback
-	fn something(pfad: PathBuf) {
-		println!("File: {:?}", pfad);
+	fn something(path: PathBuf) {
+		println!("File: {:?}", path);
 	}
 	
 	let btn_test_file_chooser = create_special_button::create_button_icon(
@@ -571,6 +571,27 @@ fn build_ui(app: &adw::Application) {
     
     // init style
     use_adw_provider(ADW_CUSTOM_CSS);
+    
+    // testing temp file
+    write_to_temp("Hello World!").unwrap();
+    write_to_temp("\nSecond Line").unwrap();
+	write_to_temp("\nLast Line").unwrap();
+
+    match read_from_temp() {
+        Ok(content) => println!("Content of file: \n{}", content),
+        Err(e) => eprintln!("Error with writing to: {}", e),
+    }
+
+    println!("Before:\n{}", read_from_temp().unwrap());
+
+    remove_line_from_temp(1).unwrap();
+    println!("Delete line 1:\n{}", read_from_temp().unwrap());
+
+    clear_temp_file().unwrap();
+    println!("After Clear: '{}'", read_from_temp().unwrap());
+    
+    write_to_temp("Hello World!").unwrap();
+    println!("The file will be deleted as soon as the program closes.");
     
     // test using a config file
     // set a config

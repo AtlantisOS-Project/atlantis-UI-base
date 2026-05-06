@@ -30,11 +30,11 @@ pub mod search_file_directory;
 pub mod search_string_name;
 
 // Re-Export
-pub use delete_directory::delete_directory;
+pub use delete_directory::*;
 pub use delete_files::*;
-pub use directory_exists::{directory_exists, file_exists};
-pub use expand_path::expand_path;
-pub use home_dir::get_home_directory;
+pub use directory_exists::*;
+pub use expand_path::*;
+pub use home_dir::*;
 pub use make_path::*;
-pub use search_file_directory::search_file_directory;
-pub use search_string_name::search_string_file;
+pub use search_file_directory::*;
+pub use search_string_name::*;
