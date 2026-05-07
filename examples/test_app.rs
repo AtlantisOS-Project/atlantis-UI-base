@@ -368,6 +368,38 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     );
     grid.attach(&btn_test_image_function, 2, 4, 1, 1);
 	
+	// Test Dialog with box
+	let content_box = GtkBox::builder()
+    	.orientation(Orientation::Vertical)
+    	.spacing(10)
+	    .build();
+ 
+	content_box.append(&Label::new(Some("Do you want to continue?")));
+	let test_button = create_special_button::create_button(
+		"Test",
+		move |_| {
+			println!("Button tested!");
+		}
+	);
+	content_box.append(&test_button);
+	
+	let btn_test_box_dialog = create_special_button::create_button_icon_position(
+		"preferences-desktop-keyboard-shortcuts-symbolic",
+		"Test Box Dialog",
+		Align::Center,
+		move |btn| {
+			if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+				show_custom_content_dialog(
+			    	window,
+					"System Update",
+					"A new update is available.",
+					"Install",
+					&content_box
+				);
+			}
+		}
+	);
+	grid.attach(&btn_test_box_dialog, 2, 5, 1, 1);
     	
 	container.append(&grid);
 	container

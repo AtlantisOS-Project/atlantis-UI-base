@@ -127,6 +127,7 @@ pub mod ui_prelude {
     				show_error_title_button_dialog,
     			},
     			image_dialog::show_image_dialog,
+    			dialog_custom::show_custom_content_dialog,
     		},
     		theme::load_adw_provider::use_adw_provider,
     		utils::{

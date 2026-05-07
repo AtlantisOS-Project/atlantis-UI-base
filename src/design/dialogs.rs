@@ -25,6 +25,9 @@ pub mod dialog_function;
 /// Displaying media content in dialogs.
 pub mod image_dialog;
 
+/// Providing flexible `AlertDialog` wrappers that can accommodate custom content (`GtkBox`).
+pub mod dialog_custom;
+
 // Re-Exports 
 pub use standard_dialogs::*;
 pub use about_dialog::*;
@@ -32,3 +35,4 @@ pub use dialog::*;
 pub use image_dialog::*;
 pub use dialog_entry::*;
 pub use dialogs_spinner::*;
+pub use dialog_custom::*;
