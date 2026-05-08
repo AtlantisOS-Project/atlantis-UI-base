@@ -13,8 +13,18 @@
 */
 
 use adw::prelude::*;
-use gtk4::{glib, ProgressBar, Align, Label, Orientation, Box as GtkBox};
-use adw::{Spinner, Dialog};
+use gtk4::{
+	glib, 
+	ProgressBar, 
+	Align, 
+	Label, 
+	Orientation, 
+	Box as GtkBox
+};
+use adw::{
+	Spinner, 
+	Dialog
+};
 use std::thread;
 use std::sync::mpsc;
 use crate::design::dialogs::dialogs_spinner::IndicatorType;

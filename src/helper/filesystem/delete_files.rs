@@ -22,7 +22,10 @@
 
 use std::fs;
 use std::os::unix::fs::MetadataExt;
-use std::path::{Path, PathBuf};
+use std::path::{
+	Path, 
+	PathBuf
+};
 
 /// List of paths that must never be deleted recursively.
 const CRITICAL_PATHS: &[&str] = &[

@@ -13,7 +13,10 @@
 */
 
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{
+	BufRead, 
+	BufReader
+};
 use std::path::Path;
 
 /// Searches for a specific key in a configuration file and returns the corresponding value.

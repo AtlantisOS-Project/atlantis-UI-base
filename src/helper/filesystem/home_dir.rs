@@ -12,7 +12,7 @@
 */
 
 use std::env;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::process;
 
 /// Determines the path to the current user's home directory.

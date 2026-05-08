@@ -14,8 +14,14 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
 use adw::prelude::*;
-use adw::{AlertDialog, ResponseAppearance};
-use gtk4::{Widget, Box as GtkBox};
+use adw::{
+	AlertDialog, 
+	ResponseAppearance
+};
+use gtk4::{
+	Widget, 
+	Box as GtkBox
+};
 
 /// Displays an `AlertDialog` with a custom content area.
 ///

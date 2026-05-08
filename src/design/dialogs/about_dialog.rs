@@ -12,7 +12,7 @@
 */
 
 use adw::prelude::*;
-use adw::{AboutDialog};
+use adw::AboutDialog;
 use gtk4::Widget;
 use gtk4::License;
 

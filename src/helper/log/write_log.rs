@@ -12,8 +12,15 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
 
-use syslog::{Facility, Formatter3164};
-use log::{LevelFilter, Metadata, Record};
+use syslog::{
+	Facility, 
+	Formatter3164
+};
+use log::{
+	LevelFilter, 
+	Metadata, 
+	Record
+};
 use std::process;
 
 /// Internal structure for implementing the `log::Log` trait.

@@ -12,8 +12,19 @@
 */
 
 use adw::prelude::*;
-use adw::{ActionRow, Dialog, HeaderBar, ToolbarView};
-use gtk4::{Box as GtkBox, Button, Entry, Label, Orientation};
+use adw::{
+	ActionRow, 
+	Dialog, 
+	HeaderBar, 
+	ToolbarView
+};
+use gtk4::{
+	Box as GtkBox, 
+	Button, 
+	Entry, 
+	Label, 
+	Orientation
+};
 
 /// Creates and displays a dialog with an input field (`Entry`).
 ///

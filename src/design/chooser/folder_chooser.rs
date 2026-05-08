@@ -13,32 +13,13 @@
 */
 
 use gtk4::prelude::*;
-use gtk4::{FileDialog, Window, Button};
+use gtk4::{
+	FileDialog, 
+	Window, 
+	Button
+};
 use std::path::PathBuf;
 use crate::gettext;
-
-/// Type alias for functions that process a selected directory path.
-pub type FolderProcessorFunc = fn(PathBuf);
-
-/// Internal handler for the result of the directory selection.
-///
-/// This function evaluates the asynchronous result, extracts the system path,
-/// and passes it to the provided [FolderProcessorFunc].
-fn handle_folder_response(
-    res: Result<gio::File, glib::Error>, 
-    process_func: FolderProcessorFunc
-) {
-    match res {
-        Ok(folder) => {
-            if let Some(path) = folder.path() {
-                process_func(path);
-            }
-        }
-        Err(err) => {
-            eprintln!("Error opening the folder: {}", err);
-        }
-    }
-}
 
 /// Opens a dialog for selecting a directory.
 ///
@@ -56,6 +37,7 @@ fn handle_folder_response(
 /// # Usage:
 ///
 /// ```rust
+/// // Example that without a box specification
 /// let folder_btn = Button::with_label("Folder?:");
 /// fn handle_folder(path: PathBuf) {
 ///    println!("path: {:?}", path);
@@ -64,8 +46,22 @@ fn handle_folder_response(
 /// folder_btn.connect_clicked(move |btn| {
 ///    show_folder_chooser(btn, handle_folder);
 /// });
+///
+/// // Example with boxing 
+/// let scan_button = create_special_button::create_button_icon_position(
+///    "scanner-symbolic",
+///    "Scan QR-Code/Barcode",
+///    Align::Center,
+///    move |btn| {
+///        // create the closure and box it
+///        let callback = Box::new(handle_folder);
+///        file_chooser::show_folder_chooser(btn, callback);
+///    }
 /// ```
-pub fn show_folder_chooser(button: &Button, process_func: FolderProcessorFunc) {
+pub fn show_folder_chooser<F>(button: &Button, process_func: F) 
+where 
+    F: Fn(PathBuf) + 'static 
+{
     // get the root window
     let root = button.root();
     let parent_window = root.and_then(|r| r.downcast::<Window>().ok());
@@ -73,11 +69,25 @@ pub fn show_folder_chooser(button: &Button, process_func: FolderProcessorFunc) {
     let dialog = FileDialog::new();
     dialog.set_title(&gettext!("Choose folder"));
 
+    // we wrap the function in a box internally so that it 
+    // can be passed into the dialog's asynchronous `move` block.
+    let boxed_func = Box::new(process_func);
+
     dialog.select_folder(
         parent_window.as_ref(),
         gio::Cancellable::NONE,
         move |res| {
-            handle_folder_response(res, process_func);
+            match res {
+                Ok(folder) => {
+                    if let Some(path) = folder.path() {
+                        boxed_func(path);
+                    }
+                }
+                
+                Err(err) => {
+                    eprintln!("Error opening the folder: {}", err);
+                }
+            }
         },
     );
 }

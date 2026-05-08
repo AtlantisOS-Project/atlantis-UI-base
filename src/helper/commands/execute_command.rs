@@ -8,7 +8,11 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
 
-use std::process::{Command, Stdio, ExitStatus};
+use std::process::{
+	Command, 
+	Stdio, 
+	ExitStatus
+};
 use std::io::{self};
 
 /// Run a command and direct the output to stdout

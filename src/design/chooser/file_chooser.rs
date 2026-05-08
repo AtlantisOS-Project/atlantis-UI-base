@@ -12,32 +12,13 @@
 */
 
 use gtk4::prelude::*;
-use gtk4::{FileDialog, Window, Button};
+use gtk4::{
+	FileDialog, 
+	Window, 
+	Button
+};
 use std::path::PathBuf;
 use crate::gettext;
-
-/// Type alias for functions that process a selected file path.
-pub type FileProcessorFunc = fn(PathBuf);
-
-/// Internal handler that evaluates the asynchronous result of the dialog.
-///
-/// Extracts the path from the `gio::File` instance and passes it to the 
-/// provided processing function.
-fn handle_file_response(
-    res: Result<gio::File, glib::Error>, 
-    process_func: FileProcessorFunc
-) {
-    match res {
-        Ok(file) => {
-            if let Some(path) = file.path() {
-                process_func(path);
-            }
-        }
-        Err(err) => {
-            eprintln!("Error opening the file: {}", err);
-        }
-    }
-}
 
 /// Opens a native file selection dialog.
 ///
@@ -52,9 +33,10 @@ fn handle_file_response(
 /// The dialog is launched asynchronously. The program continues to run during the selection, 
 /// and the result is processed internally before being passed to `process_func`.
 ///
-/// # Usage:
-///
+/// # Example:
+/// 
 /// ```rust
+/// // Example that without a box specification
 /// let btn1 = Button::with_label("File?:");
 /// // define callback
 /// fn something(pfad: PathBuf) {
@@ -64,15 +46,45 @@ fn handle_file_response(
 /// btn1.connect_clicked(move |b| {
 ///     show_file_chooser(b, something);
 /// });
+///
+/// // Example with boxing 
+/// let scan_button = create_special_button::create_button_icon_position(
+///    "scanner-symbolic",
+///    "Scan QR-Code/Barcode",
+///    Align::Center,
+///    move |btn| {
+///        // create the closure and box it
+///        let callback = Box::new(something);
+///        file_chooser::show_file_chooser(btn, callback);
+///    }
+/// );
+///
 /// ``` 
-pub fn show_file_chooser(button: &Button, process_func: FileProcessorFunc) {
+pub fn show_file_chooser<F>(button: &Button, process_func: F) 
+where 
+    F: Fn(PathBuf) + 'static 
+{
     let root = button.root();
     let parent_window = root.and_then(|r| r.downcast::<Window>().ok());
 
     let dialog = FileDialog::new();
     dialog.set_title(&gettext!("Choose File"));
     
+    // we wrap the function in a box internally so that it 
+    // can be passed into the dialog's asynchronous `move` block.
+    let boxed_func = Box::new(process_func);
+
     dialog.open(parent_window.as_ref(), gio::Cancellable::NONE, move |res| {
-        handle_file_response(res, process_func);
+        match res {
+            Ok(file) => {
+                if let Some(path) = file.path() {
+                    boxed_func(path);
+                }
+            }
+            
+            Err(err) => {
+                eprintln!("Error opening the file: {}", err);
+            }
+        }
     });
 }

@@ -47,8 +47,17 @@
 *
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
-use std::io::{self, Read, Write, Seek, SeekFrom};
-use std::sync::{Mutex, OnceLock};
+use std::io::{
+	self, 
+	Read, 
+	Write, 
+	Seek, 
+	SeekFrom
+};
+use std::sync::{
+	Mutex, 
+	OnceLock
+};
 use tempfile::NamedTempFile;
 
 /// Global storage for the temporary file.

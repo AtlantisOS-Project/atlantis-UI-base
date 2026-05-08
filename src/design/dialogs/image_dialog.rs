@@ -10,8 +10,18 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
 use adw::prelude::*;
-use adw::{AlertDialog, ResponseAppearance};
-use gtk4::{Widget, Box as GtkBox, Orientation, Image, Align, ScrolledWindow};
+use adw::{
+	AlertDialog, 
+	ResponseAppearance
+};
+use gtk4::{
+	Widget, 
+	Box as GtkBox, 
+	Orientation, 
+	Image, 
+	Align, 
+	ScrolledWindow
+};
 use std::path::Path;
 
 /// Displays a highly configurable Libadwaita dialog with an image preview.

@@ -12,7 +12,11 @@
  * License: GNU GENERAL PUBLIC LICENSE Version 3
  */
 use adw::StyleManager;
-use gtk4::{CssProvider, style_context_add_provider_for_display, STYLE_PROVIDER_PRIORITY_USER};
+use gtk4::{
+	CssProvider, 
+	style_context_add_provider_for_display, 
+	STYLE_PROVIDER_PRIORITY_USER
+};
 use std::cell::RefCell;
 
 thread_local! {

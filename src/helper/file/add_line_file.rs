@@ -12,7 +12,10 @@
 */
 
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{
+	Read, 
+	Write
+};
 use std::path::Path;
 
 /// Adds a specific line to the end of a file if it does not yet exist.

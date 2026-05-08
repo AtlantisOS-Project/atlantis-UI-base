@@ -12,7 +12,10 @@
  */
 
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::{
+	Path, 
+	PathBuf
+};
 
 /// Replaces a leading tilde (`~`) with the path from the `$HOME` environment variable.
 ///

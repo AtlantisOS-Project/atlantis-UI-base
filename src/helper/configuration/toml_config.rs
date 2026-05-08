@@ -12,7 +12,10 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
 
-use serde::{Serialize, Deserialize};
+use serde::{
+	Serialize, 
+	Deserialize
+};
 use std::collections::HashMap;
 
 /// Data structure for AtlantisOS configurations.

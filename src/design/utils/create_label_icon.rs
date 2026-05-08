@@ -23,7 +23,13 @@
 */
 
 use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Image, Label, Orientation};
+use gtk4::{
+	Align, 
+	Box as GtkBox, 
+	Image, 
+	Label, 
+	Orientation
+};
 
 /// Creates a horizontal box with an icon and a label (left-aligned).
 ///

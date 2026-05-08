@@ -13,7 +13,14 @@
 */
 
 use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Button, Image, Label, Orientation};
+use gtk4::{
+	Align, 
+	Box as GtkBox, 
+	Button, 
+	Image, 
+	Label, 
+	Orientation
+};
 
 /// Creates a standard button with text and a callback.
 ///

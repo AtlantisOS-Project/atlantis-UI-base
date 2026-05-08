@@ -13,9 +13,18 @@
 * License: GNU GENERAL PUBLIC LICENSE Version 3
 */
 
-use gettextrs::{bind_textdomain_codeset, bindtextdomain, setlocale, textdomain, LocaleCategory};
+use gettextrs::{
+	bind_textdomain_codeset, 
+	bindtextdomain, 
+	setlocale, 
+	textdomain, 
+	LocaleCategory
+};
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::{
+	Path, 
+	PathBuf
+};
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 

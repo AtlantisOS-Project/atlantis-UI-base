@@ -13,8 +13,23 @@
 */
 
 use adw::prelude::*;
-use adw::{ApplicationWindow, HeaderBar, ToolbarView};
-use gtk4::{Box as GtkBox, Button, Label, ListBox, ListBoxRow, MenuButton, Popover, Image, Orientation, Align};
+use adw::{
+	ApplicationWindow, 
+	HeaderBar, 
+	ToolbarView
+};
+use gtk4::{
+	Box as GtkBox, 
+	Button, 
+	Label, 
+	ListBox, 
+	ListBoxRow, 
+	MenuButton, 
+	Popover, 
+	Image, 
+	Orientation, 
+	Align
+};
 use vte4::Terminal;
 use vte4::TerminalExtManual;
 use vte4::TerminalExt;

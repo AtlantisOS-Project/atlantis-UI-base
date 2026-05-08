@@ -12,7 +12,13 @@
 */
 
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Entry, Label, Orientation, Align};
+use gtk4::{
+	Box as GtkBox, 
+	Entry, 
+	Label, 
+	Orientation, 
+	Align
+};
 
 /// Creates a text input field with a preceding label.
 ///

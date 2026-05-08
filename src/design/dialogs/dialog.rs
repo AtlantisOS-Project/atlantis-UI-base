@@ -12,7 +12,10 @@
 */
 
 use adw::prelude::*;
-use adw::{AlertDialog, ResponseAppearance};
+use adw::{
+	AlertDialog, 
+	ResponseAppearance
+};
 use gtk4::Widget;
 
 /// Displays a standard Libadwaita alert dialog.
