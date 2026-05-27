@@ -11,8 +11,23 @@
 */
 
 use adw::prelude::*;
-use adw::{Application, ApplicationWindow, HeaderBar, ToolbarView};
-use gtk4::{Box as GtkBox, Label, Orientation, Stack, StackTransitionType, Align, glib, Button, Grid};
+use adw::{
+	Application, 
+	ApplicationWindow, 
+	HeaderBar, 
+	ToolbarView
+};
+use gtk4::{
+	Box as GtkBox, 
+	Label, 
+	Orientation, 
+	Stack, 
+	StackTransitionType, 
+	Align, 
+	glib, 
+	Button, 
+	Grid
+};
 use std::path::PathBuf;
 
 // atl functions
@@ -209,7 +224,8 @@ fn create_home_page(stack: &Stack) -> GtkBox {
   						"sleep 5".to_string(), 
   						"echo 'Ready'".to_string()
   					],
-  					IndicatorType::Spinner 
+  					IndicatorType::Spinner ,
+  					None
   				);
     		}
     	}  
@@ -246,7 +262,8 @@ fn create_home_page(stack: &Stack) -> GtkBox {
   						"sleep 5".to_string(), 
   						"echo 'Ready'".to_string()
   					],
-  					IndicatorType::ProgressBar
+  					IndicatorType::ProgressBar,
+  					None
   				);
     		}
     	}

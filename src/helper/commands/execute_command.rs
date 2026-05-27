@@ -13,7 +13,9 @@ use std::process::{
 	Stdio, 
 	ExitStatus
 };
-use std::io::{self};
+use std::io::{
+	self
+};
 
 /// Run a command and direct the output to stdout
 /// ### Usage:

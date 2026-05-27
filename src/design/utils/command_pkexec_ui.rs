@@ -29,7 +29,14 @@ pub fn command_pkexec_spinner(
     text: &str
 ) {
     let full_command = format!("pkexec {}", command);
-    show_spinner_dialog(parent, title, text, vec![full_command], IndicatorType::Spinner);
+    show_spinner_dialog(
+    	parent, 
+    	title, 
+    	text, 
+    	vec![full_command], 
+    	IndicatorType::Spinner,
+    	None
+    );
 }
 
 /// Executes multiple commands within a privileged shell using a spinner dialog.
@@ -45,7 +52,14 @@ pub fn commands_pkexec_spinner(
     text: &str
 ) {
     let full_command = format!("pkexec sh -c \"{}\"", commands);
-    show_spinner_dialog(parent, title, text, vec![full_command], IndicatorType::Spinner);
+    show_spinner_dialog(
+    	parent, 
+    	title, 
+    	text, 
+    	vec![full_command], 
+    	IndicatorType::Spinner,
+    	None
+    );
 }
 
 /// Executes a single privileged command with a progress indicator (Pulse).
@@ -58,7 +72,14 @@ pub fn command_pkexec_progressbar(
     text: &str
 ) {
     let full_command = format!("pkexec {}", command);
-    show_spinner_dialog(parent, title, text, vec![full_command], IndicatorType::ProgressBar);
+    show_spinner_dialog(
+    	parent, 
+    	title, 
+    	text, 
+    	vec![full_command], 
+    	IndicatorType::ProgressBar,
+    	None
+    );
 }
 
 /// Executes multiple privileged commands with a progress indicator (Pulse).
@@ -71,5 +92,12 @@ pub fn commands_pkexec_progressbar(
     text: &str
 ) {
     let full_command = format!("pkexec sh -c \"{}\"", commands);
-    show_spinner_dialog(parent, title, text, vec![full_command], IndicatorType::ProgressBar);
+    show_spinner_dialog(
+    	parent, 
+    	title, 
+    	text, 
+    	vec![full_command], 
+    	IndicatorType::ProgressBar,
+    	None
+    );
 }

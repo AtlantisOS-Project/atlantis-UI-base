@@ -35,6 +35,9 @@ serde = { version = "1.0", features = ["derive"] }
 confy = "0.6"
 directories = "6.0"
 tempfile = "3.27"
+networkmanager = "0.5"
+tokio = { version = "1", features = ["full"] }
+thiserror = "2"
 
 [profile.release]
 opt-level = "z"     # Optimized for the smallest possible file size

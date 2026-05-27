@@ -110,3 +110,9 @@ target/
 *.seed
 *.pid.lock
 
+## For work in progress
+system.rs
+src/system.rs
+src/system
+system
+
