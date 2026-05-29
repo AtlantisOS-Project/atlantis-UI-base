@@ -1,4 +1,4 @@
-//! # AtlBase - The central system library of the AtlantisOS project
+//! # AtlBase 
 //!
 //! `atlbase` provides a comprehensive collection of tools for 
 //! operating system development, ranging from low-level file system operations to 
