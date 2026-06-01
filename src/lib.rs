@@ -12,6 +12,12 @@
 pub mod helper;
 pub mod design;
 pub mod macros;
+/// Experimental core functions intended to handle system configuration tasks 
+/// (for the live system and installer), 
+/// but which are not yet fully implemented
+#[cfg(feature = "experimental-api")]
+#[doc(cfg(feature = "experimental-api"))]
+pub mod system;
 
 /// The `prelude` module provides quick access to all non-graphical utility functions.
 ///

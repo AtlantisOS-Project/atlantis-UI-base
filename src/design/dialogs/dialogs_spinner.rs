@@ -31,36 +31,35 @@ use std::sync::mpsc;
 
 /// Specifies the type of progress indicator in the dialog.
 pub enum IndicatorType {
-	/// A circular, indefinite loading indicator (Libadwaita Spinner).
+    /// A circular, indefinite loading indicator (Libadwaita Spinner).
     Spinner,
     /// A horizontal bar that indicates activity by moving back and forth (Pulse).
     ProgressBar,
 }
 
-/// Executes a list of shell commands in a background thread.
+/// Executes a list of structured commands in a background thread.
 ///
 /// The commands are executed one after another. As soon as a command fails,
-/// the chain is terminated and `false` is sent to the main thread.
-///
-/// # Platform-specific behavior
-/// - **Windows:** Uses `cmd /C` for execution.
-/// - **Unix/Linux:** Uses `sh -c` for execution.
-fn run_commands_thread(commands: Vec<String>, tx: mpsc::Sender<Result<String, String>>) {
+/// the chain is terminated and the error is sent to the main thread.
+fn run_commands_thread(commands: Vec<Vec<String>>, tx: mpsc::Sender<Result<String, String>>) {
     thread::spawn(move || {
         let mut combined_output = String::new();
 
-        for cmd_str in commands {
-            let output_res = if cfg!(target_os = "windows") {
-                Command::new("cmd")
-                    .arg("/C")
-                    .arg(&cmd_str)
-                    .output()
-            } else {
-                Command::new("sh")
-                    .arg("-c")
-                    .arg(&cmd_str)
-                    .output()
-            };
+        for cmd_args in commands {
+            // if the vec is empty -> skip
+            if cmd_args.is_empty() {
+                continue;
+            }
+
+            let program = &cmd_args[0];
+            let args = &cmd_args[1..];
+            
+            // create a readable version for error warnings
+            let cmd_display = cmd_args.join(" ");
+            
+            let output_res = Command::new(program)
+                .args(args)
+                .output();
 
             match output_res {
                 Ok(output) => {
@@ -73,12 +72,12 @@ fn run_commands_thread(commands: Vec<String>, tx: mpsc::Sender<Result<String, St
                     }
 
                     if !output.status.success() {
-                        let _ = tx.send(Err(format!("Command failed: {}\nOutput:\n{}", cmd_str, combined_output)));
+                        let _ = tx.send(Err(format!("Command failed: {}\nOutput:\n{}", cmd_display, combined_output)));
                         return;
                     }
                 }
                 Err(e) => {
-                    let _ = tx.send(Err(format!("Failed to execute command '{}': {}", cmd_str, e)));
+                    let _ = tx.send(Err(format!("Failed to execute command '{}': {}", cmd_display, e)));
                     return;
                 }
             }
@@ -98,43 +97,36 @@ fn run_commands_thread(commands: Vec<String>, tx: mpsc::Sender<Result<String, St
 /// * `parent` - The application's main window.
 /// * `title` - Title of the dialog.
 /// * `message` - Information text for the user.
-/// * `commands` - A vector of strings interpreted as shell commands.
+/// * `commands` - A vector of command vectors (e.g., `vec![vec!["fastboot", "reboot"]]`).
 /// * `indicator` - The visual style ([IndicatorType]).
-/// * `on_complete` - Optional callback: `Some(move |res| { ... })` oder `None`.
+/// * `on_complete` - Optional callback.
 ///
-/// # Usage (Without output):
+/// # Usage Example:
 /// ```rust
-/// show_spinner_dialog(
-/// 	&window, 
-///		"Info", 
-/// 	"Please wait...", 
-/// 	commands, 
-///		IndicatorType::Spinner, 
-/// 	None
-/// );
-/// ```
+/// let commands = vec![
+///     vec!["fastboot".to_string(), "devices".to_string()],
+///     vec!["fastboot".to_string(), "reboot".to_string(), "bootloader".to_string()],
+/// ];
 ///
-/// # Usage (With Output):
-/// ```rust
 /// show_spinner_dialog(
-///		&window, 
-///		"Info", 
-///		"Please wait...", 
-/// 	commands, 
-///		IndicatorType::Spinner, 
-///		Some(|res| {
-///     	match res {
-///         	Ok(out) => println!("Output: {}", out),
-///         	Err(err) => eprintln!("Error: {}", err),
-///     	}
-/// 	})
+///     &window, 
+///     "Flashing", 
+///     "Processing commands...", 
+///     commands, 
+///     IndicatorType::Spinner, 
+///     Some(Box::new(|res| {
+///	        match res {
+///			    Ok(out) => println!("Success: {}", out),
+///			    Err(err) => eprintln!("Error: {}", err),
+///			}
+///		}))
 /// );
 /// ```
 pub fn show_spinner_dialog(
     parent: &adw::ApplicationWindow,
     title: &str,
     message: &str,
-    commands: Vec<String>,
+    commands: Vec<Vec<String>>,
     indicator: IndicatorType,
     on_complete: Option<Box<dyn FnOnce(Result<String, String>) + 'static>>,
 ) {
@@ -164,11 +156,11 @@ pub fn show_spinner_dialog(
     
     // add indicator
     let spinner = Spinner::builder()
-    .halign(Align::Center)
-    .valign(Align::Center)
-    .width_request(150)
-    .height_request(150)
-    .build();
+        .halign(Align::Center)
+        .valign(Align::Center)
+        .width_request(150)
+        .height_request(150)
+        .build();
 
     match indicator {
         IndicatorType::Spinner => {
@@ -206,7 +198,7 @@ pub fn show_spinner_dialog(
             Ok(result) => {
                 dialog_to_close.force_close();
                 if let Some(cb) = on_complete_opt.take() {
-                    cb(result); // Das Ausführen bleibt identisch
+                    cb(result);
                 }
                 gtk4::glib::ControlFlow::Break
             }

@@ -38,6 +38,7 @@ use atlbase::design::dialogs::dialog;
 use atlbase::design::dialogs::about_dialog::AboutInfo;
 use atlbase::design::chooser::file_chooser;
 use atlbase::design::chooser::folder_chooser;
+use atlbase::design::utils::command_pkexec_ui::*;
 // use the extra gettext macro
 use atlbase::gettext;
 // use this for all preludes from the lib.rs
@@ -221,11 +222,16 @@ fn create_home_page(stack: &Stack) -> GtkBox {
   					"System-Update",
   					"Please wait...",
   					vec![
-  						"sleep 5".to_string(), 
-  						"echo 'Ready'".to_string()
+  						vec!["sleep".to_string(), "5".to_string()], 
+  						vec!["echo".to_string(), "'Ready'".to_string()]
   					],
   					IndicatorType::Spinner ,
-  					None
+  					Some(Box::new(|res| {
+				        match res {
+						    Ok(out) => println!("Success: {}", out),
+						    Err(err) => eprintln!("Error: {}", err),
+						}
+					}))
   				);
     		}
     	}  
@@ -259,11 +265,16 @@ fn create_home_page(stack: &Stack) -> GtkBox {
   					"System-Update",
   					"Please wait...",
   					vec![
-  						"sleep 5".to_string(), 
-  						"echo 'Ready'".to_string()
+  						vec!["sleep".to_string(), "5".to_string()], 
+  						vec!["echo".to_string(), "'Ready'".to_string()],
   					],
   					IndicatorType::ProgressBar,
-  					None
+  					Some(Box::new(|res| {
+				        match res {
+						    Ok(out) => println!("Success: {}", out),
+						    Err(err) => eprintln!("Error: {}", err),
+						}
+					}))
   				);
     		}
     	}
@@ -461,9 +472,12 @@ fn create_settings_page(stack: &Stack) -> GtkBox {
 		Align::Center,
 		move |btn| {
 			if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-				command_pkexec_spinner(
+				commands_pkexec_spinner(
 					window,
-					"ls /root && sleep 2",
+					vec![
+						vec!["ls".to_string(), "/root".to_string()],
+						vec!["sleep".to_string(), "3".to_string()]
+					],
 					"Test pkexec dilaog",
 					"Testing."
 				);

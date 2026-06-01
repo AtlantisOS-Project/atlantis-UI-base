@@ -19,46 +19,65 @@ use crate::design::dialogs::dialogs_spinner::IndicatorType;
 ///
 /// Opens a modal dialog and triggers the Polkit authentication prompt.
 ///
-/// # Security
-/// The command is passed directly to `pkexec`. Ensure that the 
-/// `command` string does not contain any unsafe user input.
+/// # Example
+/// ```rust
+/// command_pkexec_spinner(&window, vec!["fastboot".into(), "reboot".into()], "Rebooting", "Please wait...");
+/// ```
 pub fn command_pkexec_spinner(
     parent: &adw::ApplicationWindow,
-    command: &str,
+    command: Vec<String>,
     title: &str,
     text: &str
 ) {
-    let full_command = format!("pkexec {}", command);
+    if command.is_empty() { return; }
+
+    // Fügt "pkexec" als auszuführendes Programm an den Anfang der Argumente ein
+    let mut full_command = vec!["pkexec".to_string()];
+    full_command.extend(command);
+
     show_spinner_dialog(
-    	parent, 
-    	title, 
-    	text, 
-    	vec![full_command], 
-    	IndicatorType::Spinner,
-    	None
+        parent, 
+        title, 
+        text, 
+        vec![full_command], 
+        IndicatorType::Spinner,
+        None
     );
 }
 
-/// Executes multiple commands within a privileged shell using a spinner dialog.
+/// Executes multiple commands sequentially with root privileges using a spinner dialog.
 ///
-/// The commands are passed as a single argument to `sh -c`, which 
-/// is in turn launched by `pkexec`. This allows the use of pipes 
-/// or logical operators (&&, ||) with root privileges.
+/// Jedes Kommando wird sauber separiert übergeben. Polkit cached die Authentifizierung 
+/// in der Regel für kurze Zeit, sodass der Nutzer nicht für jeden Befehl neu eingeben muss.
 ///
+/// # Wichtiger Hinweis zu Shell-Features (Pipes, Verknüpfungen wie &&):
+/// Da die Befehle direkt ausgeführt werden, interpretieren sie standardmäßig keine Shell-Logik.
+/// Wenn du Pipes (`|`) oder `&&` benötigst, übergib die Shell explizit als Befehl, z. B.:
+/// `vec!["sh".into(), "-c".into(), "echo 1 > /proc/sys/net/ipv4/ip_forward".into()]`
 pub fn commands_pkexec_spinner(
     parent: &adw::ApplicationWindow,
-    commands: &str,
+    commands: Vec<Vec<String>>,
     title: &str,
     text: &str
 ) {
-    let full_command = format!("pkexec sh -c \"{}\"", commands);
+    // Verarbeite alle Befehle und stelle jedem ein "pkexec" voran
+    let full_commands: Vec<Vec<String>> = commands
+        .into_iter()
+        .filter(|cmd| !cmd.is_empty())
+        .map(|cmd| {
+            let mut pkexec_cmd = vec!["pkexec".to_string()];
+            pkexec_cmd.extend(cmd);
+            pkexec_cmd
+        })
+        .collect();
+
     show_spinner_dialog(
-    	parent, 
-    	title, 
-    	text, 
-    	vec![full_command], 
-    	IndicatorType::Spinner,
-    	None
+        parent, 
+        title, 
+        text, 
+        full_commands, 
+        IndicatorType::Spinner,
+        None
     );
 }
 
@@ -67,18 +86,22 @@ pub fn commands_pkexec_spinner(
 /// Equivalent to [command_pkexec_spinner], but uses a `ProgressBar` instead of a spinner.
 pub fn command_pkexec_progressbar(
     parent: &adw::ApplicationWindow,
-    command: &str,
+    command: Vec<String>,
     title: &str,
     text: &str
 ) {
-    let full_command = format!("pkexec {}", command);
+    if command.is_empty() { return; }
+
+    let mut full_command = vec!["pkexec".to_string()];
+    full_command.extend(command);
+
     show_spinner_dialog(
-    	parent, 
-    	title, 
-    	text, 
-    	vec![full_command], 
-    	IndicatorType::ProgressBar,
-    	None
+        parent, 
+        title, 
+        text, 
+        vec![full_command], 
+        IndicatorType::ProgressBar,
+        None
     );
 }
 
@@ -87,17 +110,26 @@ pub fn command_pkexec_progressbar(
 /// Equivalent to [commands_pkexec_spinner], but uses a `ProgressBar` instead of a spinner.
 pub fn commands_pkexec_progressbar(
     parent: &adw::ApplicationWindow,
-    commands: &str,
+    commands: Vec<Vec<String>>,
     title: &str,
     text: &str
 ) {
-    let full_command = format!("pkexec sh -c \"{}\"", commands);
+    let full_commands: Vec<Vec<String>> = commands
+        .into_iter()
+        .filter(|cmd| !cmd.is_empty())
+        .map(|cmd| {
+            let mut pkexec_cmd = vec!["pkexec".to_string()];
+            pkexec_cmd.extend(cmd);
+            pkexec_cmd
+        })
+        .collect();
+
     show_spinner_dialog(
-    	parent, 
-    	title, 
-    	text, 
-    	vec![full_command], 
-    	IndicatorType::ProgressBar,
-    	None
+        parent, 
+        title, 
+        text, 
+        full_commands, 
+        IndicatorType::ProgressBar,
+        None
     );
 }
