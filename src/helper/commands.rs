@@ -20,6 +20,7 @@ pub mod open_terminal_desktop;
 /// Open web links or files with the system's default application.
 pub mod open_url;
 
+
 // Re-Export
 pub use command_exists::*;
 pub use command_pkexec::*;

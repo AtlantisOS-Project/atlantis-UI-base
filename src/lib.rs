@@ -123,6 +123,10 @@ pub mod ui_prelude {
     			dialog_function::{
     				show_task_dialog,
     			},
+    			dialog_spinner_return::{
+    				CommandResult,
+    				show_spinner_dialog_return_output
+    			},
     			standard_dialogs::{
     				show_info_dialog,
     				show_info_button_dialog,

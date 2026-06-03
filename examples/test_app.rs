@@ -501,7 +501,7 @@ fn create_settings_page(stack: &Stack) -> GtkBox {
 }
 
 // testing all the standard dialogs
-fn create_test_standard_dialogs(stack: &Stack) -> GtkBox {
+fn create_test_standard_dialogs(stack: &Stack) -> GtkBox {	
 	let container = GtkBox::new(Orientation::Vertical, 12);
 	container.set_valign(Align::Center);
 	container.set_hexpand(true);
@@ -576,6 +576,58 @@ fn create_test_standard_dialogs(stack: &Stack) -> GtkBox {
 		}
 	);
 	container.append(&btn7);
+	
+	let btn8 = create_special_button::create_button_icon(
+		"folder-saved-search-symbolic",
+		"Test Return Dialog",
+		move |btn| {
+			if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+    			show_spinner_dialog_return_output(
+					window, 
+    				"System-Update", 
+    				"Updating System...", 
+    				vec![
+    					vec![
+    						"ls".to_string(),
+    						"./".to_string()
+    					],
+    					vec![
+    						"tree".to_string(),
+    						"./".to_string()
+    					],
+    					vec![
+    						"ls".to_string(),
+    						"-l".to_string()
+    					]
+    				], 
+    				IndicatorType::Spinner, 
+    				Some(Box::new(|res| {
+        				match res {
+            				Ok(success_list) => {
+                				println!("Success!");
+                				for cmd in success_list {
+                    				println!("-> [{}]: {}", cmd.command, cmd.stdout);
+                				}
+            				}
+            				Err(failed_chain) => {
+                				println!("Abort!");
+                				for cmd in failed_chain {
+                				    if cmd.success {
+                				        println!(" [OK] {}", cmd.command);
+                    				} else {
+                    				    println!(" [FEHLER] {}", cmd.command);
+                    				    println!("  Stderr: {}", cmd.stderr);
+            	    	    		}
+            	    			}	
+            				}
+        				}
+    				}))
+				);
+			}
+		}
+	);
+	container.append(&btn8);
+	
 			
 	let stack_clone = stack.clone();
 	let btn_back = create_special_button::create_button_icon_position(
@@ -676,7 +728,7 @@ fn build_ui(app: &adw::Application) {
        AppEnvironment::Ppa => println!("Action for PPA"),
        _ => println!("Other enviroment"),
     }
-    
+    	    
     // add a toolbar
     let toolbar_view = ToolbarView::new();
     toolbar_view.set_vexpand(true);
