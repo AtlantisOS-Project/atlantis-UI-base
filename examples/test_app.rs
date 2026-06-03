@@ -615,7 +615,7 @@ fn create_test_standard_dialogs(stack: &Stack) -> GtkBox {
                 				    if cmd.success {
                 				        println!(" [OK] {}", cmd.command);
                     				} else {
-                    				    println!(" [FEHLER] {}", cmd.command);
+                    				    println!(" [ERROR] {}", cmd.command);
                     				    println!("  Stderr: {}", cmd.stderr);
             	    	    		}
             	    			}	

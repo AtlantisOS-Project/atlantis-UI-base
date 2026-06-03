@@ -28,6 +28,7 @@ pub mod image_dialog;
 /// Providing flexible `AlertDialog` wrappers that can accommodate custom content (`GtkBox`).
 pub mod dialog_custom;
 
+/// Progress indicators and background execution infrastructure for system commands.
 pub mod dialog_spinner_return;
 
 // Re-Exports 
