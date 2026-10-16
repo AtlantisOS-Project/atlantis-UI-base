@@ -1,116 +1,88 @@
-//! Progress indicators and background execution infrastructure for system commands.
+// dialog_spinner_return.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Progress dialogs that return the result of every command.
 //!
-//! This module provides synchronous-looking asynchronous orchestration for running
-//! sequential system commands (`std::process::Command`) inside a dedicated OS thread,
-//! preventing UI degradation or freezing in Libadwaita/GTK 4 applications.
-//!
-//! While commands execute, a modal, non-closable [`adw::Dialog`] visually communicates
-//! activity via an indeterminate [`adw::Spinner`] or a pulsing [`gtk4::ProgressBar`].
+//! The module runs a chain of system commands ([`std::process::Command`]) in a separate
+//! thread, so the interface of the Libadwaita/GTK 4 application keeps responding. While the
+//! commands run, a modal dialog that cannot be closed shows a spinner or a progress bar.
 //!
 //! # Architecture
 //!
 //! ```text
-//!  Main (UI) Thread                      Background Worker Thread
-//! ┌────────────────────────┐            ┌────────────────────────┐
-//! │  show_spinner_dialog   │            │  run_commands_thread   │
-//! │  Instantiates Dialog   │            │                        │
-//! │  Spawns Thread ────────┼───────────►│  Loop: Execute Command │
-//! │                        │            │        Capture Output  │
-//! │  glib::timeout_add     │◄───────────┼──────  Send progress   │
-//! │  Polls Receiver Channel│   mpsc     │                        │
-//! └────────────────────────┘            └────────────────────────┘
+//!  Main (UI) thread                       Worker thread
+//! ┌──────────────────────────┐          ┌──────────────────────────┐
+//! │ show_spinner_dialog_…    │          │ run_commands_thread      │
+//! │ creates the dialog       │          │                          │
+//! │ starts the thread ───────┼─────────►│ for each command:        │
+//! │                          │          │   run, collect output    │
+//! │ glib timeout polls the   │◄─────────┼── send the results       │
+//! │ channel (mpsc)           │          │                          │
+//! └──────────────────────────┘          └──────────────────────────┘
 //! ```
 //!
-//! Once all operations finish—or immediately when any command emits a non-zero exit 
-//! status—the channel dispatches historical telemetry back to the main context, closes 
-//! the dialog safely, and triggers the dynamic callback.
+//! When all commands are done — or as soon as one fails — the results are sent to the main
+//! thread, the dialog closes and the callback is called.
 
-/**
-* dialogs_spinner_return.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
-
+use super::dialogs_spinner::{IndicatorType, build_progress_dialog, close_dialog_when_done};
 use adw::prelude::*;
-use gtk4::{
-    glib, 
-    ProgressBar, 
-    Align, 
-    Label, 
-    Orientation, 
-    Box as GtkBox
-};
-use adw::{
-    Spinner, 
-    Dialog
-};
+use gtk4::Widget;
 use std::process::Command;
-use std::thread;
 use std::sync::mpsc;
-use crate::ui_prelude::IndicatorType;
+use std::thread;
 
-/// Encapsulates execution metrics and console streams of an evaluated system process.
+/// The outcome of one executed command.
 ///
-/// This telemetry model tracks standard output buffers and processing results
-/// passed from the background worker thread back into the GUI loop.
-#[derive(Debug, Clone)]
+/// The worker thread sends a list of these to the callback of
+/// [`show_spinner_dialog_return_output`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommandResult {
-    /// The exact command string representation including joined sub-arguments.
+    /// The command line with all arguments, joined by spaces.
     ///
-    /// # Example
-    /// `"fastboot flash bootloader boot.img"`
+    /// For example `"fastboot flash bootloader boot.img"`.
     pub command: String,
-    
-    /// Collected standard output stream data (`stdout`), safely translated via UTF-8 lossy conversion.
+
+    /// What the command wrote to `stdout` (invalid UTF-8 is replaced).
     pub stdout: String,
-    
-    /// Collected standard error stream data (`stderr`), capturing diagnostics, trace logs, or error text.
+
+    /// What the command wrote to `stderr`, or the reason why it could not be started.
     pub stderr: String,
-    
-    /// Termination status flag. Evaluates to `true` if the process returned an exit code of `0`.
+
+    /// `true` if the command ended with the exit code 0.
     pub success: bool,
 }
 
-/// Dispatches sequential system processes sequentially inside an isolated background thread.
+/// The results of a chain of commands: `Ok` if all succeeded, `Err` up to the first failure.
+type ChainResult = Result<Vec<CommandResult>, Vec<CommandResult>>;
+
+/// The callback of [`show_spinner_dialog_return_output`].
+type Callback = Box<dyn FnOnce(ChainResult) + 'static>;
+
+/// Runs the commands one after another in a background thread.
 ///
-/// Execution processing works like a short-circuiting chain. If any atomic command reports a 
-/// failure execution profile (or fails to start entirely), downstream commands are dropped, 
-/// and the entire analytical stack collected up to that fraction is packaged as an `Err`.
-///
-/// # Arguments
-///
-/// * `commands` - Multi-dimensional vector matrix representing command calls with arguments.
-/// * `tx` - Asynchronous Multi-Producer Single-Consumer transmission piping boundary.
-fn run_commands_thread(commands: Vec<Vec<String>>, tx: mpsc::Sender<Result<Vec<CommandResult>, Vec<CommandResult>>>) {
+/// The chain stops at the first command that fails or cannot be started; the later commands
+/// are not run, and everything collected so far is sent as `Err`.
+fn run_commands_thread(commands: Vec<Vec<String>>, tx: mpsc::Sender<ChainResult>) {
     thread::spawn(move || {
         let mut results = Vec::new();
 
         for cmd_args in commands {
-            if cmd_args.is_empty() {
-                continue;
-            }
+            let Some((program, args)) = cmd_args.split_first() else {
+                continue; // empty command
+            };
+            let command = cmd_args.join(" ");
 
-            let program = &cmd_args[0];
-            let args = &cmd_args[1..];
-            let cmd_display = cmd_args.join(" ");
-            
-            let output_res = Command::new(program)
-                .args(args)
-                .output();
-
-            match output_res {
+            match Command::new(program).args(args).output() {
                 Ok(output) => {
-                    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-                    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
                     let success = output.status.success();
-
                     results.push(CommandResult {
-                        command: cmd_display,
-                        stdout,
-                        stderr,
+                        command,
+                        stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                        stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
                         success,
                     });
 
@@ -121,7 +93,7 @@ fn run_commands_thread(commands: Vec<Vec<String>>, tx: mpsc::Sender<Result<Vec<C
                 }
                 Err(e) => {
                     results.push(CommandResult {
-                        command: cmd_display,
+                        command,
                         stdout: String::new(),
                         stderr: format!("Failed to execute process: {}", e),
                         success: false,
@@ -136,162 +108,81 @@ fn run_commands_thread(commands: Vec<Vec<String>>, tx: mpsc::Sender<Result<Vec<C
     });
 }
 
-/// Renders a non-closable, modal Libadwaita dialog while driving continuous background jobs.
+/// Shows a modal dialog while a chain of commands runs, and returns the result of each one.
 ///
-/// The dialog configuration parameter enforces `.can_close(false)`, effectively locking input interactions
-/// out of the parent frame until execution results are transmitted or thread context disconnects.
+/// The user cannot close the dialog, so the parent window is blocked until the chain has
+/// finished or failed. In contrast to
+/// [`show_spinner_dialog`](super::dialogs_spinner::show_spinner_dialog) the callback gets
+/// one [`CommandResult`] per command with separate `stdout` and `stderr`.
 ///
 /// # Arguments
 ///
-/// * `parent` - Reference context to the hosting [`adw::ApplicationWindow`] establishing transient alignment.
-/// * `title` - Heading string printed atop the viewport and inside the dialog frame wrapper.
-/// * `message` - Explanatory localized label variant communicating instructions or contextual operations to users.
-/// * `commands` - Command array sequences mapping programs to discrete parameters (e.g., `vec![vec!["pkexec", "apt", "update"]]`).
-/// * `indicator` - Choice variant enforcing either a circular [`IndicatorType::Spinner`] or a sliding linear [`IndicatorType::ProgressBar`].
-/// * `on_complete` - Dynamic completion callback closure providing explicit error and success evaluation data trees.
+/// * `parent` - The widget (usually the main window) the dialog is shown over.
+/// * `title` - The title of the dialog.
+/// * `message` - An explanation for the user.
+/// * `commands` - The commands, each as the program followed by its arguments, for example
+///   `vec![vec!["pkexec".to_string(), "apt".to_string(), "update".to_string()]]`.
+/// * `indicator` - A [`IndicatorType::Spinner`] or a pulsing [`IndicatorType::ProgressBar`].
+/// * `on_complete` - Optional. Receives `Ok(results)` if all commands succeeded, or
+///   `Err(results)` with everything that ran up to and including the failed command.
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```no_run
+/// use atlbase::ui_prelude::{IndicatorType, show_spinner_dialog_return_output};
+/// # gtk4::init().unwrap();
+/// # let window = adw::ApplicationWindow::builder().build();
+///
 /// show_spinner_dialog_return_output(
-///		window, 
-///		"System-Update", 
-///		"Updating System...", 
-///		vec![
-///			vec![
-///				"ls".to_string(),
-///				"./".to_string()
-///			],
-///			vec![
-///				"tree".to_string(),
-///				"./".to_string()
-///			],
-///			vec![
-///				"ls".to_string(),
-///				"-l".to_string()
-///			]
-///		], 
-///		IndicatorType::Spinner, 
-///		Some(Box::new(|res| {
-///			match res {
-///				Ok(success_list) => {
-///    				println!("Success!");
-///    				for cmd in success_list {
-///        				println!("-> [{}]: {}", cmd.command, cmd.stdout);
-///    				}
-///				}
-///				Err(failed_chain) => {
-///    				println!("Abort!");
-///   				for cmd in failed_chain {
-///   				    if cmd.success {
-///   				        println!(" [OK] {}", cmd.command);
-///        				} else {
-///        				    println!(" [ERROR] {}", cmd.command);
-///        				    println!("  Stderr: {}", cmd.stderr);
-///	    	    		}
-///	    			}	
-///				}
-///   		}
-///		}))
+///     &window,
+///     "System update",
+///     "Updating the system...",
+///     vec![
+///         vec!["ls".to_string(), "./".to_string()],
+///         vec!["ls".to_string(), "-l".to_string()],
+///     ],
+///     IndicatorType::Spinner,
+///     Some(Box::new(|result| match result {
+///         Ok(results) => {
+///             for command in results {
+///                 println!("[{}]: {}", command.command, command.stdout);
+///             }
+///         }
+///         Err(results) => {
+///             println!("Aborted!");
+///             for command in results {
+///                 let state = if command.success { "OK" } else { "ERROR" };
+///                 println!(" [{}] {} {}", state, command.command, command.stderr);
+///             }
+///         }
+///     })),
 /// );
 /// ```
 pub fn show_spinner_dialog_return_output(
-    parent: &adw::ApplicationWindow,
+    parent: &impl IsA<Widget>,
     title: &str,
     message: &str,
     commands: Vec<Vec<String>>,
     indicator: IndicatorType,
-    on_complete: Option<Box<dyn FnOnce(Result<Vec<CommandResult>, Vec<CommandResult>>) + 'static>>,
+    on_complete: Option<Callback>,
 ) {
-    // create dialog
-    let dialog = Dialog::builder()
-        .title(title)
-        .content_width(400)
-        .can_close(false)
-        .build();
+    let dialog = build_progress_dialog(title, message, indicator);
 
-    // layout
-    let root_box = GtkBox::new(Orientation::Vertical, 18);
-    root_box.set_margin_top(24);
-    root_box.set_margin_bottom(24);
-    root_box.set_margin_start(24);
-    root_box.set_margin_end(24);
-    root_box.set_halign(Align::Center);
-
-    let label_title = Label::builder()
-        .label(title)
-        .build();
-    
-    let label_msg = Label::new(Some(message));
-
-    root_box.append(&label_title);
-    root_box.append(&label_msg);
-    
-    // add indicator
-    let spinner = Spinner::builder()
-        .halign(Align::Center)
-        .valign(Align::Center)
-        .width_request(150)
-        .height_request(150)
-        .build();
-
-    match indicator {
-        IndicatorType::Spinner => {
-            root_box.append(&spinner);
-        }
-        IndicatorType::ProgressBar => {
-            let progress_bar = ProgressBar::builder()
-                .pulse_step(0.1)
-                .halign(Align::Center)
-                .valign(Align::Center)
-                .width_request(150)
-                .height_request(50)
-                .build();
-        
-            root_box.append(&progress_bar);
-            
-            glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-                progress_bar.pulse();
-                glib::ControlFlow::Continue
-            });
-        }
-    }
-
-    dialog.set_child(Some(&root_box));
-    
-    let (tx, rx) = mpsc::channel::<Result<Vec<CommandResult>, Vec<CommandResult>>>();
+    let (tx, rx) = mpsc::channel();
     run_commands_thread(commands, tx);
 
-    let mut on_complete_opt = on_complete;
-
-    // check the signal from the background thread
-    let dialog_to_close = dialog.clone();
-    gtk4::glib::timeout_add_local(std::time::Duration::from_millis(25), move || {
-        match rx.try_recv() {
-            Ok(result) => {
-                dialog_to_close.force_close();
-                if let Some(cb) = on_complete_opt.take() {
-                    cb(result);
-                }
-                gtk4::glib::ControlFlow::Break
-            }
-            Err(mpsc::TryRecvError::Empty) => {
-                gtk4::glib::ControlFlow::Continue
-            }
-            Err(mpsc::TryRecvError::Disconnected) => {
-                dialog_to_close.force_close();
-                if let Some(cb) = on_complete_opt.take() {
-                    cb(Err(vec![CommandResult {
-                        command: "Unknown".to_string(),
-                        stdout: String::new(),
-                        stderr: "Thread disconnected unexpectedly.".to_string(),
-                        success: false,
-                    }]));
-                }
-                gtk4::glib::ControlFlow::Break
-            }
+    close_dialog_when_done(&dialog, rx, move |result| {
+        if let Some(callback) = on_complete {
+            callback(result.unwrap_or_else(|| {
+                Err(vec![CommandResult {
+                    command: "Unknown".to_string(),
+                    stdout: String::new(),
+                    stderr: "Thread disconnected unexpectedly.".to_string(),
+                    success: false,
+                }])
+            }));
         }
     });
-    
+
     dialog.present(Some(parent));
 }

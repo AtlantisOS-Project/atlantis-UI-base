@@ -1,92 +1,101 @@
-//! Automated creation of directory structures.
-//!
-//! This module provides functions to ensure that paths exist. 
-//! It handles the recursive creation of parent directories, both for 
-//! pure directory paths and for paths that point to files.
-/**
-* make_path.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+// make_path.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-use std::path::Path;
-use std::io;
+//! Creates directory structures.
+//!
+//! The module makes sure that paths exist. Missing parent directories are created
+//! recursively, for paths of directories as well as for paths of files.
+
 use std::fs;
+use std::io;
+use std::path::Path;
 
 /// Creates a directory and all missing parent directories (recursively).
 ///
-/// This function operates in “fire-and-forget” mode and logs success or 
-/// errors directly to the console.
+/// The function works in "fire and forget" mode: success and errors are only logged to the
+/// console. Use [`make_path`] if you have to react to a failure.
 ///
 /// # Arguments
-/// * `path` - The path to be created (accepts `&str`, `String`, `Path`, etc.).
 ///
-/// # Usage:
+/// * `path` - The directory to create (`&str`, `String`, `Path`, …).
 ///
-/// ```rust
-/// fn main() {
-///    create_directory("/tmp/atlantis/logs/sys");
-/// }
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::create_directory;
+///
+/// let root = tempfile::tempdir().unwrap();
+/// let logs = root.path().join("atlantis/logs/sys");
+///
+/// create_directory(&logs);
+/// assert!(logs.is_dir());
 /// ```
 pub fn create_directory<P: AsRef<Path>>(path: P) {
-    let p = path.as_ref();
-    match fs::create_dir_all(p) {
-        Ok(_) => println!("[DEBUG] Directory created or already exists: {:?}", p),
-        Err(e) => eprintln!("[ERROR] Error when creating the directory {:?}: {}", p, e),
+    let path = path.as_ref();
+    match fs::create_dir_all(path) {
+        Ok(_) => println!("[DEBUG] Directory created or already exists: {:?}", path),
+        Err(e) => eprintln!(
+            "[ERROR] Error when creating the directory {:?}: {}",
+            path, e
+        ),
     }
 }
 
-/// Creates a path recursively and returns the result of the operation.
+/// Creates a directory and all missing parents and returns the result.
 ///
-/// Unlike `create_directory`, there is no automatic logging here; 
-/// error handling is the responsibility of the caller.
+/// Unlike [`create_directory`] nothing is logged; the caller handles errors.
 ///
-/// # Return value
-/// An [io::Result<()>] that confirms the success of the operation or describes the IO error.
+/// # Errors
 ///
-/// # Usage:
+/// Returns the [`io::Error`] of [`fs::create_dir_all`], for example if the permissions
+/// are missing or a file is in the way.
 ///
-/// ```rust
-/// fn main() {
-///    make_path("/tmp/atlantis/logs/sys");
-/// }
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::make_path;
+///
+/// let root = tempfile::tempdir().unwrap();
+/// make_path(root.path().join("atlantis/logs/sys")).unwrap();
+/// assert!(root.path().join("atlantis/logs/sys").is_dir());
 /// ```
 pub fn make_path<P: AsRef<Path>>(path: P) -> io::Result<()> {
     fs::create_dir_all(path)
 }
 
-/// Extracts the parent directory of a file path and creates it recursively.
+/// Creates the parent directory of a file path.
 ///
-/// This function is ideal when you have the path to a file (e.g., a config file) 
-/// and want to ensure that the folder where the file should be located exists.
+/// Ideal when you have the path of a file (for example a configuration file) and want to
+/// make sure the directory that will contain it exists. The file itself is not created.
+/// A path without a directory part (`"settings.toml"`) needs nothing and succeeds.
 ///
 /// # Arguments
-/// * `filepath` - The full path to the file.
 ///
-/// # Usage:
+/// * `filepath` - The complete path of the file.
 ///
-/// ```rust
-/// fn main() {
-///    let target = "/tmp/atlantis/config/settings.toml";
-///    if let Err(e) = make_path_dirname(target) {
-///        eprintln!("Error: {}", e);
-///    } else {
-///        println!("Parent-Directory {:?} are ready.", target);
-///    }
-/// }
+/// # Errors
+///
+/// Returns the [`io::Error`] of [`fs::create_dir_all`].
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::make_path_dirname;
+///
+/// let root = tempfile::tempdir().unwrap();
+/// let target = root.path().join("atlantis/config/settings.toml");
+///
+/// make_path_dirname(&target).unwrap();
+/// assert!(target.parent().unwrap().is_dir());
+/// assert!(!target.exists());
 /// ```
 pub fn make_path_dirname<P: AsRef<Path>>(filepath: P) -> io::Result<()> {
-    let path = filepath.as_ref();
-    
-    // get the path from the full path of the file
-    if let Some(parent) = path.parent() {
-        if !parent.as_os_str().is_empty() {
-            return fs::create_dir_all(parent);
-        }
+    match filepath.as_ref().parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => fs::create_dir_all(parent),
+        _ => Ok(()),
     }
-    
-    Ok(())
 }

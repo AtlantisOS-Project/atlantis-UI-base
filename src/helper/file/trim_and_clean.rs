@@ -1,52 +1,37 @@
-//! Utility for cleaning up strings.
-//!
-//! This module provides functions to remove unnecessary spaces and 
-//! enclosing quotation marks from strings, which is particularly important when parsing 
-//! user input or configuration values.
-/**
-* trim_and_clean.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+// trim_and_clean.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-/// Removes leading and trailing whitespace as well as enclosing quotation marks.
+//! Cleans up strings.
+//!
+//! The module removes unnecessary spaces and enclosing quotation marks, which is useful
+//! when parsing user input or configuration values.
+
+/// Removes leading and trailing whitespace as well as enclosing double quotes.
 ///
-/// The function operates efficiently on string slices (`&str`), so no 
-/// new string allocations in memory are required.
+/// 1. All whitespace at the beginning and end is removed.
+/// 2. If the remaining text begins **and** ends with `"`, these two characters are removed.
 ///
-/// # How it works
-/// 1. First, all whitespace at the beginning and end is removed (`trim`).
-/// 2. If the remaining text begins **and** ends with `"`, these 
-///    two characters are removed.
+/// The function works on string slices, so no memory is allocated.
 ///
-/// # Arguments
-/// * `s` - The string to be cleaned.
+/// # Examples
 ///
-/// # Return Value
-/// A cleaned string slice.
+/// ```
+/// use atlbase::prelude::trim_and_clean;
 ///
-/// # Usage:
-///
-/// ```rust
-/// fn main() {
-///    let input = "  \"Hello AtlantisOS\"  ";
-///    let cleaned = trim_and_clean(input);
-///    println!("Input: |{}|", input);
-///    println!("Output: |{}|", cleaned);
-/// }
+/// assert_eq!(trim_and_clean("  \"Hello AtlantisOS\"  "), "Hello AtlantisOS");
+/// assert_eq!(trim_and_clean("  plain  "), "plain");
+/// assert_eq!(trim_and_clean("\""), "\"");
 /// ```
 pub fn trim_and_clean(s: &str) -> &str {
-    // remove empty space
-    let mut trimmed = s.trim();
+    let trimmed = s.trim();
 
-    // check for '"'
     if trimmed.len() >= 2 && trimmed.starts_with('"') && trimmed.ends_with('"') {
-        // remove 
-        trimmed = &trimmed[1..trimmed.len() - 1];
+        &trimmed[1..trimmed.len() - 1]
+    } else {
+        trimmed
     }
-
-    trimmed
 }

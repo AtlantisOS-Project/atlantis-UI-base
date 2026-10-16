@@ -1,35 +1,32 @@
-//! Comprehensive file system management.
+// filesystem.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! File system management.
 //!
-//! This module provides tools for manipulating the directory structure. 
-//! It includes functions for path expansion, for recursively creating or 
-//! deleting directories, and for searching for specific files 
-//! within the system.
- 
-/// Deleting entire directory trees.
+//! This module works with the directory structure: expanding paths, creating and deleting
+//! directories, and searching for files.
+
 pub mod delete_directory;
 
-/// Selectively deleting files and their parent directories.
 pub mod delete_files;
 
-/// Validating the existence of files and directories.
 pub mod directory_exists;
 
-/// Expanding tildes (`~`) and environment variables into absolute paths.
 pub mod expand_path;
 
-/// Determining the user's home directory ($HOME).
 pub mod home_dir;
 
-/// Recursive creation of paths and directories.
 pub mod make_path;
 
-/// Search for substrings in filenames within a directory.
 pub mod search_file_directory;
 
-/// Specialized search for strings in filenames (e.g., for PPA checks).
 pub mod search_string_name;
 
-// Re-Export
+// Re-exports
 pub use delete_directory::*;
 pub use delete_files::*;
 pub use directory_exists::*;

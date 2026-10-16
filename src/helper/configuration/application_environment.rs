@@ -1,113 +1,130 @@
-//! Identification of the application runtime environment.
+// application_environment.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Identification of the runtime environment of the application.
 //!
-//! This module detects whether the application is running as an isolated package (Flatpak, Snap) 
-//! or as a native system package (PPA, local DEB). This is 
-//! essential for correctly adjusting paths and permissions at runtime.
-/**
-* application_environment.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module detects whether the application runs inside an isolated package (Flatpak,
+//! Snap, AppImage) or as a native system package (PPA, local deb). The result is used to
+//! adjust paths and permissions at run time.
 
-use std::path::Path;
-use std::process;
-use std::env;
 use crate::helper::filesystem::search_string_name::search_string_file;
+use std::env;
+use std::path::Path;
 
-/// Defines the possible runtime environments for the application.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The possible runtime environments of the application.
+///
+/// The enum is returned by [`check_application_environment`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AppEnvironment {
-    /// Runs within a Flatpak sandbox.
+    /// Runs inside a Flatpak sandbox.
     Flatpak,
     /// Runs as a Snap package.
     Snap,
-    /// Installation via a registered PPA (Personal Package Archive).
+    /// Runs from an AppImage.
+    AppImage,
+    /// Installed through a registered PPA (Personal Package Archive).
     Ppa,
-    /// Installation as a manually installed, local DEB package.
+    /// Installed as a local deb package.
     LocalDeb,
-    /// Unknown or unidentifiable environment.
+    /// Unknown environment, for example a system without APT (rpm, Arch, …).
     Unknown,
 }
 
-/// Retrieves the name of the current runtime environment as a string.
+/// Returns the name of the current runtime environment.
 ///
-/// This function performs simple file system and environment variable checks
-/// to distinguish between the most common sandbox formats.
+/// The check needs only the file system and the environment variables:
 ///
-/// # Return value
-/// Returns "flatpak", "snap", or "native".
+/// | Result | Condition |
+/// |---|---|
+/// | `"flatpak"` | the file `/.flatpak-info` exists |
+/// | `"snap"` | `$SNAP` is set |
+/// | `"appimage"` | `$APPIMAGE` is set (the AppImage runtime sets it) |
+/// | `"native"` | none of the above (deb, rpm, `cargo install`, …) |
 ///
-/// ```rust
-/// let env_str = get_execution_environment();
-/// println!("The app runs in the environment: **{}**", env_str);
-/// ``` 
-pub fn get_execution_environment() -> String {
-    // check for flatpak
-    if Path::new("/.flatpak-info").exists() {
-        return "flatpak".to_string()
-    }
-
-    // check for snap
-    if env::var("SNAP").is_ok() {
-        return "snap".to_string()
-    }
-	
-	// return as native file
-    return "native".to_string()
-}
-
-/// Analyzes the application's detailed installation source.
-///
-/// If the application runs natively, this function searches the APT source lists
-/// to distinguish between a PPA source and a locally installed package.
-///
-/// # Arguments
-/// * `search_string` - The identifier of the application in the sources lists (e.g., “fastboot-assistant”).
-/// * `source_dir` - The directory of the APT lists (usually `/etc/apt/sources.list.d`).
-///
-/// # Return Value
-/// Returns an instance of [AppEnvironment].
-///
-/// # Error Handling
-/// If access to the system directories fails, an error message
-/// is printed and the process terminates with status `1`, since the environment is critical
-/// for the program's subsequent execution.
-///
-/// # Usage:
+/// # Examples
 ///
 /// ```
-/// fn main() {
-///	  const SEARCH_STRING: &str = "fastboot-assistant";
-///	  const SOURCES_DIR: &str = "/etc/apt/sources.list.d";
-///   let current_env = check_application_environment(SEARCH_STRING, SOURCES_DIR);    
-///   match current_env {
-///       AppEnvironment::Flatpak => println!("Action for Flatpak"),
-///       AppEnvironment::Ppa => println!("Action for PPA"),
-///       _ => println!("Other enviroment"),
-///    }
+/// use atlbase::prelude::get_execution_environment;
+///
+/// let env = get_execution_environment();
+/// assert!(["flatpak", "snap", "appimage", "native"].contains(&env.as_str()));
+/// ```
+pub fn get_execution_environment() -> String {
+    let name = if Path::new("/.flatpak-info").exists() {
+        "flatpak"
+    } else if env::var_os("SNAP").is_some() {
+        "snap"
+    } else if env::var_os("APPIMAGE").is_some() {
+        "appimage"
+    } else {
+        "native"
+    };
+    name.to_string()
+}
+
+/// Analyzes the installation source of the application in detail.
+///
+/// Sandboxed packages are recognized through [`get_execution_environment`]. A native
+/// installation is looked up in the APT source lists: a file in `source_dir` whose name
+/// contains `search_string` means the application comes from a PPA, otherwise it was
+/// installed from a local deb package.
+///
+/// # Arguments
+///
+/// * `search_string` - The name of the application in the source lists, for example
+///   `"fastboot-assistant"`.
+/// * `source_dir` - The directory with the APT lists, usually `/etc/apt/sources.list.d`.
+///
+/// # Returns
+///
+/// The detected [`AppEnvironment`]. [`AppEnvironment::Unknown`] is returned if `source_dir`
+/// does not exist (a system without APT) or cannot be read; the reason is printed to
+/// `stderr`. The function never terminates the process.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{AppEnvironment, check_application_environment};
+///
+/// let environment = check_application_environment("fastboot-assistant", "/etc/apt/sources.list.d");
+/// match environment {
+///     AppEnvironment::Flatpak => println!("running as Flatpak"),
+///     AppEnvironment::Ppa => println!("installed from the PPA"),
+///     _ => println!("other environment"),
 /// }
+/// ```
 pub fn check_application_environment(search_string: &str, source_dir: &str) -> AppEnvironment {
     let env_str = get_execution_environment();
-    println!("The app runs in the environment: **{}**", env_str);
+    println!("[INFO] The app runs in the environment: {}", env_str);
 
     match env_str.as_str() {
         "flatpak" => AppEnvironment::Flatpak,
         "snap" => AppEnvironment::Snap,
+        "appimage" => AppEnvironment::AppImage,
         _ => {
-            // PPA/DEB logic
-            println!("Running as PPA/DEB");
+            if !Path::new(source_dir).is_dir() {
+                println!(
+                    "[INFO] {} does not exist: not an APT based system",
+                    source_dir
+                );
+                return AppEnvironment::Unknown;
+            }
             match search_string_file(source_dir, search_string) {
                 Ok(true) => AppEnvironment::Ppa,
                 Ok(false) => {
-                    println!("Running local DEB package.");
+                    println!("[INFO] Running as local deb package.");
                     AppEnvironment::LocalDeb
-                },
+                }
                 Err(e) => {
-                    eprintln!("Error check for PPA files: {}", e);
-                    process::exit(1);
+                    eprintln!(
+                        "[ERROR] Cannot check the APT sources in {}: {}",
+                        source_dir, e
+                    );
+                    AppEnvironment::Unknown
                 }
             }
         }

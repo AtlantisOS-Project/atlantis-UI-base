@@ -1,11 +1,17 @@
-//! Theme-specific customizations and styling.
-//!
-//! This module manages the visual appearance of AtlantisOS apps.
-//! It enables the loading of custom stylesheets and the 
-//! integration of Adwaita-specific design providers.
+// theme.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-/// Functions for loading and applying CSS providers for Libadwaita.
+//! Themes and stylesheets.
+//!
+//! The module manages the visual appearance of AtlantisOS applications: it loads custom
+//! stylesheets and keeps them correct when the system switches between the light and the
+//! dark style.
+
 pub mod load_adw_provider;
 
-// Re-Export
+// Re-exports
 pub use load_adw_provider::*;

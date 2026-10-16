@@ -1,61 +1,60 @@
-//! Search for filenames within a directory.
+// search_file_directory.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Searches the file names of a directory.
 //!
-//! This module searches the filenames in a specified directory for 
-//! a substring. It is useful for checking whether files exist 
-//! whose full names are not known exactly.
-/**
-* search_file_directory.c
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module looks for a substring in the names of the files of one directory. It is
+//! useful to check whether files exist whose full names are not known exactly.
 
 use std::fs;
 use std::path::Path;
 
-/// Checks whether a search term appears in the name of a file within a directory.
+/// Checks whether the name of a file in a directory contains a search term.
 ///
-/// The function scans the directory flat (not recursively) and compares 
-/// each filename with the passed `search_string`.
+/// The directory is scanned flat (not recursively). Names that are not valid UTF-8 are
+/// skipped.
 ///
 /// # Arguments
-/// * `directory` - The path to the directory to be searched (accepts `&str`, `PathBuf`, etc.).
-/// * `search_string` - The string to search for in the filename.
 ///
-/// # Return Value
-/// * `Ok(true)` - At least one file contains the search term in its name.
-/// * `Ok(false)` - No file matches the search criteria.
-/// * `Err(std::io::Error)` - Error accessing the directory.
+/// * `directory` - The directory to search (`&str`, `PathBuf`, …).
+/// * `search_string` - The text to look for in the file names.
 ///
-/// # Usage:
-/// 
-/// ```rust
-/// fn main() {
-///    let sources_dir = "./src";
-///    let search_string = "helper";
-///    match search_file_directory(sources_dir, search_string) {
-///        Ok(true) => println!("File!"),
-///        Ok(false) => println!("No file."),
-///        Err(e) => eprintln!("Error: {}", e),
-///    }
-/// }
+/// # Returns
+///
+/// * `Ok(true)` — at least one entry contains the search term in its name.
+/// * `Ok(false)` — no entry matches.
+///
+/// # Errors
+///
+/// Returns an [`std::io::Error`] if the directory cannot be read (for example because it
+/// does not exist).
+///
+/// # Examples
+///
 /// ```
- 
-pub fn search_file_directory<P: AsRef<Path>>(directory: P, search_string: &str) -> Result<bool, std::io::Error> {
-    let entries = fs::read_dir(directory)?;
-
-    for entry in entries {
+/// use atlbase::prelude::search_file_directory;
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// std::fs::write(dir.path().join("atlantis-sources.list"), "").unwrap();
+///
+/// assert!(search_file_directory(dir.path(), "atlantis").unwrap());
+/// assert!(!search_file_directory(dir.path(), "debian").unwrap());
+/// assert!(search_file_directory("/this/path/does/not/exist", "x").is_err());
+/// ```
+pub fn search_file_directory<P: AsRef<Path>>(
+    directory: P,
+    search_string: &str,
+) -> Result<bool, std::io::Error> {
+    for entry in fs::read_dir(directory)? {
         let entry = entry?;
-        let file_name = entry.file_name();
-        
-        // checks whether the filename contains the search string
-        // convert OsString to a normal string for comparison
-        if let Some(name_str) = file_name.to_str() {
-            if name_str.contains(search_string) {
-                return Ok(true);
-            }
+        if let Some(name) = entry.file_name().to_str()
+            && name.contains(search_string)
+        {
+            return Ok(true);
         }
     }
 

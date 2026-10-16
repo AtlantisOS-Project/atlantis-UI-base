@@ -1,12 +1,18 @@
+// language.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
 //! Internationalization and language support.
 //!
-//! This module manages the localization of AtlantisOS applications. 
-//! It provides functions for initializing the `gettext` system, 
-//! managing text domains, and automatically determining 
-//! the correct paths for translation files.
+//! This module manages the localization of AtlantisOS applications: it initializes the
+//! `gettext` system, keeps the text domain and finds the translation files in every
+//! package format.
 
-/// Core logic for language control and path lookup.
+#[allow(clippy::module_inception)]
 pub mod language;
 
-// Re-Export
+// Re-exports
 pub use language::*;

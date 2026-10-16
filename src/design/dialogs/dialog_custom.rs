@@ -1,64 +1,48 @@
-//! # Custom Dialog Module
-//!
-//! This module provides helper functions for displaying user interface dialogs 
-//! using `libadwaita` and `GTK4`.
-//!
-//! The focus is on providing flexible `AlertDialog` wrappers that 
-//! can accommodate custom content (`GtkBox`).
-/**
-* dialog_custom.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
-use adw::prelude::*;
-use adw::{
-	AlertDialog, 
-	ResponseAppearance
-};
-use gtk4::{
-	Widget, 
-	Box as GtkBox
-};
+// dialog_custom.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-/// Displays an `AlertDialog` with a custom content area.
+//! An alert dialog with custom content.
+//!
+//! The module provides a flexible wrapper around [`adw::AlertDialog`] that can show your
+//! own widgets in a [`gtk4::Box`].
+
+use adw::prelude::*;
+use adw::{AlertDialog, ResponseAppearance};
+use gtk4::{Box as GtkBox, Widget};
+
+/// Shows an alert dialog with an area for custom widgets.
 ///
-/// This function abstracts the boilerplate setup for a libadwaita dialog. 
-/// The caller is responsible for preparing the `GtkBox` with the desired widgets 
-/// (e.g., images, labels, or progress bars).
+/// The function hides the boilerplate of the dialog. You prepare a [`gtk4::Box`] with the
+/// widgets you want (images, labels, progress bars, …); it is shown below the text as the
+/// *extra child*. The button works as in [`show_alert_dialog`](super::dialog::show_alert_dialog).
 ///
 /// # Arguments
 ///
-/// * `parent` - The parent widget (usually the main window) to which the dialog is docked.
-/// * `title` - The bolded title of the dialog.
-/// * `body` - A short descriptive text below the title.
-/// * `button_label` - The text for the primary confirmation button.
-/// * `content` - A reference to a `GtkBox` that is displayed as additional content (`extra_child`).
+/// * `parent` - The widget (usually the window) the dialog is shown over.
+/// * `title` - The heading of the dialog.
+/// * `body` - A short text below the heading.
+/// * `button_label` - The label of the button.
+/// * `content` - The box that is shown as additional content.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust
-/// use gtk::prelude::*;
-/// use gtk::{Box as GtkBox, Orientation, Label};
-/// 
-/// // Preparing the content
+/// ```no_run
+/// use atlbase::ui_prelude::show_custom_content_dialog;
+/// use gtk4::{Box as GtkBox, Label, Orientation, prelude::*};
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
 /// let content_box = GtkBox::builder()
 ///     .orientation(Orientation::Vertical)
 ///     .spacing(10)
 ///     .build();
-/// 
 /// content_box.append(&Label::new(Some("Do you want to continue?")));
 ///
-/// // Display the dialog
-/// show_custom_content_dialog(
-///     &window,
-///     "System Update",
-///     "A new update is available.",
-///     "Install",
-///     &content_box
-/// );
+/// show_custom_content_dialog(&window, "System update", "A new update is available.", "Install", &content_box);
 /// ```
 pub fn show_custom_content_dialog(
     parent: &impl IsA<Widget>,
@@ -67,19 +51,13 @@ pub fn show_custom_content_dialog(
     button_label: &str,
     content: &GtkBox,
 ) {
-    let dialog = AlertDialog::builder()
-        .heading(title)
-        .body(body)
-        .build();
+    let dialog = AlertDialog::builder().heading(title).body(body).build();
 
-    // sets the passed box as additional content in the dialog
     dialog.set_extra_child(Some(content));
 
-    // config for standard response
     dialog.add_response("ok", button_label);
     dialog.set_response_appearance("ok", ResponseAppearance::Suggested);
     dialog.set_close_response("ok");
 
-    // show the dialog
     dialog.present(Some(parent));
 }

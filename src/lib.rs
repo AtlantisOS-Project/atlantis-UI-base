@@ -1,166 +1,211 @@
-//! # AtlBase 
-//!
-//! `atlbase` provides a comprehensive collection of tools for 
-//! operating system development, ranging from low-level file system operations to 
-//! modern UI components based on Libadwaita.
-//!
-//! ## Structure
-//! The library is divided into two main sections:
-//! * **prelude**: Contains logic functions (commands, configuration, file system, logging).
-//! * **ui_prelude**: Contains graphical components (dialogs, widgets, themes).
+// lib.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-pub mod helper;
+//! # AtlBase
+//!
+//! `atlbase` is a collection of building blocks for GTK4 + Libadwaita applications on Linux:
+//! dialogs, widget factories, theming, multi-page guides, translations (gettext), logging
+//! and a set of small file system and command helpers.
+//!
+//! The crate has two halves:
+//!
+//! * [`helper`] — everything without a user interface: commands, configuration,
+//!   files, file system, language and logging. Import it with [`prelude`].
+//! * [`design`] — everything with a user interface: dialogs, choosers, theme, widget
+//!   factories and the [`carousel`](design::carousel) guide widget. Import it with
+//!   [`ui_prelude`].
+//!
+//! # Getting started
+//!
+//! ```no_run
+//! use adw::prelude::*;
+//! use atlbase::{gettext, prelude::*, ui_prelude::*};
+//!
+//! fn main() -> glib::ExitCode {
+//!     let app = adw::Application::builder()
+//!         .application_id("org.example.Demo")
+//!         .build();
+//!
+//!     app.connect_activate(|app| {
+//!         // Binds the translations of the application *and* of this library.
+//!         init_language("demo", "/usr/share/locale", false);
+//!
+//!         let window = adw::ApplicationWindow::builder()
+//!             .application(app)
+//!             .title(gettext!("Demo"))
+//!             .build();
+//!         let button = create_button(&gettext!("Say hello"), |button| {
+//!             show_info_dialog(button, "Hello from AtlBase");
+//!         });
+//!         window.set_content(Some(&button));
+//!         window.present();
+//!     });
+//!     app.run()
+//! }
+//! ```
+//!
+//! More complete programs live in the `examples/` directory of the repository
+//! (`cargo run --example dialogs`, `--example guide`, `--example helper_tools`,
+//! `--example localized_app`).
+//!
+//! # Feature flags
+//!
+//! | Feature | Default | Description |
+//! |---|---|---|
+//! | `carousel-toml` | yes | Loads multi-page guides from TOML files ([`GuideLoader`](design::carousel::GuideLoader)). |
+//! | `log-viewer` | yes | Journal viewer window and header bar menu; needs VTE (`libvte-2.91-gtk4`). |
+//! | `experimental-api` | no | Unfinished `system` module. Does not compile yet. |
+//!
+//! # Localization
+//!
+//! Call [`init_language`](helper::language::language::init_language) once at start-up. The
+//! texts of this library are translated with the [`gettext!`] macro: first in the text domain
+//! of your application (so you can override any string), then in the domain of the library
+//! ([`LIB_DOMAIN`](helper::language::language::LIB_DOMAIN)). The library's own catalogs are
+//! compiled into the binary, so the dialogs are translated without installing any extra
+//! file. See [`helper::language`] for the lookup order of the locale directory.
+//!
+//! # Packaging
+//!
+//! `atlbase` is used as a normal crate dependency and works the same in every package
+//! format. It adapts to the sandbox it runs in:
+//!
+//! | Format | Detected via | What to know |
+//! |---|---|---|
+//! | Flatpak | `/.flatpak-info` | Config and cache go to `~/.var/app/<id>/…` (XDG variables). `pkexec`, host terminals and `journalctl` are not available in the sandbox. VTE is not part of the GNOME runtime: add it as a module or build with `default-features = false`. |
+//! | Snap | `$SNAP` | Translations are searched in `$SNAP/usr/share/locale`. Strict confinement cannot use `pkexec`. |
+//! | AppImage | `$APPIMAGE` | Translations are searched in `$APPDIR/usr/share/locale`. |
+//! | deb / rpm / `cargo install` | — | Translations are searched in `/usr/share/locale`. |
+//!
+//! At build time the library needs the GTK4, Libadwaita (and VTE) development packages;
+//! `msgfmt` from `gettext` is optional. Use [`get_execution_environment`] or
+//! [`check_application_environment`] to react to the environment at run time.
+//!
+//! [`get_execution_environment`]: helper::configuration::application_environment::get_execution_environment
+//! [`check_application_environment`]: helper::configuration::application_environment::check_application_environment
+
+#![warn(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 pub mod design;
+pub mod helper;
 pub mod macros;
-/// Experimental core functions intended to handle system configuration tasks 
-/// (for the live system and installer), 
-/// but which are not yet fully implemented
+
+/// Experimental core functions intended to handle system configuration tasks
+/// (for the live system and installer), but which are not yet fully implemented.
 #[cfg(feature = "experimental-api")]
-#[doc(cfg(feature = "experimental-api"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "experimental-api")))]
 pub mod system;
 
-/// The `prelude` module provides quick access to all non-graphical utility functions.
+/// Quick access to all functions that need no user interface.
 ///
-/// # Usage
-/// ```rust
+/// # Examples
+///
+/// ```
 /// use atlbase::prelude::*;
+///
+/// assert!(directory_exists("/"));
 /// ```
 pub mod prelude {
-	pub use crate::{
-    	helper::{
-    		commands::{
-    			command_pkexec::command_pkexec,
-    			command_exists::command_exists_native,
-    			execute_command::{
-    				run_command,
-    				capture_command_output,
-    			},
-    			open_terminal_desktop::open_terminal_by_desktop,
-    			open_url::open_url,
-    		},
-    		configuration::{
-    			toml_config::{
-    				get_config,
-    				set_config,
-    			},
-    			application_environment::{
-    				AppEnvironment,
-    				get_execution_environment,
-    				check_application_environment,
-    			},
-    		},
-    		file::{
-    			get_config_value::get_config_value,
-    			trim_and_clean::trim_and_clean,
-    			add_line_file::add_line_file,
-    			write_file::write_file,
-    			temp_app_file::{
-    				write_to_temp,
-    				read_from_temp,
-    				remove_line_from_temp,
-    				clear_temp_file,
-    			},
-    		},
-    		filesystem::{
-    			delete_directory::delete_directory,
-    			delete_files::{
-    				delete_files_in_dir,
-    				delete_files_and_parents,
-    				delete_files_with_parent,
-    			},
-    			directory_exists::{
-    				directory_exists,
-    				file_exists,
-    			},
-    			expand_path::expand_path,
-    			home_dir::get_home_directory,
-    			make_path::{
-    				create_directory,
-    				make_path,
-    				make_path_dirname,
-    			},
-    			search_file_directory::search_file_directory,
-    			search_string_name::search_string_file,
-    		},
-    		language::language::{
-    			set_language_dir,
-    			get_language_dir,
-    			init_language,
-    		},
-    		log::write_log::init_syslog,  		
-    	},
+    pub use crate::helper::{
+        commands::{
+            command_exists::command_exists_native,
+            command_pkexec::command_pkexec,
+            execute_command::{capture_command_output, run_command},
+            open_terminal_desktop::open_terminal_by_desktop,
+            open_url::open_url,
+        },
+        configuration::{
+            application_environment::{
+                AppEnvironment, check_application_environment, get_execution_environment,
+            },
+            toml_config::{get_config, set_config},
+        },
+        file::{
+            add_line_file::add_line_file,
+            get_config_value::get_config_value,
+            temp_app_file::{
+                clear_temp_file, read_from_temp, remove_line_from_temp, write_to_temp,
+            },
+            trim_and_clean::trim_and_clean,
+            write_file::write_file,
+        },
+        filesystem::{
+            delete_directory::delete_directory,
+            delete_files::{
+                delete_files_and_parents, delete_files_in_dir, delete_files_with_parent,
+            },
+            directory_exists::{directory_exists, file_exists},
+            expand_path::expand_path,
+            home_dir::get_home_directory,
+            make_path::{create_directory, make_path, make_path_dirname},
+            search_file_directory::search_file_directory,
+            search_string_name::search_string_file,
+        },
+        language::language::{
+            LIB_DOMAIN, get_current_domain, get_language_dir, init_language, set_language_dir,
+        },
+        log::write_log::init_syslog,
     };
 }
 
-/// The `ui_prelude` module bundles all graphical tools and dialogs for Libadwaita apps.
+/// Quick access to all graphical components for Libadwaita applications.
 ///
-/// # Usage
-/// ```rust
+/// # Examples
+///
+/// ```no_run
 /// use atlbase::ui_prelude::*;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// show_error_dialog(&window, "Something went wrong");
 /// ```
 pub mod ui_prelude {
-    pub use crate::{
-    	helper::log::write_log_text::{
-    		show_log_viewer,
-    		create_custom_headerbar,
-    	},
-    	design::{
-    		chooser::{
-    			file_chooser::show_file_chooser,
-    			folder_chooser::show_folder_chooser,
-    		},
-    		dialogs::{
-    			about_dialog::{
-    				show_about_dialog,
-    				AboutInfo,
-    			},
-    			dialog::show_alert_dialog,
-    			dialog_entry::show_entry_dialog, 
-    			dialogs_spinner::{
-    				show_spinner_dialog,
-    				IndicatorType,
-    			},
-    			dialog_function::{
-    				show_task_dialog,
-    			},
-    			dialog_spinner_return::{
-    				CommandResult,
-    				show_spinner_dialog_return_output
-    			},
-    			standard_dialogs::{
-    				show_info_dialog,
-    				show_info_button_dialog,
-    				show_dialog_title,
-    				show_error_dialog,
-    				show_error_button_dialog,
-    				show_error_title_dialog,
-    				show_error_title_button_dialog,
-    			},
-    			image_dialog::show_image_dialog,
-    			dialog_custom::show_custom_content_dialog,
-    		},
-    		theme::load_adw_provider::use_adw_provider,
-    		utils::{
-    			create_entry::{
-    				create_entry,
-    				create_password_entry,
-    			},    		
-    			create_label_icon::{
-    				create_label_icon,
-    				create_label_icon_position,
-    			},
-    			create_special_button::{
-    				create_button,
-    				create_button_icon,
-    				create_button_icon_no_callback,
-    				create_button_two_icon,
-    				create_button_icon_position,
-    			},
-    			command_pkexec_ui::{
-    				command_pkexec_spinner,
-    				command_pkexec_progressbar,
-    			},
-    		},
-    	},
+    pub use crate::design::{
+        carousel::{
+            Block, Callout, CalloutKind, Guide, GuideView, Image, ImageSource, Labels, Page, Step,
+            block_widget, page_widget,
+        },
+        chooser::{file_chooser::show_file_chooser, folder_chooser::show_folder_chooser},
+        dialogs::{
+            about_dialog::{AboutInfo, show_about_dialog},
+            dialog::show_alert_dialog,
+            dialog_custom::show_custom_content_dialog,
+            dialog_entry::show_entry_dialog,
+            dialog_function::show_task_dialog,
+            dialog_spinner_return::{CommandResult, show_spinner_dialog_return_output},
+            dialogs_spinner::{IndicatorType, show_spinner_dialog},
+            image_dialog::show_image_dialog,
+            standard_dialogs::{
+                show_dialog_title, show_error_button_dialog, show_error_dialog,
+                show_error_title_button_dialog, show_error_title_dialog, show_info_button_dialog,
+                show_info_dialog,
+            },
+        },
+        theme::load_adw_provider::{use_adw_provider, use_adw_provider_with_priority},
+        utils::{
+            command_pkexec_ui::{
+                command_pkexec_progressbar, command_pkexec_spinner, commands_pkexec_progressbar,
+                commands_pkexec_spinner,
+            },
+            create_entry::{create_entry, create_password_entry},
+            create_label_icon::{create_label_icon, create_label_icon_position},
+            create_special_button::{
+                create_button, create_button_icon, create_button_icon_no_callback,
+                create_button_icon_position, create_button_two_icon,
+            },
+        },
     };
+
+    #[cfg(feature = "carousel-toml")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "carousel-toml")))]
+    pub use crate::design::carousel::{GuideError, GuideLoader};
+
+    #[cfg(feature = "log-viewer")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "log-viewer")))]
+    pub use crate::helper::log::write_log_text::{create_custom_headerbar, show_log_viewer};
 }

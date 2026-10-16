@@ -1,23 +1,35 @@
-//! The visual framework of AtlantisOS.
-//!
-//! This module bundles all components responsible for designing the 
-//! graphical user interface. It uses `gtk4` and `libadwaita`
-//! to ensure a modern, consistent, and user-friendly design across all 
-//! system applications.
+// design.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-/// Tools for selecting files and folders.
+//! The visual half of AtlBase: everything with a user interface.
+//!
+//! The module bundles the components for the graphical user interface. They are built on
+//! `gtk4` and `libadwaita` and give all AtlantisOS applications a modern and consistent
+//! look. Most items are also available through the [`ui_prelude`](crate::ui_prelude).
+//!
+//! | Module | Purpose |
+//! |---|---|
+//! | [`carousel`] | Multi-page guides (instructions, tours) as a swipeable widget |
+//! | [`chooser`] | File and folder dialogs |
+//! | [`dialogs`] | Alert, entry, spinner, image and about dialogs |
+//! | [`theme`] | CSS providers that follow the light/dark style |
+//! | [`utils`] | Factories for entries, buttons and icon labels |
+
+pub mod carousel;
+
 pub mod chooser;
 
-/// A variety of dialog boxes for interactions and information.
 pub mod dialogs;
 
-/// Management of stylesheets and themes.
 pub mod theme;
 
-/// Utility functions for quickly creating UI widgets.
 pub mod utils;
 
-// Re-Export
+// Re-exports
 pub use chooser::*;
 pub use dialogs::*;
 pub use theme::*;

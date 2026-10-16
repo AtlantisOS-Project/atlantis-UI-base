@@ -1,23 +1,25 @@
-//! Utility tools for UI development.
+// utils.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Helpers for user interface development.
 //!
-//! This module contains handy factory functions for quickly creating 
-//! standardized widgets such as input fields, buttons with icons, or 
-//! progress bars for privileged commands.
- 
-/// Creation of text and password input fields.
+//! Factory functions that create standardized widgets quickly: input fields, buttons with
+//! icons, icon-label combinations, and progress dialogs for privileged commands.
+
 pub mod create_entry;
 
-/// Combined widgets consisting of labels and icons.
 pub mod create_label_icon;
 
-/// Specialized buttons (e.g., with multiple icons or specific positions).
 pub mod create_special_button;
 
-/// Visual feedback (spinner/progress bar) for pkexec commands.
 pub mod command_pkexec_ui;
 
-// Re-Exports
+// Re-exports
+pub use command_pkexec_ui::*;
 pub use create_entry::*;
 pub use create_label_icon::*;
 pub use create_special_button::*;
-pub use command_pkexec_ui::*;

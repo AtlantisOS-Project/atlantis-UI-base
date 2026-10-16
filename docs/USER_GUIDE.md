@@ -1,103 +1,103 @@
-# User Manual
+# User manual
 
-This manual explains how to integrate Atl UIBase into your GTK4/Libadwaita project.
+This manual explains how to use AtlBase in a GTK4/Libadwaita project written in Rust.
 
 ## Installation
 
+Add the crate to `Cargo.toml`:
+
+```toml
+[dependencies]
+atlbase = "0.2"
+# plus the same gtk4 / libadwaita versions that atlbase uses, if you use them yourself:
+gtk4 = { version = "0.11", features = ["v4_20"] }
+adw = { version = "0.9", package = "libadwaita", features = ["v1_8"] }
+```
+
+**Requirements** (build and run time):
+
+- Rust 1.92 or newer
+- GTK 4.20 or newer, Libadwaita 1.8 or newer
+- VTE for GTK 4 (`libvte-2.91-gtk4`), only with the feature `log-viewer` (default)
+- `gettext` (`msgfmt`) at build time, for the translations of the library
+
+Install the development packages (Debian / Ubuntu):
+
 ```bash
-git clone https://github.com/AtlantisOS-Project/atlantis-UI-base.git
-cd atlantis-UI-base
-# compile UIBase
-make
-# run test app
-./test_app
+sudo apt install build-essential pkg-config gettext libgtk-4-dev libadwaita-1-dev libvte-2.91-gtk4-dev
 ```
 
-**Requirements:**
+Fedora:
 
-- `> GTK 4.12`
-- `> Libadwaita 1.6`
-- `> libvte-gtk4`
-- `make`
-- `GCC, ccache`
-- `other basic tools`
-
-- Install build and runtime tools with:
 ```bash
-sudo apt install make libadwaita-1-0 libsecret-1-0 libvte-2.91-gtk4-0 ccache gcc libgtk-4-dev desktop-file-utils make dpkg-dev debhelper libsecret-1-dev build-essential libadwaita-1-dev rsync git curl libvte-2.91-gtk4-dev xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils libgtk-4-1
-``` 
-
-## Project Integration
-
-### With Makefile
-- copy the following makefile as example
-```makefile
-# Dependencies.mk
-# configs
-BUILD_DIR := build
-TMP_DIR := $(BUILD_DIR)/.external
-# use SSH by default, switch to HTTPS with "make GIT_HTTPS=1"
-GIT_HTTPS ?= 0
-ifeq ($(GIT_HTTPS),1)
-  UIBASE_URL := https://github.com/AtlantisOS-Project/atlantis-UI-base.git
-  DEBBUILD_URL := https://github.com/AtlantisOS-Project/base-debian-build.git
-else
-  UIBASE_URL := git@github.com:AtlantisOS-Project/atlantis-UI-base.git
-  DEBBUILD_URL := git@github.com:AtlantisOS-Project/base-debian-build.git
-endif
-# atl ui base configs
-UIBASE_NAME := atlantis-UI-base
-UIBASE_SUBFOLDER := src
-# deb build base configs
-DEBBUILD_NAME := base-debian-build
-DEBBUILD_SUBFOLDER := src
-DEBBUILD_CONFFOLDER := $(DEBBUILD_SUBFOLDER)/config
-DEBBUILD_TARGET := deb
-all: prepare clean-tmp
-prepare:
-	@echo "[INFO] Preparing external dependencies..."
-	rm -rf $(TMP_DIR)
-	mkdir -p $(TMP_DIR)
-	@echo "[INFO] Cloning Atlantis UI Base..."
-	git clone --depth=1 $(UIBASE_URL) $(TMP_DIR)/$(UIBASE_NAME)
-	@echo "[INFO] Cloning Base Debian Build..."
-	git clone --depth=1 $(DEBBUILD_URL) $(TMP_DIR)/$(DEBBUILD_NAME)
-	# create target dirs
-	mkdir -p $(BUILD_DIR)/uibase
-	mkdir -p $(DEBBUILD_TARGET)
-		
-	# copy code and other files
-	rsync -av --update --exclude '.git/' --exclude='*.md' --exclude='test/' --exclude='po/' --exclude='custom_css_adw.c' $(TMP_DIR)/$(UIBASE_NAME)/$(UIBASE_SUBFOLDER)/* $(BUILD_DIR)/
-	rsync -av --update --exclude '.git/' --exclude='*.md' --exclude='*/config' --exclude='deb/config' $(TMP_DIR)/$(DEBBUILD_NAME)/$(DEBBUILD_SUBFOLDER)/* $(DEBBUILD_TARGET)
-clean-tmp:
-	rm -rf $(TMP_DIR)
-.PHONY: all prepare clean-tmp
+sudo dnf install gcc pkgconf gettext gtk4-devel libadwaita-devel vte291-gtk4-devel
 ```
 
-- **Notes:**
-    * Exclude `test.c` and other code parts, like `custom_css_adw.c` → provide this in your code
-    * include `language.mk` to your main makefile
-    * create in your working directory folder `po/` and add the `LINGUAS` file
-    * include this makefile as `Dependencies.mk`:
-```makefile 
-	include Dependencies.mk
-	include language.mk
+Run the examples from a checkout:
+
+```bash
+cargo run --example test_app       # everything in one window
+cargo run --example dialogs        # every dialog
+cargo run --example guide          # multi-page guide
+cargo run --example helper_tools   # helper functions, no window
 ```
 
+## First application
 
-## Basic usage
+```rust
+use adw::prelude::*;
+use atlbase::{gettext, prelude::*, ui_prelude::*};
 
-```c
-#include "atlbase.h"
+fn main() -> glib::ExitCode {
+    let app = adw::Application::builder()
+        .application_id("org.example.Demo")
+        .build();
+
+    app.connect_activate(|app| {
+        init_syslog("demo").ok();                          // log to syslog / journal
+        init_language("demo", "/usr/share/locale", false); // translations
+        use_adw_provider("button { border-radius: 12px; }");
+
+        let button = create_button(&gettext!("Hello"), |button| {
+            show_info_dialog(button, &gettext!("Hello from AtlBase"));
+        });
+        let window = adw::ApplicationWindow::builder()
+            .application(app)
+            .content(&button)
+            .build();
+        window.present();
+    });
+    app.run()
+}
 ```
-- now use the functions/modules in your code
 
-## Modules
+## Translations
 
-- `design/` – UI components (buttons, labels, switches)
-- `dialogs/` – Dialog system (spinners, progress bars, inputs)
-- `helper/` – Helper functions
-- `language/` – Localization system
+1. Wrap every text of your interface in `gettext!("…")`.
+2. Collect the texts into `po/<domain>.pot` and translate them in `po/<lang>.po`.
+   `xgettext` does not know Rust macros, but this works:
 
-## Module Usage
-- [Developer Docs](https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/docs/DEVELOPER_DOCS.md)
+   ```bash
+   cat src/*.rs | sed 's/gettext!(/gettext(/g' \
+     | xgettext -L C --keyword=gettext --from-code=UTF-8 -o po/demo.pot -
+   ```
+3. Compile them to `<LOCALEDIR>/<lang>/LC_MESSAGES/<domain>.mo` and call
+   `init_language(domain, LOCALEDIR, false)` at start-up.
+
+The texts of the library itself (dialog buttons, the log viewer, the navigation of guides, …)
+are translated automatically: the catalogs are part of the library.
+
+## Guides
+
+`design::carousel` shows instructions and tours as a swipeable multi-page widget. Write
+the content in a TOML file (see `examples/assets/guide.toml`) and show it:
+
+```rust
+let guide = GuideLoader::new().load_resource("/org/example/App/guides/intro.toml")?;
+GuideView::present_in_stack(&stack, "intro", &guide, "home");
+```
+
+## Packaging
+
+How to build deb, rpm, Flatpak, Snap and AppImage packages of an application that uses
+AtlBase is described in [PACKAGING.md](PACKAGING.md).

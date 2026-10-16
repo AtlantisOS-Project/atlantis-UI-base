@@ -1,27 +1,35 @@
+// commands.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
 //! System commands and external process control.
 //!
-//! This module bundles all functions related to executing commands 
-//! at the operating system level. It provides abstractions for 
-//! privileged operations, output redirection, and interaction 
-//! with desktop standards (URLs, terminals).
- 
-/// Checks whether a command is available in the system path ($PATH).
+//! This module bundles all functions that execute commands at the operating system
+//! level: privileged operations through `pkexec`, output capturing, and interaction with
+//! the desktop (URLs, terminals).
+//!
+//! # Packaging
+//!
+//! Inside a **Flatpak** sandbox, host programs such as `pkexec` and host terminal emulators
+//! are not reachable, and **Snap** strict confinement cannot elevate privileges. The
+//! functions report such failures on `stderr` instead of panicking. Use
+//! [`get_execution_environment`](crate::helper::configuration::application_environment::get_execution_environment)
+//! to hide the corresponding buttons.
+
 pub mod command_exists;
 
-/// Executes commands with administrator privileges via pkexec (Polkit).
 pub mod command_pkexec;
 
-/// Basic functions for executing commands and capturing return values.
 pub mod execute_command;
 
-/// Open a terminal window based on the desktop environment.
 pub mod open_terminal_desktop;
 
-/// Open web links or files with the system's default application.
 pub mod open_url;
 
-
-// Re-Export
+// Re-exports
 pub use command_exists::*;
 pub use command_pkexec::*;
 pub use execute_command::*;

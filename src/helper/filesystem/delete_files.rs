@@ -1,83 +1,97 @@
-//! Advanced deletion utilities with recursive parent cleanup.
+// delete_files.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Deletes files and cleans up the empty directories above them.
 //!
-//! This module provides functions for cleaning up directories. A key 
-//! feature is the ability to delete directory hierarchies “from the bottom up,” 
-//! as long as the directories are empty.
+//! The main feature is deleting a directory hierarchy "from the bottom up": the files of
+//! one directory are removed, then the directory and each parent directory is removed as
+//! long as it is empty.
 //!
-//! # Safety Notes
-//! The functions include strict safeguards to prevent the deletion of:
-//! - System-critical paths (`/bin`, `/etc`, etc.)
-//! - Mount points (partitions/network drives)
-//! - Standard user directories (Pictures, Documents, etc.)
-//! Nevertheless, this module should only be used for application-specific data 
+//! # Safety
 //!
-/**
-* delete_files.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The functions refuse to touch:
+//!
+//! * system-critical paths (`/`, `/bin`, `/etc`, `/usr`, `/var`, … and everything below
+//!   them),
+//! * important top-level directories (`/home`, `/tmp`, `/opt`, `/mnt`, `/media`, `/run`,
+//!   `/srv`, `/app`, `/snap`) — the directories themselves, not their contents,
+//! * the home directory and its standard folders (`Documents`, `Pictures`, `.config`, …),
+//! * mount points (they are never removed).
+//!
+//! Even so, use them only for data that belongs to your application.
 
 use std::fs;
 use std::os::unix::fs::MetadataExt;
-use std::path::{
-	Path, 
-	PathBuf
-};
+use std::path::{Path, PathBuf};
 
-/// List of paths that must never be deleted recursively.
+/// Paths that must never be deleted, nor anything below them.
 const CRITICAL_PATHS: &[&str] = &[
-    "/", "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", 
-    "/sys", "/dev", "/lib", "/boot", "/root"
+    "/", "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", "/sys", "/dev", "/lib", "/lib32",
+    "/lib64", "/boot", "/root",
+];
+
+/// Directories that must never be removed themselves; their contents are not protected.
+const PROTECTED_DIRS: &[&str] = &[
+    "/home", "/tmp", "/opt", "/mnt", "/media", "/run", "/srv", "/app", "/snap",
 ];
 
 /// Standard folders in the home directory that are protected.
 const STANDARD_HOME_FOLDERS: &[&str] = &[
-    "Desktop", "Documents", "Downloads", "Music", 
-    "Pictures", "Videos", "Public", "Templates", 
-    ".config", ".local"
+    "Desktop",
+    "Documents",
+    "Downloads",
+    "Music",
+    "Pictures",
+    "Videos",
+    "Public",
+    "Templates",
+    ".config",
+    ".local",
 ];
 
-/// Checks whether a path is a mount point.
-/// Compares the device ID of the path with that of the parent directory.
+/// Checks whether a path is a mount point by comparing its device ID with the parent's.
 fn is_mount_point(path: &Path) -> bool {
-    let parent = match path.parent() {
-        Some(p) => p,
-        None => return false,
+    let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) else {
+        return false;
     };
 
-    let meta_path = fs::metadata(path);
-    let meta_parent = fs::metadata(parent);
-
-    if let (Ok(mp), Ok(mpr)) = (meta_path, meta_parent) {
-        if mp.dev() != mpr.dev() {
-            println!("[WARN] Blocked: Mount Point detected: {:?}", path);
-            return true;
-        }
+    if let (Ok(meta_path), Ok(meta_parent)) = (fs::metadata(path), fs::metadata(parent))
+        && meta_path.dev() != meta_parent.dev()
+    {
+        println!("[WARN] Blocked: Mount Point detected: {:?}", path);
+        return true;
     }
     false
 }
 
 /// Checks whether the path belongs to a protected system directory.
 fn is_critical_system_path(path: &Path) -> bool {
-    if let Some(path_str) = path.to_str() {
-        for prefix in CRITICAL_PATHS {
-            if path_str == *prefix || path_str.starts_with(&format!("{}/", prefix)) {
-                println!("[ERROR] Blocked: Critical System Path detected: {}", path_str);
-                return true;
-            }
-        }
+    let Some(path_str) = path.to_str() else {
+        return false;
+    };
+
+    let critical = CRITICAL_PATHS
+        .iter()
+        .any(|prefix| path_str == *prefix || path_str.starts_with(&format!("{}/", prefix)))
+        || PROTECTED_DIRS.contains(&path_str);
+
+    if critical {
+        println!(
+            "[ERROR] Blocked: Critical System Path detected: {}",
+            path_str
+        );
     }
-    false
+    critical
 }
 
-/// Checks whether the path is a standard user folder to prevent data loss.
+/// Checks whether the path is the home directory or one of its standard folders.
 fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
-    let home = match home_dir {
-        Some(h) => h,
-        None => return false,
+    let Some(home) = home_dir else {
+        return false;
     };
 
     if path == home {
@@ -85,29 +99,52 @@ fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
         return true;
     }
 
-    for folder in STANDARD_HOME_FOLDERS {
-        if path == home.join(folder) {
-            println!("[ERROR] Blocked: Standard Home Folder detected: {:?}", path);
-            return true;
-        }
+    let standard = STANDARD_HOME_FOLDERS
+        .iter()
+        .any(|folder| path == home.join(folder));
+    if standard {
+        println!("[ERROR] Blocked: Standard Home Folder detected: {:?}", path);
     }
-    false
+    standard
 }
 
-/// Deletes all regular files within a directory.
+/// The home directory according to `$HOME`.
+fn home_from_env() -> Option<PathBuf> {
+    std::env::var_os("HOME").map(PathBuf::from)
+}
+
+/// Deletes all regular files in a directory.
 ///
-/// Subdirectories remain untouched.
+/// Subdirectories and their contents remain untouched; the directory itself is kept.
+/// Protected directories (see the [module documentation](self)) are refused: a message is
+/// printed and nothing is deleted. Errors are printed as well; the function does not
+/// return them.
 ///
-/// # Usage:
-/// 
-/// ```rust
-/// fn main {
-/// let test_file = "/tmp/test_file_path/test.txt";
-/// 	delete_files_in_dir(test_file);
-/// }
+/// # Arguments
+///
+/// * `path` - The directory whose files are deleted.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::delete_files_in_dir;
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// std::fs::write(dir.path().join("a.txt"), "a").unwrap();
+/// std::fs::create_dir(dir.path().join("sub")).unwrap();
+///
+/// delete_files_in_dir(dir.path());
+///
+/// assert!(!dir.path().join("a.txt").exists());
+/// assert!(dir.path().join("sub").is_dir());
+/// ```
 pub fn delete_files_in_dir(path: &Path) {
+    if is_critical_system_path(path) || is_standard_home_directory(path, &home_from_env()) {
+        return;
+    }
+
     let entries = match fs::read_dir(path) {
-        Ok(e) => e,
+        Ok(entries) => entries,
         Err(_) => {
             println!("[ERROR] Error opening the directory: {:?}", path);
             return;
@@ -117,106 +154,149 @@ pub fn delete_files_in_dir(path: &Path) {
     for entry in entries.flatten() {
         let file_path = entry.path();
         if file_path.is_file() {
-            if let Err(e) = fs::remove_file(&file_path) {
-                println!("[ERROR] Error deleting file {:?}: {}", file_path, e);
-            } 
-            
-            else {
-                println!("[INFO] File deleted: {:?}", file_path);
+            match fs::remove_file(&file_path) {
+                Ok(()) => println!("[INFO] File deleted: {:?}", file_path),
+                Err(e) => println!("[ERROR] Error deleting file {:?}: {}", file_path, e),
             }
         }
     }
 }
 
-/// Core logic for recursively deleting files and empty parent directories.
+/// Deletes the files of a directory and then removes it and its empty parents.
 ///
-/// Works its way up the directory tree until a directory is no longer empty 
-/// or a safety mechanism (stop directory, system path) is triggered.
+/// 1. The regular files of `path` are deleted (see [`delete_files_in_dir`]).
+/// 2. If `path` is now empty, it is removed. The same is repeated for each parent directory
+///    until a directory is **not empty**, is `stop_dir`, or is protected (see the
+///    [module documentation](self)). The files of the parent directories are never touched.
 ///
-/// # Usage:
+/// # Arguments
 ///
-/// ```rust
-/// fn main() {
-///    let base_path = "temp_data/projects/old_project/cache";
-///	   let file_path = format!("{}/temp_log.txt", base_path);
-///    delete_files::delete_files_with_parents(base_path);
-/// }
+/// * `path` - The directory to clean up.
+/// * `stop_dir` - The directory where the climb stops. It is never removed and also protects
+///   its standard folders (`Documents`, …). Usually the home directory.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::delete_files_and_parents;
+/// use std::path::PathBuf;
+///
+/// let root = tempfile::tempdir().unwrap();
+/// let cache = root.path().join("projects/old_project/cache");
+/// std::fs::create_dir_all(&cache).unwrap();
+/// std::fs::write(cache.join("temp_log.txt"), "log").unwrap();
+/// // a file in a parent directory keeps that directory alive
+/// std::fs::write(root.path().join("projects/keep.txt"), "keep").unwrap();
+///
+/// delete_files_and_parents(&cache, &Some(PathBuf::from(root.path())));
+///
+/// assert!(!root.path().join("projects/old_project").exists());
+/// assert!(root.path().join("projects/keep.txt").is_file());
+/// ```
 pub fn delete_files_and_parents(path: &Path, stop_dir: &Option<PathBuf>) {
-    if let Some(stop) = stop_dir {
-        if path == stop { 
-        	return; 
-        }
+    if stop_dir.as_deref() == Some(path) {
+        return;
     }
 
-    // remove the file
     delete_files_in_dir(path);
 
-    // check if the parent dir is empty
-    let is_empty = fs::read_dir(path).map(|mut i| i.next().is_none()).unwrap_or(false);
-
-    if is_empty {
-        // security check
-        if is_mount_point(path) || is_critical_system_path(path) || is_standard_home_directory(path, stop_dir) {
-            println!("[WARN] Stopping recursion: Path is protected: {:?}", path);
+    let mut current = path.to_path_buf();
+    loop {
+        if stop_dir.as_deref() == Some(current.as_path()) {
             return;
         }
 
-        // remove the directory
-        if let Err(e) = fs::remove_dir(path) {
-            println!("[ERROR] Error deleting empty directory {:?}: {}", path, e);
-        } 
-        
-        else {
-            println!("[INFO] Directory deleted: {:?}", path);
-
-            // remove the parent dirs
-            if let Some(parent) = path.parent() {
-                if parent != Path::new("/") {
-                    delete_files_and_parents(parent, stop_dir);
-                }
-            }
+        let is_empty = fs::read_dir(&current)
+            .map(|mut entries| entries.next().is_none())
+            .unwrap_or(false);
+        if !is_empty {
+            println!(
+                "[INFO] Stopping recursion: Directory {:?} is not empty.",
+                current
+            );
+            return;
         }
-    } 
-    
-    else {
-        println!("[INFO] Stopping recursion: Directory {:?} is not empty.", path);
+
+        if is_mount_point(&current)
+            || is_critical_system_path(&current)
+            || is_standard_home_directory(&current, stop_dir)
+        {
+            println!(
+                "[WARN] Stopping recursion: Path is protected: {:?}",
+                current
+            );
+            return;
+        }
+
+        if let Err(e) = fs::remove_dir(&current) {
+            println!(
+                "[ERROR] Error deleting empty directory {:?}: {}",
+                current, e
+            );
+            return;
+        }
+        println!("[INFO] Directory deleted: {:?}", current);
+
+        match current.parent() {
+            Some(parent) if parent != Path::new("/") && !parent.as_os_str().is_empty() => {
+                current = parent.to_path_buf();
+            }
+            _ => return,
+        }
     }
 }
 
-/// Convenience wrapper for deleting a path, including empty parent directories.
+/// Deletes the files of a directory and removes it and its empty parents.
 ///
-/// Initializes security prompts and sets the home directory as the default stopping point.
+/// Convenience wrapper for [`delete_files_and_parents`]: the path is resolved first
+/// (symbolic links, `..`), a path that does not exist is ignored, and the home directory
+/// (`$HOME`) is the stop point.
 ///
 /// # Warning
-/// This function deletes the entire path hierarchy upward, provided there are no 
-/// other files within it. Never apply to other users' directories!
 ///
-/// # Usage:
+/// The function removes the whole hierarchy upwards as long as the directories are empty.
+/// Never use it on directories of other users or on data that does not belong to your
+/// application.
 ///
-/// ```rust
-/// fn main() {
-///    // Deletes the file in 'cache' and removes 'cache', 'old_project', and 'projects' 
-///    // if doing so leaves them empty.
-///    let base_path = "temp_data/projects/old_project/cache";
-///	   let file_path = format!("{}/temp_log.txt", base_path);
-///    delete_files::delete_files_with_parent(base_path);
-/// }
+/// # Arguments
+///
+/// * `path_str` - The directory to clean up.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::delete_files_with_parent;
+///
+/// let root = tempfile::tempdir().unwrap();
+/// let cache = root.path().join("projects/old_project/cache");
+/// std::fs::create_dir_all(&cache).unwrap();
+/// std::fs::write(cache.join("temp_log.txt"), "log").unwrap();
+/// // `projects` also holds another project, so the climb stops there
+/// std::fs::create_dir(root.path().join("projects/other")).unwrap();
+///
+/// delete_files_with_parent(cache.to_str().unwrap());
+///
+/// assert!(!root.path().join("projects/old_project").exists());
+/// assert!(root.path().join("projects/other").is_dir());
+/// ```
 pub fn delete_files_with_parent(path_str: &str) {
     println!("[WARN] Warning: This code deletes an entire path until it finds a stop point.");
-    
-    let path = PathBuf::from(path_str);
-    // get the real path
-    let clean_path = fs::canonicalize(&path).unwrap_or(path);
-    
-    // get the home directory
-    let home_dir = std::env::var_os("HOME").map(PathBuf::from);
-	
-	// security check
+
+    let clean_path = match fs::canonicalize(path_str) {
+        Ok(path) => path,
+        Err(e) => {
+            println!("[ERROR] Cannot resolve {}: {}", path_str, e);
+            return;
+        }
+    };
+
     if is_critical_system_path(&clean_path) {
-        println!("[ERROR] Aborted: Starting path is critical: {:?}", clean_path);
+        println!(
+            "[ERROR] Aborted: Starting path is critical: {:?}",
+            clean_path
+        );
         return;
     }
-	
-	// delete the file
-    delete_files_and_parents(&clean_path, &home_dir);
+
+    delete_files_and_parents(&clean_path, &home_from_env());
 }

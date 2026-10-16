@@ -1,93 +1,67 @@
-//! Abstraction for directory selection.
+// folder_chooser.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Choosing a directory.
 //!
-//! This module encapsulates the logic of the `gtk4::FileDialog` for selecting folders.
-//! It ensures that the selection process is asynchronous and that the UI
-//! does not block during this time.
-/**
-* folder_chooser.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module wraps [`gtk4::FileDialog`] for choosing folders. The selection runs
+//! asynchronously, so the user interface does not block.
 
-use gtk4::prelude::*;
-use gtk4::{
-	FileDialog, 
-	Window, 
-	Button
-};
-use std::path::PathBuf;
 use crate::gettext;
+use gtk4::prelude::*;
+use gtk4::{FileDialog, Widget, Window};
+use std::path::PathBuf;
 
-/// Opens a dialog for selecting a directory.
+/// Opens a dialog to choose a directory.
 ///
-/// Unlike the file selection dialog, this dialog allows only the selection
-/// of folders. It is displayed modally over the window of the button that called it.
+/// Unlike the file chooser, only folders can be chosen. The window that contains `button`
+/// becomes the parent. The call returns immediately; `process_func` is called later with
+/// the path if the user chooses a folder. If the user cancels the dialog, nothing is
+/// called. Other errors are printed to `stderr`.
 ///
 /// # Arguments
-/// * `button` - The trigger for the dialog; used to determine the parent window.
-/// * `process_func` - The callback that is called with the [PathBuf] after a successful selection.
 ///
-/// # Functionality
-/// Internally uses `FileDialog::select_folder`. The result is processed asynchronously, 
-/// so that the application can continue to respond to user interactions.
+/// * `button` - The widget that triggered the dialog; it is only used to find the parent
+///   window.
+/// * `process_func` - Called with the path of the chosen folder.
 ///
-/// # Usage:
+/// # Examples
 ///
-/// ```rust
-/// // Example that without a box specification
-/// let folder_btn = Button::with_label("Folder?:");
-/// fn handle_folder(path: PathBuf) {
-///    println!("path: {:?}", path);
-/// }
-/// // connect button
-/// folder_btn.connect_clicked(move |btn| {
-///    show_folder_chooser(btn, handle_folder);
+/// ```no_run
+/// use atlbase::ui_prelude::show_folder_chooser;
+/// use gtk4::prelude::*;
+/// # gtk4::init().unwrap();
+///
+/// let button = gtk4::Button::with_label("Choose a folder");
+/// button.connect_clicked(|button| {
+///     show_folder_chooser(button, |path| println!("Folder: {:?}", path));
 /// });
-///
-/// // Example with boxing 
-/// let scan_button = create_special_button::create_button_icon_position(
-///    "scanner-symbolic",
-///    "Scan QR-Code/Barcode",
-///    Align::Center,
-///    move |btn| {
-///        // create the closure and box it
-///        let callback = Box::new(handle_folder);
-///        file_chooser::show_folder_chooser(btn, callback);
-///    }
 /// ```
-pub fn show_folder_chooser<F>(button: &Button, process_func: F) 
-where 
-    F: Fn(PathBuf) + 'static 
+pub fn show_folder_chooser<F>(button: &impl IsA<Widget>, process_func: F)
+where
+    F: Fn(PathBuf) + 'static,
 {
-    // get the root window
-    let root = button.root();
-    let parent_window = root.and_then(|r| r.downcast::<Window>().ok());
+    let parent_window = button
+        .root()
+        .and_then(|root| root.downcast::<Window>().ok());
 
     let dialog = FileDialog::new();
     dialog.set_title(&gettext!("Choose folder"));
 
-    // we wrap the function in a box internally so that it 
-    // can be passed into the dialog's asynchronous `move` block.
-    let boxed_func = Box::new(process_func);
-
     dialog.select_folder(
         parent_window.as_ref(),
         gio::Cancellable::NONE,
-        move |res| {
-            match res {
-                Ok(folder) => {
-                    if let Some(path) = folder.path() {
-                        boxed_func(path);
-                    }
-                }
-                
-                Err(err) => {
-                    eprintln!("Error opening the folder: {}", err);
+        move |res| match res {
+            Ok(folder) => {
+                if let Some(path) = folder.path() {
+                    process_func(path);
                 }
             }
+            Err(err) if err.matches(gtk4::DialogError::Dismissed) => {}
+            Err(err) => eprintln!("Error opening the folder: {}", err),
         },
     );
 }

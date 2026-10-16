@@ -1,99 +1,114 @@
-//! Provides the standardized "About" dialog.
+// about_dialog.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! The standard "About" dialog.
 //!
-//! This module uses `adw::AboutDialog` to display consistent metadata about the application,
-//! licensing, and contributors.
-/**
-* about_dialog.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module uses [`adw::AboutDialog`] to show consistent information about an
+//! application: version, license, contributors and acknowledgments.
 
-use adw::prelude::*;
+use crate::gettext;
 use adw::AboutDialog;
-use gtk4::Widget;
-use gtk4::License;
+use adw::prelude::*;
+use gtk4::{License, Widget};
 
-/// Contains all metadata to be displayed in the “About” dialog.
+/// All information shown in the "About" dialog.
 ///
-/// This structure serves as a container for passing the various pieces of information
-/// to the [show_about_dialog] function in a clear and organized manner.
-#[derive(Debug, Clone)]
+/// The struct passes the many pieces of information to [`show_about_dialog`] in an organized
+/// way. It implements [`Default`] (all fields empty), so you can set only what you need:
+///
+/// ```
+/// use atlbase::ui_prelude::AboutInfo;
+///
+/// let info = AboutInfo {
+///     app_name: "My App".to_string(),
+///     version: "1.0.0".to_string(),
+///     ..Default::default()
+/// };
+/// assert!(info.developers.is_empty());
+/// ```
+#[derive(Debug, Clone, Default)]
 pub struct AboutInfo {
-    /// Name of the app icon (from the icon theme or path)
+    /// Name of the application icon (from the icon theme).
     pub app_icon: String,
-    /// The display name of the application
+    /// The display name of the application.
     pub app_name: String,
-    /// Primary developer or organization
+    /// The main developer or organization.
     pub developer_name: String,
-    /// Current program version
+    /// The current version of the program.
     pub version: String,
-    /// Version of the current release notes
+    /// The version the release notes belong to.
     pub release_notes_version: String,
-    /// Brief summary of changes (Markup allowed)
+    /// A short summary of the changes (Pango markup allowed).
     pub release_notes: String,
-    /// A brief description of the application
+    /// A short description of the application.
     pub comments: String,
-    /// Official website of the application
+    /// The website of the application.
     pub website: String,
-    /// URL to the issue tracker (e.g., GitHub/GitLab Issues)
+    /// URL of the issue tracker (for example the GitHub issues).
     pub issue_url: String,
-    /// Link to support resources
+    /// Link to the support resources.
     pub support_url: String,
-    /// Copyright string (e.g., “© 2026 AtlantisOS Project”)
+    /// The copyright line, for example `"© 2026 AtlantisOS Project"`.
     pub copyright: String,
-    /// List of contributing developers
+    /// The developers.
     pub developers: Vec<String>,
-    /// Graphic artists and designers
+    /// The graphic artists and designers.
     pub artists: Vec<String>,
-    /// Link to online documentation
+    /// Link to the online documentation. Without a link the entry is left out.
     pub documentation_url: String,
-    /// Information about fonts used and their licenses
+    /// Fonts that are used and their licenses. Without text the section is left out.
     pub font_usage: String,
-    /// Special acknowledgments
+    /// Special acknowledgments. Without entries the section is left out.
     pub special_thanks: Vec<String>,
-    /// Credits for translators
+    /// The credits for the translators.
     pub translator_credits: String,
 }
 
-/// Opens a Libadwaita "About" dialog with the specified information.
+/// Shows the "About" dialog of the application.
 ///
-/// The dialog is displayed modally relative to the `parent` widget (usually the main window).
-/// It automatically includes sections for legal information, contributors, and acknowledgments.
+/// The dialog is presented over `parent` (usually the main window). It always uses the
+/// license GPL 3.0 and has sections for the legal information, the contributors and the
+/// acknowledgments. The headings of the sections are translated with
+/// [`gettext!`](crate::gettext!).
 ///
 /// # Arguments
 ///
-/// * `parent` - The widget from which the dialog is "presented".
-/// * `info` - An [AboutInfo] instance containing the data to be displayed.
+/// * `parent` - The widget the dialog is shown over.
+/// * `info` - The information to show.
 ///
-/// # Usage:
+/// # Examples
 ///
-/// ```rust
+/// ```no_run
+/// use atlbase::ui_prelude::{AboutInfo, show_about_dialog};
+/// # gtk4::init().unwrap();
+/// # let main_window = gtk4::Window::new();
+///
 /// let info = AboutInfo {
-///    app_icon: "atlantis-os-logo".to_string(),
-///    app_name: "AtlantisOS Dashboard".to_string(),
-///    developer_name: "NachtsternBuild".to_string(),
-///    version: "2026.1.0".to_string(),
-///    release_notes_version: "1.0.0".to_string(),
-///    release_notes: "Stable Release".to_string(),
-///    comments: "Some UI".to_string(),
-///    website: "https://example.org".to_string(),
-///    issue_url: "https://example.org/issues".to_string(),
-///    support_url: "https://example.org/support".to_string(),
-///    copyright: "© 2026 AtlantisOS Project".to_string(),
-///    developers: vec!["NachtsternBuild".to_string(), "OpenSource Contributor".to_string()],
-///    artists: vec!["DesignTeam Alpha".to_string()],
-///    documentation_url: "https://docs.atlantisos.org".to_string(),
-///    font_usage: "Some cool font".to_string(),
-///    special_thanks: vec!["GNOME Team".to_string(), "Rust Community".to_string()],
-///    translator_credits: "Translated by AtlantisOS Project".to_string(),
+///     app_icon: "atlantis-os-logo".to_string(),
+///     app_name: "AtlantisOS Dashboard".to_string(),
+///     developer_name: "NachtsternBuild".to_string(),
+///     version: "2026.1.0".to_string(),
+///     release_notes_version: "2026.1.0".to_string(),
+///     release_notes: "Stable release".to_string(),
+///     comments: "The dashboard of AtlantisOS".to_string(),
+///     website: "https://example.org".to_string(),
+///     issue_url: "https://example.org/issues".to_string(),
+///     support_url: "https://example.org/support".to_string(),
+///     copyright: "© 2026 AtlantisOS Project".to_string(),
+///     developers: vec!["NachtsternBuild".to_string()],
+///     artists: vec!["DesignTeam Alpha".to_string()],
+///     documentation_url: "https://docs.atlantisos.org".to_string(),
+///     font_usage: "Cantarell, SIL Open Font License".to_string(),
+///     special_thanks: vec!["GNOME Team".to_string(), "Rust Community".to_string()],
+///     translator_credits: "Translated by the AtlantisOS Project".to_string(),
 /// };
 /// show_about_dialog(&main_window, info);
 /// ```
 pub fn show_about_dialog(parent: &impl IsA<Widget>, info: AboutInfo) {
-    // create the dialog
     let about = AboutDialog::builder()
         .application_icon(&info.app_icon)
         .application_name(&info.app_name)
@@ -112,21 +127,23 @@ pub fn show_about_dialog(parent: &impl IsA<Widget>, info: AboutInfo) {
         .translator_credits(&info.translator_credits)
         .build();
 
-    // add documentation
-    about.add_link("Documentation", &info.documentation_url);
+    if !info.documentation_url.is_empty() {
+        about.add_link(&gettext!("Documentation"), &info.documentation_url);
+    }
 
-    // Fonts and Licenses
-    about.add_legal_section(
-        "Fonts",
-        None,
-        License::Custom,
-        Some(&info.font_usage),
-    );
-    
-    // add some thanks
-    let thanks_refs: Vec<&str> = info.special_thanks.iter().map(|s| s.as_str()).collect();
-    about.add_acknowledgement_section(Some("Special thanks to"), &thanks_refs);
+    if !info.font_usage.is_empty() {
+        about.add_legal_section(
+            &gettext!("Fonts"),
+            None,
+            License::Custom,
+            Some(&info.font_usage),
+        );
+    }
 
-    // show dialog
+    if !info.special_thanks.is_empty() {
+        let thanks: Vec<&str> = info.special_thanks.iter().map(String::as_str).collect();
+        about.add_acknowledgement_section(Some(&gettext!("Special thanks to")), &thanks);
+    }
+
     about.present(Some(parent));
 }

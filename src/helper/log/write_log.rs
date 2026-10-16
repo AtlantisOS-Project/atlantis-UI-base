@@ -1,64 +1,65 @@
+// write_log.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
 //! System-wide logging via the syslog service.
 //!
-//! This module implements a logger for the `log` crate that forwards messages 
-//! directly to the Unix syslog daemon. This enables centralized 
-//! error management and monitoring within AtlantisOS.
-/**
-* write_log.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module implements a logger for the [`log`] crate that forwards the messages to the
+//! Unix syslog daemon. That makes centralized error handling and monitoring possible; on
+//! systemd systems the messages show up in `journalctl -t <app name>` and can be displayed
+//! with `show_log_viewer` (feature `log-viewer`).
+//!
+//! # Packaging
+//!
+//! The logger talks to the socket `/dev/log`. Inside a Flatpak sandbox this socket is not
+//! reachable; the messages are dropped silently and the application keeps running. Debian,
+//! rpm, Snap and AppImage packages can use it without changes.
 
-use syslog::{
-	Facility, 
-	Formatter3164
-};
-use log::{
-	LevelFilter, 
-	Metadata, 
-	Record
-};
+use log::{Level, LevelFilter, Metadata, Record};
 use std::process;
+use std::sync::Mutex;
+use syslog::{Facility, Formatter3164, Logger, LoggerBackend};
 
-/// Internal structure for implementing the `log::Log` trait.
-/// 
-/// Stores the application name to uniquely identify log entries.
+/// Forwards `log` records to syslog.
 struct SyslogLogger {
-    app_name: String,
+    formatter: Formatter3164,
+    /// The connection is opened with the first message and reused; it is dropped after a
+    /// failed write so that the next message reconnects (for example after a restart of
+    /// the syslog daemon).
+    writer: Mutex<Option<Logger<LoggerBackend, Formatter3164>>>,
 }
 
 impl log::Log for SyslogLogger {
-	/// Determines which log levels are processed.
-    /// In AtlantisOS, all levels up to and including `Debug` are logged.
+    /// All levels up to and including `Debug` are logged.
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= log::Level::Debug
+        metadata.level() <= Level::Debug
     }
-	
-	/// Sends a log message to the syslog daemon.
+
     fn log(&self, record: &Record) {
-        if self.enabled(record.metadata()) {
-            // create a code formatter
-            let formatter = Formatter3164 {
-    			facility: Facility::LOG_USER,
-    			hostname: None,
-    			process: self.app_name.clone(),
-    			pid: process::id() as u32, // save process id as u32
-			};
-			
-            if let Ok(mut writer) = syslog::unix(formatter) {
-                let message = format!("{}", record.args());
-                
-                let _ = match record.level() {
-                    log::Level::Error => writer.err(message),
-                    log::Level::Warn  => writer.warning(message),
-                    log::Level::Info  => writer.info(message),
-                    log::Level::Debug => writer.debug(message),
-                    log::Level::Trace => writer.debug(message),
-                };
-            }
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
+        let mut guard = self.writer.lock().unwrap_or_else(|p| p.into_inner());
+        if guard.is_none() {
+            *guard = syslog::unix(self.formatter.clone()).ok();
+        }
+        let Some(writer) = guard.as_mut() else {
+            return;
+        };
+
+        let message = record.args().to_string();
+        let sent = match record.level() {
+            Level::Error => writer.err(message),
+            Level::Warn => writer.warning(message),
+            Level::Info => writer.info(message),
+            Level::Debug | Level::Trace => writer.debug(message),
+        };
+        if sent.is_err() {
+            *guard = None;
         }
     }
 
@@ -67,29 +68,38 @@ impl log::Log for SyslogLogger {
 
 /// Initializes syslog logging for the current application.
 ///
-/// After calling this function, standard macros such as `info!()`, 
-/// `warn!()`, or `error!()` can be used to log messages system-wide.
+/// Afterwards the standard macros `info!()`, `warn!()`, `error!()` and so on log to the
+/// system. The log level is `Debug`.
 ///
 /// # Arguments
-/// * `app_name` - The name under which the logs should appear in the system (e.g., in `/var/log/syslog`).
 ///
-/// # Error Handling
-/// Returns a `SetLoggerError` if a logger has already been registered for this process.
+/// * `app_name` - The identifier under which the messages appear, for example in
+///   `/var/log/syslog` or with `journalctl -t app_name`.
 ///
-/// # Usage:
+/// # Errors
 ///
-/// ```rust
-/// fn main() {
-///    init_syslog("atlantis-ui").expect("Unable to initialize Syslog");
-///    log::info!("UI successful started");
-///    log::error!("Critical Error found!");
-/// }
-/// ``` 
+/// Returns a [`log::SetLoggerError`] if a logger has already been registered for this
+/// process.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::prelude::init_syslog;
+///
+/// init_syslog("atlantis-ui").expect("unable to initialize syslog");
+/// log::info!("UI successfully started");
+/// log::error!("Critical error found!");
+/// ```
 pub fn init_syslog(app_name: &str) -> Result<(), log::SetLoggerError> {
     let logger = SyslogLogger {
-        app_name: app_name.to_string(),
+        formatter: Formatter3164 {
+            facility: Facility::LOG_USER,
+            hostname: None,
+            process: app_name.to_string(),
+            pid: process::id(),
+        },
+        writer: Mutex::new(None),
     };
 
-    log::set_boxed_logger(Box::new(logger))
-        .map(|_| log::set_max_level(LevelFilter::Debug))
+    log::set_boxed_logger(Box::new(logger)).map(|_| log::set_max_level(LevelFilter::Debug))
 }

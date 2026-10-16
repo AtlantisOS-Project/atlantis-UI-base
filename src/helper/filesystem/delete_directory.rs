@@ -1,56 +1,61 @@
-//! Utility for removing empty directories.
+// delete_directory.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Removes empty directories.
 //!
-//! This module provides a simple interface for deleting directories. 
-//! Since it uses `std::fs::remove_dir`, the operation will fail as a safety measure 
-//! if the directory is not empty.
-/**
-* delete_directory.rs
-*
-* (C) 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module offers a simple interface for deleting a directory. It uses
+//! [`std::fs::remove_dir`], so the operation fails as a safety measure if the directory
+//! is not empty.
 
 use std::fs;
 use std::path::Path;
 use std::process;
 
-/// Deletes a directory from the file system.
+/// Deletes an empty directory.
 ///
-/// This function is designed as a "simple" delete command. It **does not** 
-/// delete contents recursively. If the folder contains files or subfolders, an 
-/// error is returned and the program terminates.
+/// This is a deliberately simple delete command: it does **not** delete contents
+/// recursively. Use
+/// [`delete_files_with_parent`](crate::helper::filesystem::delete_files::delete_files_with_parent)
+/// to clean up a directory with files in it.
 ///
-/// # Safety & Error Handling
-/// - **Program Termination:** In case of an error (e.g., missing permissions or 
-///   non-empty folder), the function outputs an error message to `stderr` 
-///   and terminates the entire process with status `1`.
-/// - **Generic paths:** Accepts anything that implements `AsRef<Path>` (strings, PathBuf, etc.).
+/// # Process exit
+///
+/// If the directory cannot be deleted (it is not empty, does not exist or the permissions
+/// are missing), the function prints an error to `stderr` and **terminates the whole
+/// process** with status `1`. This suits cleanup steps of installers and command line
+/// tools; do not use it where the application has to carry on after a failure — use
+/// [`std::fs::remove_dir`] there.
 ///
 /// # Arguments
-/// * `path` - The path to the directory to be deleted.
 ///
-/// # Usage:
+/// * `path` - The directory to delete (`&str`, `String`, `PathBuf`, …).
 ///
-/// ```rust
-/// fn main() {
-///    delete_directory("/tmp/test_dir");
-/// }
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::delete_directory;
+///
+/// let parent = tempfile::tempdir().unwrap();
+/// let dir = parent.path().join("empty");
+/// std::fs::create_dir(&dir).unwrap();
+///
+/// delete_directory(&dir);
+/// assert!(!dir.exists());
 /// ```
 pub fn delete_directory<P: AsRef<Path>>(path: P) {
     let path_ref = path.as_ref();
 
     match fs::remove_dir(path_ref) {
-        Ok(_) => {
-            println!("Directory deleted: {:?}", path_ref);
-        }
+        Ok(_) => println!("Directory deleted: {:?}", path_ref),
         Err(e) => {
             eprintln!(
                 "Error deleting directory {:?}: {} (Note: Only empty directories can be deleted.)",
                 path_ref, e
             );
-            // since this is often a critical cleanup step, we exit if errors occur
             process::exit(1);
         }
     }

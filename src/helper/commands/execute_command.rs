@@ -1,70 +1,82 @@
-//! Functions to run a shell command
-/**
-* execute_command.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+// execute_command.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-use std::process::{
-	Command, 
-	Stdio, 
-	ExitStatus
-};
-use std::io::{
-	self
-};
+//! Functions to run a command and to capture its output.
 
-/// Run a command and direct the output to stdout
-/// ### Usage:
-///
-/// ```rust
-/// fn main() {
-///    let status = run_command(&["echo", "Simuliere apt update..."]);
-///    match status {
-///        Ok(s) => println!("Ends with code: {}", s),
-///        Err(e) => ephemerals!("Error: {}", e),
-///    }
-/// }
-/// ```
-pub fn run_command(args: &[&str]) -> io::Result<ExitStatus> {
-    let mut child = Command::new(args[0])
-        .args(&args[1..])
-        .spawn()?;
+use std::io;
+use std::process::{Command, ExitStatus, Stdio};
 
-    child.wait()
+/// Splits `args` into the program and its arguments.
+fn split_command<'a>(args: &'a [&'a str]) -> io::Result<(&'a str, &'a [&'a str])> {
+    args.split_first()
+        .map(|(program, rest)| (*program, rest))
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "no command given"))
 }
 
-/// Run a command an capture the stadout of the command
-/// ### Usage:
-/// 
-/// ```rust
-/// fn main {
-/// match capture_command_output(&["date"]) {
-///        Ok(out) => println!("The output was: {}", out.trim()),
-///        Err(e) => eprintln!("Error during capture: {}", e),
-///		}
-/// }
-/// ``` 
+/// Runs a command and lets it write directly to the standard streams of this process.
+///
+/// The function waits until the command has finished.
+///
+/// # Arguments
+///
+/// * `args` - The program followed by its arguments. No shell is involved, so quoting and
+///   pipes are not interpreted; pass `["sh", "-c", "…"]` if you need them.
+///
+/// # Errors
+///
+/// Returns an [`io::Error`] if `args` is empty or the program cannot be started. A command
+/// that runs but fails is *not* an error: check the returned [`ExitStatus`].
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::run_command;
+///
+/// let status = run_command(&["true"]).unwrap();
+/// assert!(status.success());
+/// ```
+pub fn run_command(args: &[&str]) -> io::Result<ExitStatus> {
+    let (program, rest) = split_command(args)?;
+    Command::new(program).args(rest).spawn()?.wait()
+}
+
+/// Runs a command and captures what it writes to `stdout`.
+///
+/// # Arguments
+///
+/// * `args` - The program followed by its arguments (see [`run_command`]).
+///
+/// # Errors
+///
+/// Returns an [`io::Error`] if `args` is empty, the program cannot be started, or it exits
+/// with a status other than 0. In the last case the message contains the `stderr` output.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::capture_command_output;
+///
+/// let output = capture_command_output(&["echo", "hello"]).unwrap();
+/// assert_eq!(output.trim(), "hello");
+///
+/// assert!(capture_command_output(&["false"]).is_err());
+/// ```
 pub fn capture_command_output(args: &[&str]) -> io::Result<String> {
-    let output = Command::new(args[0])
-        .args(&args[1..])
+    let (program, rest) = split_command(args)?;
+    let output = Command::new(program)
+        .args(rest)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()?;
 
     if output.status.success() {
-        let result = String::from_utf8_lossy(&output.stdout).into_owned();
-        Ok(result)
-    } 
-    
-    else {
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    } else {
         let error = String::from_utf8_lossy(&output.stderr);
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!("Command failed: {}", error),
-        ))
+        Err(io::Error::other(format!("Command failed: {}", error)))
     }
 }

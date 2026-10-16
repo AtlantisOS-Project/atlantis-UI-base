@@ -1,42 +1,43 @@
-//! A collection of dialog components for AtlantisOS.
-//!
-//! This module provides various graphical interaction elements based on 
-//! `libadwaita` and `gtk4`. It ranges from simple informational messages to 
-//! complex task dialogs with progress indicators.
+// dialogs.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-/// Basic alert dialogs for confirmations.
+//! Dialogs for AtlantisOS applications.
+//!
+//! The module offers graphical dialogs based on `libadwaita` and `gtk4`: from simple
+//! messages to task dialogs with a progress indicator.
+//!
+//! Text that the dialogs show on their own ("OK", "Error", …) is translated with
+//! [`gettext!`](crate::gettext!); see [`helper::language`](crate::helper::language).
+
 pub mod dialog;
 
-/// The standardized "About" dialog for app information.
 pub mod about_dialog;
 
-/// Dialogs with input fields for user interactions.
 pub mod dialog_entry;
 
-/// Visual feedback via loading spinners.
 pub mod dialogs_spinner;
 
-/// Pre-built standard dialogs (Info, Error, Warning).
 pub mod standard_dialogs;
 
-/// Dialogs for executing and monitoring background tasks.
 pub mod dialog_function;
 
-/// Displaying media content in dialogs.
 pub mod image_dialog;
 
-/// Providing flexible `AlertDialog` wrappers that can accommodate custom content (`GtkBox`).
 pub mod dialog_custom;
 
-/// Progress indicators and background execution infrastructure for system commands.
 pub mod dialog_spinner_return;
 
-// Re-Exports 
-pub use standard_dialogs::*;
+// Re-exports
 pub use about_dialog::*;
-pub use dialog::*; 
-pub use image_dialog::*;
-pub use dialog_entry::*;
-pub use dialogs_spinner::*;
+pub use dialog::*;
 pub use dialog_custom::*;
+pub use dialog_entry::*;
+pub use dialog_function::*;
 pub use dialog_spinner_return::*;
+pub use dialogs_spinner::*;
+pub use image_dialog::*;
+pub use standard_dialogs::*;

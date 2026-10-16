@@ -1,201 +1,206 @@
-//! # Runtime Tempfile Manager
+// temp_app_file.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! A temporary file for the lifetime of the application.
 //!
-//! This module provides a thread-safe, globally accessible interface for 
-//! managing a temporary file that exists only for the duration of the 
-//! application.
+//! The module offers a thread-safe, globally accessible interface for one temporary file
+//! that exists only while the application runs. It is handy to pass small amounts of text
+//! between parts of an application, or to a helper process, without inventing a file name.
 //!
-//! ## Architecture
-//! The module uses the **RAII principle** (Resource Acquisition Is Initialization). 
-//! The file is created upon first access and automatically deleted as soon as 
-//! the application terminates normally or aborts due to a panic.
+//! # How it works
 //!
-//! ### Core Components:
-//! - `OnceLock`: Guarantees thread-safe lazy initialization.
-//! - `Mutex`: Enables synchronized access from multiple threads.
-//! - `NamedTempFile`: Manages the physical file and its deletion.
+//! * The file is created on first access in the temporary directory of the system
+//!   (`$TMPDIR`, usually `/tmp`; Flatpak and Snap give each application a private one).
+//! * A [`OnceLock`] guarantees the thread-safe lazy creation and a [`Mutex`] serializes
+//!   the access.
+//! * The file is a [`NamedTempFile`] and is removed when the application ends normally. It
+//!   cannot be removed if the process is killed.
 //!
-//! ## Example
+//! # Examples
 //!
-//! ```rust
-//! fn main() {
-//!    write_to_temp("Hello World!").unwrap();
-//!    write_to_temp("\nSecond Line").unwrap();
-//!	   write_to_temp("\nLast Line").unwrap();
-//!
-//!    match read_from_temp() {
-//!        Ok(content) => println!("Content of file: \n{}", content),
-//!        Err(e) => eprintln!("Error with writing to: {}", e),
-//!    }
-//!
-//!    println!("Before:\n{}", read_from_temp().unwrap());
-//!
-//!    remove_line_from_temp(1).unwrap();
-//!    println!("Delete line 1:\n{}", read_from_temp().unwrap());
-//!
-//!    clear_temp_file().unwrap();
-//!    println!("After Clear: '{}'", read_from_temp().unwrap());
-//!    
-//!    write_to_temp("Hello World!").unwrap();
-//!    println!("The file will be deleted as soon as the program closes.");
-//! }
 //! ```
-/**
-* temp_app_file.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
-use std::io::{
-	self, 
-	Read, 
-	Write, 
-	Seek, 
-	SeekFrom
-};
-use std::sync::{
-	Mutex, 
-	OnceLock
-};
+//! use atlbase::prelude::*;
+//!
+//! write_to_temp("Hello World!").unwrap();
+//! write_to_temp("\nSecond Line").unwrap();
+//! write_to_temp("\nLast Line").unwrap();
+//! assert_eq!(read_from_temp().unwrap(), "Hello World!\nSecond Line\nLast Line");
+//!
+//! remove_line_from_temp(1).unwrap();
+//! assert_eq!(read_from_temp().unwrap(), "Hello World!\nLast Line\n");
+//!
+//! clear_temp_file().unwrap();
+//! assert_eq!(read_from_temp().unwrap(), "");
+//! ```
+
+use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::sync::{Mutex, MutexGuard, OnceLock};
 use tempfile::NamedTempFile;
 
-/// Global storage for the temporary file.
-/// The file is automatically deleted when this object is dropped.
+/// Global storage of the temporary file. The file is deleted when the object is dropped.
 static TEMP_FILE: OnceLock<Mutex<NamedTempFile>> = OnceLock::new();
 
-/// Initializes the temporary file or returns a reference to the existing one.
+/// Locks the temporary file; creates it on first use.
 ///
 /// # Panics
-/// This function panics if the temporary file cannot be created in the system temp directory 
 ///
-fn get_temp_file() -> &'static Mutex<NamedTempFile> {
-    TEMP_FILE.get_or_init(|| {
-        let file = NamedTempFile::new().expect("Critical error: Temporary file could not be created");
-        Mutex::new(file)
-    })
+/// Panics if the file cannot be created in the temporary directory of the system.
+fn lock_temp_file() -> MutexGuard<'static, NamedTempFile> {
+    TEMP_FILE
+        .get_or_init(|| {
+            let file = NamedTempFile::new().expect("temporary file could not be created");
+            Mutex::new(file)
+        })
+        .lock()
+        // a panic in another thread cannot leave the file in an inconsistent state
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-/// Writes data to the temporary file.
+/// Appends text to the end of the temporary file.
 ///
-/// The data is written to the end of the file. After writing,
-/// the buffer is flushed to prevent data loss.
+/// The buffer is flushed afterwards so no data is lost.
 ///
 /// # Arguments
-/// * `data` - A string slice to be written to the file.
+///
+/// * `data` - The text to append. No line break is added.
 ///
 /// # Errors
-/// Returns a `std::io::Result::Err` if the write operation fails.
 ///
-/// # Example
-/// ```rust
+/// Returns an [`io::Error`] if writing fails.
+///
+/// # Panics
+///
+/// Panics if the temporary file cannot be created on first use.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::write_to_temp;
+///
 /// write_to_temp("Important runtime data").unwrap();
 /// ```
 pub fn write_to_temp(data: &str) -> io::Result<()> {
-    let mutex = get_temp_file();
-    let mut guard = mutex.lock().unwrap();
-    
-    guard.as_file_mut().write_all(data.as_bytes())?;
-    guard.as_file_mut().flush()?;
-    Ok(())
+    let mut file = lock_temp_file();
+
+    // a previous read or clear may have left the cursor somewhere else
+    file.as_file_mut().seek(SeekFrom::End(0))?;
+    file.as_file_mut().write_all(data.as_bytes())?;
+    file.as_file_mut().flush()
 }
 
-/// Reads the entire contents of the temporary file.
-///
-/// This function sets the file pointer to the beginning (position 0) before reading.
-///
-/// # Returns
-/// An `io::Result<String>` containing the complete contents of the file.
+/// Reads the entire content of the temporary file.
 ///
 /// # Errors
-/// Returns an error if the file cannot be read or 
-/// contains invalid UTF-8.
 ///
-/// # Example
+/// Returns an [`io::Error`] if the file cannot be read or does not contain valid UTF-8.
 ///
-/// ```rust
+/// # Panics
+///
+/// Panics if the temporary file cannot be created on first use.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::read_from_temp;
+///
 /// match read_from_temp() {
-///        Ok(content) => println!("Content of file: \n{}", content),
-///        Err(e) => eprintln!("Error with writing to: {}", e),
+///     Ok(content) => println!("Content of the file:\n{}", content),
+///     Err(e) => eprintln!("Cannot read the file: {}", e),
 /// }
 /// ```
 pub fn read_from_temp() -> io::Result<String> {
-    let mutex = get_temp_file();
-    let mut guard = mutex.lock().unwrap();
-    
-    guard.as_file_mut().seek(SeekFrom::Start(0))?;
+    let mut file = lock_temp_file();
+
+    file.as_file_mut().seek(SeekFrom::Start(0))?;
     let mut content = String::new();
-    guard.as_file_mut().read_to_string(&mut content)?;
+    file.as_file_mut().read_to_string(&mut content)?;
     Ok(content)
 }
 
-/// Deletes the entire contents of the temporary file.
+/// Deletes the entire content of the temporary file.
 ///
-/// The file remains in existence and reserved, but its size is set to 0
-/// and the file pointer is reset to the beginning.
+/// The file itself remains; its size is set to 0 and the cursor returns to the start.
 ///
 /// # Errors
-/// Returns an error if the file cannot be truncated.
 ///
-/// # Example
+/// Returns an [`io::Error`] if the file cannot be truncated.
 ///
-/// ```rust
+/// # Panics
+///
+/// Panics if the temporary file cannot be created on first use.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::clear_temp_file;
+///
 /// clear_temp_file().unwrap();
 /// ```
 pub fn clear_temp_file() -> io::Result<()> {
-    let mutex = get_temp_file();
-    let guard = mutex.lock().unwrap();
-    
-    // set the file size to 0
-    guard.as_file().set_len(0)?;
+    let mut file = lock_temp_file();
+
+    file.as_file().set_len(0)?;
+    file.as_file_mut().seek(SeekFrom::Start(0))?;
     Ok(())
 }
 
-/// Deletes a specific line from the temporary file based on the line number.
+/// Deletes one line of the temporary file.
 ///
-/// **Performance Note:** Since files in the file system cannot simply be 
-/// "truncated" in the middle, this function must read and rewrite the entire file.
-/// For very large files, this function should be used sparingly.
+/// A file cannot be shortened in the middle, so the function reads and rewrites the
+/// whole file. Avoid it for very large files. The remaining lines are terminated by a
+/// line break.
 ///
 /// # Arguments
-/// * `line_number` - The 0-based index number of the line to be removed.
+///
+/// * `line_number` - The 0-based index of the line to remove.
 ///
 /// # Errors
-/// Returns an error if the file cannot be read or rewritten.
 ///
-/// # Example
+/// Returns an [`io::Error`] of kind [`InvalidInput`](io::ErrorKind::InvalidInput) if the
+/// file has no such line, or any error that occurs while reading or rewriting the file.
 ///
-/// ```rust
+/// # Panics
+///
+/// Panics if the temporary file cannot be created on first use.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{clear_temp_file, remove_line_from_temp, write_to_temp};
+///
+/// clear_temp_file().unwrap();
+/// write_to_temp("keep\nremove\n").unwrap();
 /// remove_line_from_temp(1).unwrap();
 /// ```
 pub fn remove_line_from_temp(line_number: usize) -> io::Result<()> {
-    let mutex = get_temp_file();
-    let mut guard = mutex.lock().unwrap();
+    let mut file = lock_temp_file();
 
-    // read content
-    guard.as_file_mut().seek(SeekFrom::Start(0))?;
+    file.as_file_mut().seek(SeekFrom::Start(0))?;
     let mut content = String::new();
-    guard.as_file_mut().read_to_string(&mut content)?;
+    file.as_file_mut().read_to_string(&mut content)?;
 
-    // filter the lines
     let lines: Vec<&str> = content.lines().collect();
     if line_number >= lines.len() {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Line number outside the range"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Line number outside the range",
+        ));
     }
 
     let mut new_content = String::new();
-    for (i, line) in lines.iter().enumerate() {
-        if i != line_number {
+    for (index, line) in lines.iter().enumerate() {
+        if index != line_number {
             new_content.push_str(line);
             new_content.push('\n');
         }
     }
 
-    // remove everything from the file and rewrite the content
-    guard.as_file().set_len(0)?;
-    guard.as_file_mut().seek(SeekFrom::Start(0))?;
-    guard.as_file_mut().write_all(new_content.as_bytes())?;
-    guard.as_file_mut().flush()?;
-
-    Ok(())
+    file.as_file().set_len(0)?;
+    file.as_file_mut().seek(SeekFrom::Start(0))?;
+    file.as_file_mut().write_all(new_content.as_bytes())?;
+    file.as_file_mut().flush()
 }

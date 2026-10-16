@@ -1,263 +1,126 @@
-# Developer Documentation
-
-All functions and modules are listed here.
-For more details, look for the functions in the headers.
-
-## `altbase.h`
-- Bring all functions from the ATL UIBase
-- Bring all this additional libraries:
-
-```c
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
-#include <strings.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <errno.h>
-#include <signal.h>
-#include <limits.h>
-#include <time.h>
-#include <locale.h>
-#include <fcntl.h>
-#include <ctype.h>
-#include <pthread.h>
-#include <syslog.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <glib.h>
-#include <libintl.h>
-#include <glib/gi18n.h>
-#include <gdk/gdk.h>
-#include <gtk/gtk.h>
-#include <adwaita.h>
-#include <vte/vte.h>
-``` 
-- If you want no UI use the `helper.h`
-- `helper.h` include this libaries:
-```c
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
-#include <strings.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <errno.h>
-#include <signal.h>
-#include <limits.h>
-#include <time.h>
-#include <locale.h>
-#include <fcntl.h>
-#include <ctype.h>
-#include <pthread.h>
-#include <syslog.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <glib.h>
-#include <libintl.h>
-#include <glib/gi18n.h>
-```
-
-
-
-## `design/create_label_icon.c`
-
-- `GtkWidget *create_label_icon(const char *icon_name, const char *label_text) {`
-- `GtkWidget *create_label_icon_position(const char *icon_name, const char *label_text, GtkAlign alignment) {`
-
-## `design/home_page.c`
-
-- `void show_home_page(GtkWidget *widget, gpointer stack) {`
-
-## `design/create_special_button.c`
-
-- `GtkWidget *create_button(const char *label, GCallback callback, gpointer data) {`
-- `GtkWidget *create_button_icon(const char *icon_name, const char *label_text, GCallback callback, gpointer data) {`
-- `GtkWidget *create_button_icon_no_callback(const char *icon_name, const char *label_text) {`
-- `GtkWidget *create_button_two_icon(const char *first_icon, const char *second_icon, const char *label_text, GCallback callback, gpointer data) {`
-- `GtkWidget *create_button_icon_position(const char *icon_name, const char *label_text, GCallback callback, gpointer data, GtkAlign alignment) {`
-
-## `design/create_entry.c`
-
-- `GtkWidget* create_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out) {`
-- `GtkWidget* create_password_entry(const char *label_text, const char *placeholder, GtkEntry **entry_out) {`
-
-## `design/switch_page.c`
-
-- `void switch_page(GtkWidget *widget, gpointer user_data) {`
-
-## `design/chooser/file_chooser.c`
-
-- `static void file_dialog_response_callback(GtkFileDialog *dialog, GAsyncResult *res, gpointer user_data) {`
-- `void show_file_chooser(GtkWidget *widget, gpointer data) {`
-
-## `design/chooser/folder_chooser.c`
-
-- `static void folder_dialog_response_callback(GtkFileDialog *dialog, GAsyncResult *res, gpointer user_data) {`
-- `void show_folder_chooser(GtkWidget *widget, gpointer data) {`
-
-## `design/dialogs/about_dialog.c`
-
-- `void show_about_dialog(GtkWidget *parent) {`
-
-## `design/dialogs/dialogs_spinner.c`
-
-- `static gchar *run_command_capture_output(const gchar *cmd) {`
-- `static gpointer run_command_thread(gpointer data) {`
-- `static gpointer run_function_thread(gpointer data)`
-- `static gpointer run_command_thread_return(gpointer data) {`
-- `gboolean pulse_progress(GtkProgressBar *pbar) {`
-- `void show_spinner_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd) {`
-- `void show_spinner_dialog_function(GtkWidget *parent, const char *title, const char *body, WorkerFunction worker, gpointer user_data) {`
-- `void show_progress_dialog(GtkWidget *parent, const char *title, const char *body, const char *cmd) {`
-- `void show_spinner_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data) {`
-- `void show_progress_dialog_return(GtkWidget *parent, const char *title, const char *body, const char *cmd, CommandFinishedCallback callback, gpointer user_data) {`
-
-## `design/dialogs/dialog_entry.c`
-
-- `static void on_dialog_response(AdwAlertDialog *dialog, const char *response, gpointer user_data) {`
-- `void show_entry_dialog(GtkWidget *parent, const char *title, const char *body, const char *ok_label, const char *cancel_label, const char *entry_label, const char *placeholder, EntryDialogCallback callback, gpointer user_data) {`
-
-## `design/dialogs/dialog_multi_progress.c`
-
-- `static gboolean update_dialog_description(gpointer data) {`
-- `static gpointer run_command_thread(gpointer data) {`
-- `void show_progress_dialog_multi(GtkWidget *parent, const char *title, const char *body, GSList *commands) {`
-
-## `design/dialogs/dialog.c`
-
-- `void show_alert_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label) {`
-
-## `design/dialogs/dialogs.c`
-
-- `void show_info_dialog(GtkWidget *parent, const char *body) {`
-- `void show_info_button_dialog(GtkWidget *parent, const char *body, const char *button_label) {`
-- `void show_dialog_title(GtkWidget *parent, const char *title, const char *body) {`
-- `void show_error_dialog(GtkWidget *parent, const char *body) {`
-- `void show_error_button_dialog(GtkWidget *parent, const char *body, const char *button_label) {`
-- `void show_error_title_dialog(GtkWidget *parent, const char *title, const char *body) {`
-- `void show_error_title_button_dialog(GtkWidget *parent, const char *title, const char *body, const char *button_label) {`
-
-## `helper/file_filter.c`
-
-- `GListStore* load_file_filters(const char *config_path) {`
-
-## `helper/free_wrapper.c`
-
-- `void free_wrapper(void *p) {`
-
-## `helper/get_config_value.c`
-
-- `char *get_config_value(const char *filename, const char *key) {`
-
-## `helper/trim_and_clean.c`
-
-- `char *trim_and-clean(char *str) {`
-
-## `helper/log/write_log_text.c`
-
-- `static void spawn_cb(VteTerminal *terminal, GPid pid, GError *error, gpointer user_data) {`
-- `void log_viewer(void) {`
-- `void kill_program(GtkButton *button, gpointer user_data){`
-- `GtkWidget *create_custom_headerbar(gpointer stack) {`
-
-## `helper/log/write_log.c`
-
-- `int map_level_to_syslog(int level) {`
-- `void set_logging_mode(int syslog_mode) {`
-- `const char *get_log_path(void){`
-- `void close_logging(void) {`
-- `void log_message(const char *level, int syslog_level, const char *fmt, va_list args) {`
-
-## `helper/filesystem/home_dir.c`
-
-- `gchar *get_home(const gchar *path) {`
-- `const char *get_home_directory() {`
-
-## `helper/filesystem/delete_files.c`
-
-- `void delete_files_in_dir(const char *path) {`
-- `static bool is_mount_point(const char *path, const char *parent_path) {`
-- `int remove_file(const char *filepath) {`
-- `static bool is_critical_system_path(const char *path) {`
-- `static bool is_standard_home_directory(const char *path, const char *home_dir) {`
-- `static void delete_files_and_parents(const char *path, const char *stop_dir) {`
-- `void delete_files_with_parent(const char *path) {`
-
-## `helper/filesystem/make_path.c`
-
-- `void make_directory(const char *path) {`
-- `int make_path(const char *path) {`
-- `int make_path_dirname(const char *filepath) {`
-- `void create_directory(const char *path) {`
-
-## `helper/filesystem/directory_exists.c`
-
-- `int directory_exists(const char *path) {`
-- `int file_exists(const char *path) {`
-
-## `helper/filesystem/delete_directory.c`
-
-- `void delete_directory(const char *path) {`
-
-## `helper/filesystem/search_file_directory.c`
-- `int search_file_directory(const char *directory, const char *search_string) {`
-
-## `helper/filesystem/expand_path.c`
-- `char *expand_path(const char *path) {`
-
-## `helper/commands/command_pkexec.c`
-
-- `void command_pkexec(const gchar *command) {`
-- `void command_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
-- `void command_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
-- `void commands_pkexec(const gchar *command) {`
-- `void commands_pkexec_spinner(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
-- `void commands_pkexec_progressbar(GtkWidget *widget, const gchar *command, const char *title, const char *text) {`
-
-## `helper/commands/open_url.c`
-
-- `void open_url(const char *url) {`
-
-## `helper/commands/open_terminal_desktop.c`
-
-- `void open_terminal_by_desktop(const char *function_command)  {`
-
-## `helper/commands/execute_command.c`
-
-- `void run_command(const char *command) {`
-- `bool run_command_bool(const char *cmd) {`
-- `char *execute_command(const char *command) {`
-
-## `helper/commands/command_exists.c`
-
-- `int command_exists(const char *command) {`
-
-## `language/bind_language.c`
-
-- `void bind_language(const char *lang) {`
-
-## `language/language.c`
-
-- `void set_language_dir(const char *dir) {`
-- `const char *get_language_dir(void) {`
-- `void init_language(void) {`
-
-## `theme/load_adw_provider.c`
-
-- `GtkCssProvider* create_css_provider() {`
-- `void unload_css_provider(GtkCssProvider *provider) {`
-- `void load_adw_provider(void) {`
-- `void adw_theme_changed(AdwStyleManager *style_manager, GParamSpec *pspec, gpointer user_data) {`
-- `void use_adw_provider(void) {`
-
-## `theme/custom_css_adw.c`
-
-- `const char *get_custom_adw_css(void) {`
-
+# Developer documentation
+
+All public functions and types, grouped by module. The complete documentation with examples is
+generated from the source: `cargo doc --open` (or docs.rs).
+
+* Everything without a window: `use atlbase::prelude::*;`
+* Everything with a window: `use atlbase::ui_prelude::*;`
+* Translations: `use atlbase::gettext;`
+
+## Conventions
+
+* **Documentation:** every public item has a summary line, a description and, where it makes
+  sense, the sections `# Arguments`, `# Errors`, `# Panics` and `# Examples`. Examples are
+  compiled by `cargo test --doc`; examples that need a window or change the system are marked
+  `no_run`.
+* **Sandboxes:** modules that depend on the host (`pkexec`, terminals, `journalctl`) have a
+  `# Packaging` section that tells what happens in Flatpak and Snap.
+* **Errors:** functions return `io::Result` or `Result`; "fire and forget" helpers (for
+  example `create_directory`) print their result to the console instead. Two helpers end the
+  process on purpose and say so in their documentation: `delete_directory` and
+  `get_home_directory`.
+* **Tests:** unit tests sit next to the code, integration tests in `tests/`, programs that show
+  how to use the library in `examples/`.
+
+## `helper::commands`
+
+| Function | Purpose |
+|---|---|
+| `command_exists_native(command: &str) -> bool` | Is the program installed (`PATH` or absolute path, execute bit)? |
+| `command_pkexec(args: &[&str])` | Run a command as root with `pkexec`, print the result |
+| `run_command(args: &[&str]) -> io::Result<ExitStatus>` | Run a command, output goes to the console |
+| `capture_command_output(args: &[&str]) -> io::Result<String>` | Run a command, return its `stdout` |
+| `open_terminal_by_desktop(function_command: &str)` | Open the terminal of the desktop and run a command |
+| `open_url(url: &str)` | Open a URL or file with the default application |
+
+## `helper::configuration`
+
+| Item | Purpose |
+|---|---|
+| `get_config(app_name, key) -> Option<String>` | Read a setting from `<config dir>/<app>/default-config.toml` |
+| `set_config(app_name, key, value) -> Result<(), ConfyError>` | Store a setting |
+| `enum AppEnvironment { Flatpak, Snap, AppImage, Ppa, LocalDeb, Unknown }` | Where the application was installed from |
+| `get_execution_environment() -> String` | `"flatpak"`, `"snap"`, `"appimage"` or `"native"` |
+| `check_application_environment(search_string, source_dir) -> AppEnvironment` | Detect the installation source (APT sources) |
+
+## `helper::file`
+
+| Function | Purpose |
+|---|---|
+| `add_line_file(create_backup: &bool, path, line) -> io::Result<()>` | Append a line once, with optional `.bak` |
+| `get_config_value(filename, key) -> Option<String>` | Read `KEY=VALUE` / `KEY="VALUE"` files |
+| `trim_and_clean(s: &str) -> &str` | Trim whitespace and enclosing quotes |
+| `write_file(filename, content, base_path, path_list) -> io::Result<()>` | Write a file and create the directories |
+| `write_to_temp`, `read_from_temp`, `remove_line_from_temp`, `clear_temp_file` | One temporary file per process |
+
+## `helper::filesystem`
+
+| Function | Purpose |
+|---|---|
+| `create_directory(path)` / `make_path(path)` / `make_path_dirname(filepath)` | Create directories (logging / returning / for a file path) |
+| `directory_exists(path)` / `file_exists(path)` | Existence checks |
+| `expand_path(path) -> PathBuf` | Replace a leading `~` by `$HOME` |
+| `get_home_directory() -> PathBuf` | `$HOME`; ends the process if it is not set |
+| `delete_directory(path)` | Remove an empty directory; ends the process on failure |
+| `delete_files_in_dir(path)` | Delete the files of a directory (protected directories are refused) |
+| `delete_files_and_parents(path, stop_dir)` / `delete_files_with_parent(path)` | Delete the files, then the empty directory and its empty parents |
+| `search_file_directory(dir, text)` / `search_string_file(dir, text)` | Is there a file whose name contains the text? |
+
+## `helper::language`
+
+| Item | Purpose |
+|---|---|
+| `init_language(domain, default_dir, debug_lang)` | Initialize gettext (application and library domain) |
+| `LIB_DOMAIN` | The text domain of the library (`"atlbase"`) |
+| `translate(msgid) -> String` / `gettext!(msgid)` | Translate: application domain first, library domain second |
+| `get_current_domain()`, `get_language_dir()`, `set_language_dir(dir)` | Read or change the settings |
+
+## `helper::log`
+
+| Item | Purpose |
+|---|---|
+| `init_syslog(app_name) -> Result<(), SetLoggerError>` | Send `log` messages to syslog |
+| `show_log_viewer(app, domain)` | Window that follows the journal (feature `log-viewer`) |
+| `create_custom_headerbar(app, domain) -> gtk4::Box` | Header bar menu: log viewer and exit (feature `log-viewer`) |
+
+## `design::carousel`
+
+| Item | Purpose |
+|---|---|
+| `Guide`, `Page`, `Block`, `Step`, `Callout`, `CalloutKind`, `Image`, `ImageSource`, `Labels` | The content of a guide (builders) |
+| `GuideView` | The widget: `new`, `present_in_stack`, `present_dialog`, `connect_finished`, `page`, `set_page` |
+| `GuideLoader`, `GuideError` | Load guides from TOML (feature `carousel-toml`) |
+| `page_widget`, `block_widget` | Render a page or a block without `GuideView` |
+| `GUIDE_CSS` | The default style |
+
+## `design::chooser`
+
+`show_file_chooser(widget, callback)`, `show_folder_chooser(widget, callback)`
+
+## `design::dialogs`
+
+| Function | Purpose |
+|---|---|
+| `show_alert_dialog(parent, title, body, button)` | Basic alert dialog |
+| `show_info_dialog`, `show_info_button_dialog`, `show_dialog_title` | Information dialogs |
+| `show_error_dialog`, `show_error_button_dialog`, `show_error_title_dialog`, `show_error_title_button_dialog` | Error dialogs |
+| `show_custom_content_dialog(parent, title, body, button, content)` | Alert dialog with your own widgets |
+| `show_entry_dialog(…, on_submit) -> adw::Dialog` | Dialog with a text field |
+| `show_image_dialog(…, path, width, height)` | Image preview |
+| `show_about_dialog(parent, AboutInfo)` | The "About" dialog |
+| `show_spinner_dialog(…, commands, IndicatorType, on_complete)` | Spinner or progress bar while commands run |
+| `show_spinner_dialog_return_output(…)` | The same, with the result of every command (`CommandResult`) |
+| `show_task_dialog(parent, title, message, IndicatorType, task)` | The same for a Rust function |
+
+## `design::theme`
+
+`use_adw_provider(css) -> CssProvider`, `use_adw_provider_with_priority(css, priority) -> CssProvider`
+
+## `design::utils`
+
+| Function | Purpose |
+|---|---|
+| `create_entry`, `create_password_entry` | Label and entry in a row |
+| `create_label_icon`, `create_label_icon_position` | Icon and label |
+| `create_button`, `create_button_icon`, `create_button_icon_no_callback`, `create_button_two_icon`, `create_button_icon_position` | Pill buttons |
+| `command_pkexec_spinner`, `commands_pkexec_spinner`, `command_pkexec_progressbar`, `commands_pkexec_progressbar` | `pkexec` with a progress dialog |

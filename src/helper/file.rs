@@ -1,27 +1,29 @@
-//! Precise manipulation and processing of file contents.
+// file.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Working with the contents of files.
 //!
-//! While the `filesystem` module handles the structure (directories, existence),
-//! this module provides tools for working directly with the contents of files:
-//! from writing and appending lines to cleaning up strings.
- 
-/// Removes unnecessary spaces and control characters from text.
+//! While the [`filesystem`](crate::helper::filesystem) module handles the structure
+//! (directories, existence), this module works directly with the contents of files: from
+//! writing and appending lines to cleaning up strings.
+
 pub mod trim_and_clean;
 
-/// Extracts specific values from structured files (e.g., key-value pairs).
 pub mod get_config_value;
 
-/// Functions for securely writing to or overwriting file contents.
 pub mod write_file;
 
-/// Allows individual lines to be appended to existing files.
 pub mod add_line_file;
 
-/// Managing a temporary file that exists only for the duration of the application.
 pub mod temp_app_file;
 
-// Re-Export
-pub use trim_and_clean::*;
-pub use get_config_value::*;
-pub use write_file::*;
+// Re-exports
 pub use add_line_file::*;
+pub use get_config_value::*;
 pub use temp_app_file::*;
+pub use trim_and_clean::*;
+pub use write_file::*;

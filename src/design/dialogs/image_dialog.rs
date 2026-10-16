@@ -1,125 +1,100 @@
-//! # Image Dialog Module
-//! This module provides helper functions for displaying media content in
-//! Libadwaita dialogs.
-/**
-* image_dialog.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+// image_dialog.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! A dialog that shows an image.
+//!
+//! The module shows pictures in a Libadwaita dialog, for example a preview before a
+//! wallpaper is set.
+
 use adw::prelude::*;
-use adw::{
-	AlertDialog, 
-	ResponseAppearance
-};
-use gtk4::{
-	Widget, 
-	Box as GtkBox, 
-	Orientation, 
-	Image, 
-	Align, 
-	ScrolledWindow
-};
+use adw::{AlertDialog, ResponseAppearance};
+use gtk4::{Align, Box as GtkBox, Image, Orientation, ScrolledWindow, Widget};
 use std::path::Path;
 
-/// Displays a highly configurable Libadwaita dialog with an image preview.
+/// The file extensions that [`show_image_dialog`] accepts.
+const VALID_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "svg", "webp", "gif"];
+
+/// Shows a dialog with a preview of an image.
 ///
-/// This function validates the file path, loads the image, and embeds it in a 
-/// [`adw::AlertDialog`]. Specifying `width` and `height` controls 
-/// the initial size of the dialog.
+/// The image is embedded in an [`adw::AlertDialog`]. `width` and `height` set the initial
+/// size of the preview; the image is placed in a scrolled window, so the dialog stays usable
+/// with very large images.
+///
+/// The extension of the file is checked first: only `jpg`, `jpeg`, `png`, `svg`, `webp` and
+/// `gif` (in any case) are accepted. For any other file the function returns **without
+/// showing a dialog**.
 ///
 /// # Arguments
 ///
-/// * `parent` - The parent widget (e.g., the main window) to which the dialog belongs modally.
-/// * `title` - The main title of the dialog.
-/// * `body` - An explanatory text below the title.
-/// * `button_label` - The label of the confirmation button.
-/// * `file_path` - The path to the image file on the file system.
-/// * `width` - The target width of the image/dialog in pixels.
-/// * `height` - The target height of the image/dialog in pixels.
+/// * `parent` - The widget (for example the main window) the dialog is shown over.
+/// * `title` - The heading of the dialog.
+/// * `body` - A text below the heading.
+/// * `button_label` - The label of the confirm button.
+/// * `file_path` - The path of the image file.
+/// * `width` - The width of the preview in pixels.
+/// * `height` - The height of the preview in pixels.
 ///
 /// # Examples
 ///
-/// ```rust
-/// // A medium-sized dialog with a JPG image
+/// ```no_run
+/// use atlbase::ui_prelude::show_image_dialog;
+/// # gtk4::init().unwrap();
+/// # let main_window = gtk4::Window::new();
+///
 /// show_image_dialog(
 ///     &main_window,
-///     "Image Preview",
-///     "Would you like to set this image as your wallpaper?",
+///     "Image preview",
+///     "Do you want to set this image as your wallpaper?",
 ///     "Select",
 ///     "/home/user/pictures/wallpaper.jpg",
 ///     600,
-///     400
+///     400,
 /// );
 /// ```
-///
-/// # Validation
-/// The function internally checks for the following file extensions: `jpg`, `jpeg`, `png`, `svg`, `webp`, `gif`.
-/// If the format is not supported or the path is invalid, the function 
-/// terminates early without displaying a dialog.
-///
-/// # UI Structure
-/// Within the dialog, the image size is managed via a `GtkScrolledWindow`, 
-/// so that the UI remains usable even with large images.
 pub fn show_image_dialog(
-	parent: &impl IsA<Widget>, 
-    title: &str, 
-    body: &str, 
+    parent: &impl IsA<Widget>,
+    title: &str,
+    body: &str,
     button_label: &str,
     file_path: &str,
     width: i32,
     height: i32,
 ) {
-    // validation of the path
-    let path = Path::new(file_path);
-    let extension = path.extension()
-        .and_then(|s| s.to_str())
+    let extension = Path::new(file_path)
+        .extension()
+        .and_then(|ext| ext.to_str())
         .unwrap_or("")
         .to_lowercase();
-	
-	// validation of the file format
-    let valid_extensions = ["jpg", "jpeg", "png", "svg", "webp", "gif"];
-    if !valid_extensions.contains(&extension.as_str()) {
+    if !VALID_EXTENSIONS.contains(&extension.as_str()) {
         return;
     }
 
-    // new container
     let content = GtkBox::builder()
         .orientation(Orientation::Vertical)
         .spacing(12)
-        .width_request(width) 
+        .width_request(width)
         .build();
 
-    // get the image from the file path
     let image = Image::from_file(file_path);
-    
-    // set the size of the image
-    image.set_pixel_size(width.max(height)); 
-    
+    image.set_pixel_size(width.max(height));
     image.set_vexpand(true);
     image.set_hexpand(true);
     image.set_halign(Align::Fill);
     image.set_valign(Align::Fill);
 
-    // put everything in a scrollable window to accommodate very large images
     let scroll = ScrolledWindow::builder()
         .child(&image)
         .min_content_height(height)
         .max_content_height(height)
         .propagate_natural_width(true)
         .build();
-
     content.append(&scroll);
 
-    // dialog setup
-    let dialog = AlertDialog::builder()
-        .heading(title)
-        .body(body)
-        .build();
-	
-	// set the image as additional content
+    let dialog = AlertDialog::builder().heading(title).body(body).build();
     dialog.set_extra_child(Some(&content));
     dialog.add_response("ok", button_label);
     dialog.set_response_appearance("ok", ResponseAppearance::Suggested);

@@ -1,0 +1,85 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026 AtlantisOS Project
+# This file is distributed under the same license as the atlbase package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: atlbase 0.1.9\n"
+"Report-Msgid-Bugs-To: https://github.com/AtlantisOS-Project/atlantis-UI-base/issues\n"
+"POT-Creation-Date: 2026-10-16 09:00+0200\n"
+"PO-Revision-Date: 2026-10-16 09:00+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+
+#: src/design/carousel/model.rs:67
+msgid "Back"
+msgstr ""
+
+#: src/design/chooser/file_chooser.rs:50
+msgid "Choose File"
+msgstr ""
+
+#: src/design/chooser/folder_chooser.rs:50
+msgid "Choose folder"
+msgstr ""
+
+#: src/design/carousel/model.rs:71
+msgid "Copy"
+msgstr ""
+
+#: src/design/dialogs/about_dialog.rs:131
+msgid "Documentation"
+msgstr ""
+
+#: src/design/carousel/model.rs:70
+msgid "Done"
+msgstr ""
+
+#: src/design/dialogs/standard_dialogs.rs:107 src/design/dialogs/standard_dialogs.rs:128 src/design/dialogs/standard_dialogs.rs:181
+msgid "Error"
+msgstr ""
+
+#: src/design/carousel/model.rs:68 src/helper/log/write_log_text.rs:130
+msgid "Exit"
+msgstr ""
+
+#: src/helper/log/write_log_text.rs:131
+msgid "Exit the application"
+msgstr ""
+
+#: src/design/dialogs/about_dialog.rs:135
+msgid "Fonts"
+msgstr ""
+
+#: src/design/carousel/model.rs:72
+msgid "Image not found"
+msgstr ""
+
+#: src/design/dialogs/standard_dialogs.rs:40 src/design/dialogs/standard_dialogs.rs:63
+msgid "Information"
+msgstr ""
+
+#: src/helper/log/write_log_text.rs:55 src/helper/log/write_log_text.rs:60
+msgid "Log Viewer"
+msgstr ""
+
+#: src/design/carousel/model.rs:69
+msgid "Next"
+msgstr ""
+
+#: src/design/dialogs/standard_dialogs.rs:84 src/design/dialogs/standard_dialogs.rs:152
+msgid "OK"
+msgstr ""
+
+#: src/helper/log/write_log_text.rs:124
+msgid "Show Log"
+msgstr ""
+
+#: src/design/dialogs/about_dialog.rs:140
+msgid "Special thanks to"
+msgstr ""

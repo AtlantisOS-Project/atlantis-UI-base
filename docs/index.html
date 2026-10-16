@@ -1,0 +1,438 @@
+<!doctype html>
+<!--
+  index.html
+
+  (C) Copyright 2026 AtlantisOS Project
+  by @NachtsternBuild
+
+  License: GNU GENERAL PUBLIC LICENSE Version 3
+
+  The changelog page of AtlBase for GitHub Pages (Settings > Pages > Branch "main", folder "/docs").
+  The text lives in CHANGELOG.md; this page loads it and renders it. No build step and no
+  external script or font: everything is in this file.
+
+  Where the markdown is looked for, in this order:
+    1. CHANGELOG.md             next to this page (copy it here if you want a self-contained site)
+    2. ../CHANGELOG.md          when the repository root is served (python3 -m http.server)
+    3. raw.githubusercontent    what a Pages site that serves only /docs needs
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>AtlBase changelog</title>
+<meta name="description" content="What changed in atlbase: new functions, changed calls and behavior, removed items and their replacements.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233d6fb0'/%3E%3Cpath d='M9 22l7-12 7 12' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #fbfbfa;
+    --fg: #23262b;
+    --muted: #6b7077;
+    --line: #e4e5e7;
+    --soft: #f1f2f3;
+    --accent: #3d6fb0;
+    --code-bg: #f1f2f3;
+    --added: #3f8f5f;
+    --changed: #3d6fb0;
+    --removed: #b5533f;
+    --fixed: #8a6d1f;
+    --radius: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a;
+      --fg: #dcdee1;
+      --muted: #8d9299;
+      --line: #2a2c30;
+      --soft: #1f2124;
+      --accent: #7ba3dc;
+      --code-bg: #202226;
+      --added: #6cc08d;
+      --changed: #7ba3dc;
+      --removed: #e0866f;
+      --fixed: #d2b45c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  .wrap { max-width: 52rem; margin: 0 auto; padding: 0 1rem; }
+
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1.25rem;
+    padding-top: 1.25rem; padding-bottom: 1rem;
+  }
+  .brand { font-weight: 600; letter-spacing: .01em; color: var(--fg); }
+  .brand small { font-weight: 400; color: var(--muted); margin-left: .5rem; }
+  nav.links { margin-left: auto; display: flex; gap: 1rem; font-size: .9rem; }
+  nav.links a { color: var(--muted); }
+  nav.links a:hover { color: var(--accent); text-decoration: none; }
+
+  main { padding: 2rem 0 4rem; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .5rem; font-weight: 650; }
+  h2 { font-size: 1.3rem; margin: 2.5rem 0 .75rem; padding-top: 1.5rem; border-top: 1px solid var(--line); font-weight: 600; }
+  h3 { font-size: 1.05rem; margin: 1.75rem 0 .5rem; font-weight: 600; }
+  h4 { font-size: .95rem; margin: 1.25rem 0 .4rem; font-weight: 600; color: var(--muted); }
+  p { margin: .6rem 0; }
+  ul, ol { margin: .5rem 0; padding-left: 1.4rem; }
+  li { margin: .2rem 0; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 2rem 0; }
+  blockquote { margin: 1rem 0; padding: .1rem 1rem; border-left: 3px solid var(--line); color: var(--muted); }
+
+  code { font: .88em/1.4 ui-monospace, "SF Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--code-bg); padding: .8rem 1rem; border-radius: var(--radius); overflow-x: auto; margin: .8rem 0; }
+  pre code { background: none; padding: 0; font-size: .85rem; }
+
+  .table-wrap { overflow-x: auto; margin: .9rem 0; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { text-align: left; vertical-align: top; padding: .5rem .7rem; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--muted); background: var(--soft); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td code { overflow-wrap: anywhere; }
+
+  .lead { color: var(--muted); }
+  .version-tag { display: inline-block; margin-left: .5rem; font-size: .8rem; font-weight: 500; color: var(--muted); }
+
+  /* the small row of version links and filters */
+  .toolbar { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: 1.25rem 0 0; font-size: .88rem; color: var(--muted); }
+  .toolbar .group { display: flex; flex-wrap: wrap; gap: .1rem .9rem; align-items: baseline; }
+  .toolbar .label { text-transform: uppercase; letter-spacing: .06em; font-size: .72rem; }
+  .toolbar button {
+    all: unset; cursor: pointer; color: var(--muted); border-bottom: 1px solid transparent;
+  }
+  .toolbar button:hover { color: var(--fg); }
+  .toolbar button[aria-pressed="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+  .toolbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* a thin colored mark in front of the kind of change */
+  section[data-kind] > h3::before {
+    content: ""; display: inline-block; width: .5rem; height: .5rem; border-radius: 50%;
+    margin-right: .55rem; background: var(--muted); vertical-align: .08em;
+  }
+  section[data-kind="added"] > h3::before { background: var(--added); }
+  section[data-kind="changed"] > h3::before { background: var(--changed); }
+  section[data-kind="removed"] > h3::before { background: var(--removed); }
+  section[data-kind="fixed"] > h3::before { background: var(--fixed); }
+  .hidden { display: none; }
+
+  #status { color: var(--muted); }
+  #status.error { color: var(--removed); }
+  footer { border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+  footer .wrap { padding-top: 1rem; padding-bottom: 2rem; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+  footer a { color: var(--muted); text-decoration: underline; text-decoration-color: var(--line); }
+  footer a:hover { color: var(--accent); }
+
+  @media (max-width: 34rem) {
+    nav.links { margin-left: 0; width: 100%; }
+    h1 { font-size: 1.45rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">atlbase<small>changelog</small></span>
+    <nav class="links" aria-label="Project links">
+      <a href="https://crates.io/crates/atlbase">crates.io</a>
+      <a href="https://docs.rs/atlbase">docs.rs</a>
+      <a href="https://github.com/AtlantisOS-Project/atlantis-UI-base">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <p id="status" role="status">Loading the changelog…</p>
+  <noscript>
+    <p>This page needs JavaScript to show the changelog. You can read it as text:
+    <a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
+  </noscript>
+  <article id="content" hidden></article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Source: <a id="source-link" href="https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/CHANGELOG.md">CHANGELOG.md</a></span>
+    <span>Get the library: <a href="https://crates.io/crates/atlbase">crates.io/crates/atlbase</a></span>
+    <span>GPL-3.0</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── where the markdown comes from ──────────────────────────────────────
+  var SOURCES = [
+    'CHANGELOG.md',
+    '../CHANGELOG.md',
+    'https://raw.githubusercontent.com/AtlantisOS-Project/atlantis-UI-base/main/CHANGELOG.md'
+  ];
+
+  var status = document.getElementById('status');
+  var content = document.getElementById('content');
+
+  function load(i) {
+    if (i >= SOURCES.length) { return Promise.reject(new Error('not found')); }
+    return fetch(SOURCES[i], { cache: 'no-cache' })
+      .then(function (r) {
+        // a Pages site answers a missing file with an HTML page: only accept real text
+        var type = r.headers.get('content-type') || '';
+        if (!r.ok || /text\/html/i.test(type)) { throw new Error(r.status); }
+        return r.text();
+      })
+      .catch(function () { return load(i + 1); });
+  }
+
+  // ── a small markdown renderer (the subset the changelog uses) ───────────
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function safeUrl(u) {
+    return !/^\s*(javascript|data|vbscript):/i.test(u);
+  }
+
+  // inline: `code`, [text](url), **bold**, *italic*; everything else is escaped text
+  function inline(text) {
+    var codes = [];
+    text = text.replace(/`([^`]+)`/g, function (_, c) { codes.push(c); return '\u0000' + (codes.length - 1) + '\u0000'; });
+    text = esc(text);
+    text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, label, url) {
+      return safeUrl(url) ? '<a href="' + url + '">' + label + '</a>' : label;
+    });
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s).,;:]|$)/g, '$1<em>$2</em>');
+    return text.replace(/\u0000(\d+)\u0000/g, function (_, i) { return '<code>' + esc(codes[i]) + '</code>'; });
+  }
+
+  function slug(text) {
+    return text.toLowerCase().replace(/`/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  function cells(line) {
+    var row = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+    // `\|` is a literal bar inside a cell
+    return row.replace(/\\\|/g, '\u0001').split('|').map(function (c) { return c.trim().replace(/\u0001/g, '|'); });
+  }
+
+  function isSeparator(line) {
+    return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line);
+  }
+
+  function render(md) {
+    var lines = md.replace(/\r\n?/g, '\n').split('\n');
+    var out = [];
+    var i = 0;
+
+    function list(ordered) {
+      var tag = ordered ? 'ol' : 'ul';
+      var item = ordered ? /^\s*\d+[.)]\s+(.*)$/ : /^\s*[-*+]\s+(.*)$/;
+      var html = '<' + tag + '>';
+      while (i < lines.length && item.test(lines[i])) {
+        var text = lines[i].match(item)[1];
+        i++;
+        // continuation lines of the same item
+        while (i < lines.length && /^\s{2,}\S/.test(lines[i]) && !item.test(lines[i])) {
+          text += ' ' + lines[i].trim();
+          i++;
+        }
+        html += '<li>' + inline(text) + '</li>';
+      }
+      return html + '</' + tag + '>';
+    }
+
+    while (i < lines.length) {
+      var line = lines[i];
+
+      if (/^\s*$/.test(line)) { i++; continue; }
+
+      // HTML comments (including multi-line ones) are dropped
+      if (/^\s*<!--/.test(line)) {
+        while (i < lines.length && !/-->/.test(lines[i])) { i++; }
+        i++;
+        continue;
+      }
+
+      var fence = line.match(/^```\s*(\S*)\s*$/);
+      if (fence) {
+        var code = [];
+        i++;
+        while (i < lines.length && !/^```\s*$/.test(lines[i])) { code.push(lines[i]); i++; }
+        i++;
+        out.push('<pre><code>' + esc(code.join('\n')) + '</code></pre>');
+        continue;
+      }
+
+      var heading = line.match(/^(#{1,4})\s+(.*?)\s*#*\s*$/);
+      if (heading) {
+        var level = heading[1].length;
+        var raw = heading[2];
+        if (level === 2) {
+          // "[0.2.0] — 2026-06-03": the part after the dash is shown as a small note
+          var parts = raw.replace(/^\[([^\]]+)\](?!\()/, '$1').split(/\s+[—–]\s+/);
+          var note = parts[1] ? (/^unreleased$/i.test(parts[1]) ? 'not released yet' : parts[1]) : '';
+          out.push('<h2 id="' + slug(parts[0]) + '" data-name="' + esc(parts[0]) + '">' + inline(parts[0]) +
+                   (note ? '<span class="version-tag">' + esc(note) + '</span>' : '') + '</h2>');
+        } else {
+          out.push('<h' + level + ' id="' + slug(raw) + '">' + inline(raw) + '</h' + level + '>');
+        }
+        i++;
+        continue;
+      }
+
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+
+      if (/^\s*\|/.test(line) && i + 1 < lines.length && isSeparator(lines[i + 1])) {
+        var head = cells(line);
+        i += 2;
+        var html = '<div class="table-wrap"><table><thead><tr>';
+        head.forEach(function (c) { html += '<th>' + inline(c) + '</th>'; });
+        html += '</tr></thead><tbody>';
+        while (i < lines.length && /^\s*\|/.test(lines[i])) {
+          html += '<tr>';
+          cells(lines[i]).forEach(function (c) { html += '<td>' + inline(c) + '</td>'; });
+          html += '</tr>';
+          i++;
+        }
+        out.push(html + '</tbody></table></div>');
+        continue;
+      }
+
+      if (/^\s*[-*+]\s+/.test(line)) { out.push(list(false)); continue; }
+      if (/^\s*\d+[.)]\s+/.test(line)) { out.push(list(true)); continue; }
+
+      if (/^>\s?/.test(line)) {
+        var quote = [];
+        while (i < lines.length && /^>\s?/.test(lines[i])) { quote.push(lines[i].replace(/^>\s?/, '')); i++; }
+        out.push('<blockquote><p>' + inline(quote.join(' ')) + '</p></blockquote>');
+        continue;
+      }
+
+      // paragraph: up to the next blank line or block start
+      var para = [];
+      while (i < lines.length && !/^\s*$/.test(lines[i]) &&
+             !/^(#{1,4}\s|```|\s*[-*+]\s|\s*\d+[.)]\s|>|\s*\|)/.test(lines[i])) {
+        para.push(lines[i].trim());
+        i++;
+      }
+      if (para.length === 0) { para.push(lines[i].trim()); i++; }
+      out.push('<p>' + inline(para.join(' ')) + '</p>');
+    }
+    return out.join('\n');
+  }
+
+  // ── structure: versions, kinds of change, toolbar ──────────────────────
+  function kindOf(text) {
+    var t = text.toLowerCase();
+    if (/^added/.test(t)) { return 'added'; }
+    if (/^changed/.test(t)) { return 'changed'; }
+    if (/^removed/.test(t)) { return 'removed'; }
+    if (/^fixed/.test(t)) { return 'fixed'; }
+    if (/^security/.test(t)) { return 'security'; }
+    return 'other';
+  }
+
+  // wraps every <h3> and what follows it up to the next <h2>/<h3> in a <section data-kind>
+  function structure(root) {
+    var nodes = Array.prototype.slice.call(root.children);
+    nodes.forEach(function (node) {
+      if (node.tagName === 'H3') {
+        var section = document.createElement('section');
+        section.dataset.kind = kindOf(node.textContent);
+        root.insertBefore(section, node);
+        section.appendChild(node);
+        var next = section.nextSibling;
+        while (next && next.tagName !== 'H2' && next.tagName !== 'H3') {
+          var move = next;
+          next = next.nextSibling;
+          section.appendChild(move);
+        }
+      }
+    });
+  }
+
+  function toolbar(root) {
+    var versions = Array.prototype.slice.call(root.querySelectorAll('h2'));
+    var kinds = [['all', 'All'], ['added', 'Added'], ['changed', 'Changed'], ['removed', 'Removed'], ['fixed', 'Fixed']];
+
+    var bar = document.createElement('div');
+    bar.className = 'toolbar';
+
+    var v = document.createElement('div');
+    v.className = 'group';
+    v.innerHTML = '<span class="label">Versions</span>' + versions.map(function (h) {
+      return '<a href="#' + h.id + '">' + esc(h.dataset.name) + '</a>';
+    }).join('');
+    bar.appendChild(v);
+
+    var f = document.createElement('div');
+    f.className = 'group';
+    f.setAttribute('role', 'group');
+    f.setAttribute('aria-label', 'Filter by kind of change');
+    f.innerHTML = '<span class="label">Show</span>' + kinds.map(function (k) {
+      return '<button type="button" data-filter="' + k[0] + '" aria-pressed="' + (k[0] === 'all') + '">' + k[1] + '</button>';
+    }).join('');
+    bar.appendChild(f);
+
+    f.addEventListener('click', function (e) {
+      var button = e.target.closest('button[data-filter]');
+      if (!button) { return; }
+      var wanted = button.dataset.filter;
+      f.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === button)); });
+      root.querySelectorAll('section[data-kind]').forEach(function (s) {
+        s.classList.toggle('hidden', wanted !== 'all' && s.dataset.kind !== wanted);
+      });
+    });
+    return bar;
+  }
+
+  function show(md) {
+    content.innerHTML = render(md);
+
+    // the first h1 is the page title; the line after it is the intro text
+    var title = content.querySelector('h1');
+    if (title) {
+      document.title = 'AtlBase – ' + title.textContent;
+    }
+
+    var first = content.querySelector('h2');
+    structure(content);
+    if (first) { content.insertBefore(toolbar(content), first); }
+    var lead = title && title.nextElementSibling;
+    if (lead && lead.tagName === 'P') { lead.classList.add('lead'); }
+
+    status.hidden = true;
+    content.hidden = false;
+
+    // jump to the section named in the address (the page was built after the load)
+    if (location.hash) {
+      var target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if (target) { target.scrollIntoView(); }
+    }
+  }
+
+  load(0).then(show).catch(function () {
+    status.className = 'error';
+    status.innerHTML = 'The changelog could not be loaded. Read it on ' +
+      '<a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/CHANGELOG.md">GitHub</a>. ' +
+      '(When this page is opened from a file, the browser blocks loading; serve the folder with ' +
+      '<code>python3 -m http.server</code> instead.)';
+  });
+})();
+</script>
+</body>
+</html>

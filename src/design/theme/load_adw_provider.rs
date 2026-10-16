@@ -1,96 +1,104 @@
+// load_adw_provider.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
 //! Dynamic CSS management for Libadwaita applications.
 //!
-//! This module allows you to load custom CSS at runtime and
-//! ensures that styles are correctly reapplied even when switching between light and 
-//! dark mode.
-/**
- * load_adw_provider.rs
- *
- * (C) Copyright 2026 AtlantisOS Project
- * by @NachtsternBuild
- *
- * License: GNU GENERAL PUBLIC LICENSE Version 3
- */
+//! The module loads CSS at run time and makes sure that the styles are applied again when
+//! the system switches between the light and the dark style.
+
 use adw::StyleManager;
+use gtk4::prelude::*;
 use gtk4::{
-	CssProvider, 
-	style_context_add_provider_for_display, 
-	STYLE_PROVIDER_PRIORITY_USER
+    CssProvider, STYLE_PROVIDER_PRIORITY_USER, gdk, style_context_add_provider_for_display,
 };
-use std::cell::RefCell;
 
-thread_local! {
-	/// Holds the instance of the global CSS provider for the current thread.
-    static PROVIDER_ADW: RefCell<Option<CssProvider>> = RefCell::new(None);
-}
-
-/// Loads CSS data from a string into the active provider.
+/// Registers CSS for the whole application and keeps it up to date.
 ///
-/// This function is used internally to initially load the CSS content 
-/// or to update it when the theme changes.
-fn load_adw_provider_from_string(css_data: &str) { 
-    PROVIDER_ADW.with(|storage| {
-        if let Some(provider) = storage.borrow().as_ref() {
-            // using loading from string
-            provider.load_from_string(css_data);
-        }
-    });
-}
-
-/// Initializes and activates a global CSS provider for Libadwaita/GTK4.
+/// A new [`CssProvider`] is created for the default display with the priority
+/// `STYLE_PROVIDER_PRIORITY_USER`, so these rules win over the system theme and over the
+/// default styles of this library. Every call creates an **independent** provider: an
+/// application and the libraries it uses can all register CSS without overwriting each
+/// other.
 ///
-/// This function registers a `CssProvider` for the default display and 
-/// ensures that custom styles take precedence over the 
-/// default system styles (`STYLE_PROVIDER_PRIORITY_USER`).
+/// # Special features
 ///
-/// # Special Features
-/// - **Reactivity:** Registers a listener on `adw::StyleManager` to reload the CSS when 
-///   the `dark-notify` property changes. This is important 
-///   because some CSS variables only respond correctly to theme changes after a reload.
-/// - **Thread Safety:** Uses `thread_local!` to safely manage the provider within the context 
-///   of the GTK main loop.
+/// * **Reactivity:** a handler on [`adw::StyleManager`] loads the CSS again when the dark
+///   style changes. Some color variables follow a switch of the style only after a reload.
+/// * **Handle:** the returned provider can be ignored (the style then stays active for the
+///   whole run time). Keep it to change the CSS later with
+///   [`CssProvider::load_from_string`] — remember to reload on a style change yourself in
+///   that case — or to remove it again with
+///   [`gtk4::style_context_remove_provider_for_display`].
+///
+/// Call the function once per stylesheet, after GTK was initialized (for example in the
+/// `activate` handler).
 ///
 /// # Arguments
-/// * `css_content` - A string slice containing the CSS rules.
 ///
-/// # Usage:
+/// * `css_content` - The CSS rules.
 ///
-/// ```rust
-/// pub const ADW_CUSTOM_CSS: &str = r#"
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::use_adw_provider;
+/// # gtk4::init().unwrap();
+///
+/// const ADW_CUSTOM_CSS: &str = r#"
 /// window {
-///    background-color: @theme_bg_color;
-///    color: @theme_fg_color;
-///    padding: 12px;
-///    font-size: 14px;
-///    border: 2px solid @theme_bg_color;
-///    border-radius: 35px;
+///     background-color: @theme_bg_color;
+///     color: @theme_fg_color;
+///     font-size: 14px;
 /// }"#;
-/// use_adw_provider(ADW_CUSTOM_CSS); 
+///
+/// use_adw_provider(ADW_CUSTOM_CSS);
 /// ```
-pub fn use_adw_provider(css_content: &str) {
-    let new_provider = CssProvider::new();
+pub fn use_adw_provider(css_content: &str) -> CssProvider {
+    use_adw_provider_with_priority(css_content, STYLE_PROVIDER_PRIORITY_USER)
+}
 
-    if let Some(display) = gtk4::gdk::Display::default() {
-        style_context_add_provider_for_display(
-            &display,
-            &new_provider,
-            STYLE_PROVIDER_PRIORITY_USER,
-        );
+/// Like [`use_adw_provider`], but with an explicit priority.
+///
+/// Use a priority below `STYLE_PROVIDER_PRIORITY_USER` (for example
+/// `STYLE_PROVIDER_PRIORITY_APPLICATION`) for default styles that the application should be
+/// able to override.
+///
+/// # Arguments
+///
+/// * `css_content` - The CSS rules.
+/// * `priority` - The style provider priority, for example
+///   [`gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION`].
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::use_adw_provider_with_priority;
+/// # gtk4::init().unwrap();
+///
+/// use_adw_provider_with_priority(
+///     "button { border-radius: 12px; }",
+///     gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+/// );
+/// ```
+pub fn use_adw_provider_with_priority(css_content: &str, priority: u32) -> CssProvider {
+    let provider = CssProvider::new();
+    provider.load_from_string(css_content);
+
+    if let Some(display) = gdk::Display::default() {
+        style_context_add_provider_for_display(&display, &provider, priority);
     }
 
-    PROVIDER_ADW.with(|storage| {
-        *storage.borrow_mut() = Some(new_provider);
+    // A weak reference: once the provider is removed, the handler has nothing left to do.
+    let weak = provider.downgrade();
+    let css = css_content.to_string();
+    StyleManager::default().connect_dark_notify(move |_| {
+        if let Some(provider) = weak.upgrade() {
+            provider.load_from_string(&css);
+        }
     });
 
-    // init laod the string
-    load_adw_provider_from_string(css_content);
-
-    // handeling theme
-    let style_manager = StyleManager::default();
-    
-    // clone the string for closure
-    let content_clone = css_content.to_string();
-    style_manager.connect_dark_notify(move |_| {
-        load_adw_provider_from_string(&content_clone);
-    });
+    provider
 }

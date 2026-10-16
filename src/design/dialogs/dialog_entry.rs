@@ -1,75 +1,65 @@
-//! A modern Libadwaita input dialog for text queries.
+// dialog_entry.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! A Libadwaita dialog for text input.
 //!
-//! This module provides a standardized dialog with a text field
-//! that integrates seamlessly into the AtlantisOS design language.
-/**
-* dialogs_entry.rs
-*
-* (C) 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module provides a standard dialog with a text field that fits the AtlantisOS design.
 
 use adw::prelude::*;
-use adw::{
-	ActionRow, 
-	Dialog, 
-	HeaderBar, 
-	ToolbarView
-};
-use gtk4::{
-	Box as GtkBox, 
-	Button, 
-	Entry, 
-	Label, 
-	Orientation
-};
+use adw::{ActionRow, Dialog, HeaderBar, ToolbarView};
+use glib::clone;
+use gtk4::{Box as GtkBox, Button, Entry, Label, Orientation};
 
-/// Creates and displays a dialog with an input field (`Entry`).
+/// Shows a dialog with an input field ([`gtk4::Entry`]).
 ///
-/// The dialog uses an `adw::ToolbarView` for a consistent look and feel
-/// and employs the modern "pill" design for buttons and input fields.
+/// The dialog is built on an [`adw::ToolbarView`] and uses the "pill" style for the buttons
+/// and the field.
 ///
-/// # How it works
-/// - Confirmation is performed via the `ok_label` button or the Enter key.
-/// - Upon success, the `on_submit` callback is called with the current text content.
-/// - The dialog closes automatically after clicking "Cancel" or "Save".
+/// * The input is confirmed with the `ok_label` button or the Enter key; then `on_submit`
+///   is called with the text and the dialog closes.
+/// * The `cancel_label` button closes the dialog without calling `on_submit`.
 ///
 /// # Arguments
 ///
-/// * `parent` - The widget to which the dialog is attached.
-/// * `title` - The title in the dialog header.
-/// * `body` - An explanatory text above the input field.
-/// * `ok_label` - Text for the confirmation button (e.g., "Save").
-/// * `cancel_label` - Text for the cancel button (e.g., "Cancel").
-/// * `entry_label` - Label of the `ActionRow` containing the input field.
-/// * `placeholder` - Gray placeholder text within the empty text field.
-/// * `on_submit` - A callback closure that processes the entered `String`.
+/// * `parent` - The widget the dialog is shown over.
+/// * `title` - The title in the header bar.
+/// * `body` - An explanation above the input field.
+/// * `ok_label` - The text of the confirm button, for example `"Save"`.
+/// * `cancel_label` - The text of the cancel button, for example `"Cancel"`.
+/// * `entry_label` - The title of the row that contains the field.
+/// * `placeholder` - Gray text inside the empty field.
+/// * `on_submit` - Receives the entered text.
 ///
-/// # Return Value
+/// # Returns
 ///
-/// Returns the [adw::Dialog] instance in case further manipulation (e.g., signals) is required.
+/// The [`adw::Dialog`], in case you want to connect more signals.
 ///
-/// # Usage:
-/// 
-/// ```rust
-/// let btn = gtk4::Button::with_label("Input?");
-/// btn.connect_clicked(move |b| {
-///    show_entry_dialog(
-///        b,
-///        "Change Name",
-///        "Add new name",
-///        "Save",
-///        "Exit",
-///        "Username:",
-///        "e.g. Test",
-///        Box::new(|name| {
-///            println!("Username {}", name);
-///        }),
-///    );
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_entry_dialog;
+/// use gtk4::prelude::*;
+/// # gtk4::init().unwrap();
+///
+/// let button = gtk4::Button::with_label("Rename");
+/// button.connect_clicked(|button| {
+///     show_entry_dialog(
+///         button,
+///         "Change name",
+///         "Enter the new name.",
+///         "Save",
+///         "Cancel",
+///         "Username:",
+///         "e.g. Test",
+///         |name| println!("Username: {}", name),
+///     );
 /// });
 /// ```
+#[allow(clippy::too_many_arguments)]
 pub fn show_entry_dialog<F>(
     parent: &impl IsA<gtk4::Widget>,
     title: &str,
@@ -78,12 +68,11 @@ pub fn show_entry_dialog<F>(
     cancel_label: &str,
     entry_label: &str,
     placeholder: &str,
-    on_submit: F, // new callack
+    on_submit: F,
 ) -> Dialog
 where
-    F: Fn(String) + 'static, // F get a string and return nothing
+    F: Fn(String) + 'static,
 {
-    // ui setup
     let content = GtkBox::builder()
         .orientation(Orientation::Vertical)
         .spacing(12)
@@ -93,20 +82,15 @@ where
         .margin_end(18)
         .build();
 
-    let body_label = Label::builder()
-        .label(body)
-        .wrap(true)
-        .xalign(0.0)
-        .build();
-    content.append(&body_label);
+    content.append(&Label::builder().label(body).wrap(true).xalign(0.0).build());
 
     let entry = Entry::builder()
         .placeholder_text(placeholder)
         .hexpand(true)
-        .activates_default(true) // enter start standard button
+        .activates_default(true) // Enter presses the default button
         .build();
-	entry.add_css_class("pill");
-	
+    entry.add_css_class("pill");
+
     let row = ActionRow::builder()
         .title(entry_label)
         .activatable_widget(&entry)
@@ -120,7 +104,7 @@ where
     let header_bar = HeaderBar::builder()
         .title_widget(&adw::WindowTitle::new(title, ""))
         .build();
-    
+
     let btn_cancel = Button::with_label(cancel_label);
     btn_cancel.add_css_class("destructive-action");
     btn_cancel.add_css_class("pill");
@@ -136,29 +120,26 @@ where
     let dialog = Dialog::builder()
         .child(&toolbar_view)
         .content_width(400)
-        .default_widget(&btn_ok) // connect to activates_default from the entry
+        .default_widget(&btn_ok) // the target of `activates_default`
         .build();
 
-    // loic and callbacks    
-    let dialog_clone = dialog.clone();
-    btn_cancel.connect_clicked(move |_| {
-        dialog_clone.close();
-    });
+    // weak references: the buttons live inside the dialog, a strong one would be a cycle
+    btn_cancel.connect_clicked(clone!(
+        #[weak]
+        dialog,
+        move |_| {
+            dialog.close();
+        }
+    ));
 
-    // referenz to the the entry and button
-    let dialog_clone = dialog.clone();
-    let entry_clone = entry.clone();
-    
-
-    // pack callback to reference counted
-    let on_submit = std::rc::Rc::new(on_submit);
-    let on_submit_clone = on_submit.clone();
-
-    btn_ok.connect_clicked(move |_| {
-        let input_text = entry_clone.text().to_string();
-        on_submit_clone(input_text); // start callback
-        dialog_clone.close();
-    });
+    btn_ok.connect_clicked(clone!(
+        #[weak]
+        dialog,
+        move |_| {
+            on_submit(entry.text().to_string());
+            dialog.close();
+        }
+    ));
 
     dialog.present(Some(parent));
     dialog

@@ -1,138 +1,183 @@
-//! Predefined standard dialogs for common use cases.
-//!
-//! This module provides wrapper functions for [show_alert_dialog] to display consistent 
-//! informational and error messages with localized labels.
-/**
-* standard_dialogs.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+// standard_dialogs.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
+//! Ready-made dialogs for common cases.
+//!
+//! The functions of this module wrap
+//! [`show_alert_dialog`] to show consistent information
+//! and error messages. The fixed texts ("Information", "Error", "OK") are translated with
+//! [`gettext!`](crate::gettext!). Texts that you pass in are shown as they are: translate
+//! them yourself.
+
+use super::dialog::show_alert_dialog;
+use crate::gettext;
 use adw::prelude::*;
 use gtk4::Widget;
-use crate::design::dialogs::dialog::show_alert_dialog;
-use crate::gettext;
 
-/// Displays a standard information dialog.
+/// Shows an information dialog.
 ///
-/// Uses the static title "Information" and an "OK" button.
-/// Both texts are automatically localized.
+/// The title is "Information" and the button is "OK" (both translated).
 ///
 /// # Arguments
-/// * `parent` - The parent widget.
-/// * `body` - The message text to display.
-pub fn show_info_dialog(
-	parent: &impl IsA<Widget>, 
-	body: &str
-) {
-    show_alert_dialog(
-    	parent, 
-    	&gettext!("Information"), 
-    	body, 
-    	&gettext!("OK")
-    );
+///
+/// * `parent` - The widget the dialog is shown over.
+/// * `body` - The message.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_info_dialog;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// show_info_dialog(&window, "The file was saved.");
+/// ```
+pub fn show_info_dialog(parent: &impl IsA<Widget>, body: &str) {
+    show_alert_dialog(parent, &gettext!("Information"), body, &gettext!("OK"));
 }
 
-/// Displays an information dialog with a custom button.
+/// Shows an information dialog with your own button label.
 ///
-/// Useful when the confirmation requires a verb other than "OK" (e.g., "Understood").
+/// Useful when "OK" does not fit, for example "Understood".
 ///
 /// # Arguments
-/// * `button_label` - The button label (should ideally already be localized).
-pub fn show_info_button_dialog(
-	parent: &impl IsA<Widget>, 
-	body: &str, 
-	button_label: &str
-) {
-    show_alert_dialog(
-    	parent, 
-    	&gettext!("Information"), 
-    	body, 
-    	button_label
-    );
-}
-
-/// Displays an information dialog with a custom title and a default "OK" button.
-pub fn show_dialog_title(
-	parent: &impl IsA<Widget>, 
-	title: &str, 
-	body: &str
-) {
-    show_alert_dialog(
-    	parent, 
-    	title, 
-    	body, 
-    	&gettext!("OK")
-    );
-}
-
-/// Displays a standard error dialog.
 ///
-/// Uses the localized title "Error" and an "OK" button.
-/// This dialog should be used for general program errors.
-pub fn show_error_dialog(
-	parent: &impl IsA<Widget>, 
-	body: &str
-) {
-    show_alert_dialog(
-    	parent, 
-    	&gettext!("Error"), 
-    	body, 
-    	&gettext!("OK")
-    );
+/// * `parent` - The widget the dialog is shown over.
+/// * `body` - The message.
+/// * `button_label` - The label of the button (translate it yourself).
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_info_button_dialog;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// show_info_button_dialog(&window, "The update takes a few minutes.", "Understood");
+/// ```
+pub fn show_info_button_dialog(parent: &impl IsA<Widget>, body: &str, button_label: &str) {
+    show_alert_dialog(parent, &gettext!("Information"), body, button_label);
 }
 
-/// Displays an error dialog with a custom button.
-pub fn show_error_button_dialog(
-	parent: &impl IsA<Widget>, 
-	body: &str, 
-	button_label: &str
-) {
-    show_alert_dialog(
-    	parent, 
-    	&gettext!("Error"), 
-    	body, 
-    	button_label
-    );
+/// Shows an information dialog with your own title and the button "OK".
+///
+/// # Arguments
+///
+/// * `parent` - The widget the dialog is shown over.
+/// * `title` - The heading (translate it yourself).
+/// * `body` - The message.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_dialog_title;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// show_dialog_title(&window, "Backup", "The backup is complete.");
+/// ```
+pub fn show_dialog_title(parent: &impl IsA<Widget>, title: &str, body: &str) {
+    show_alert_dialog(parent, title, body, &gettext!("OK"));
 }
 
-/// Displays a detailed error dialog with a specific subtitle.
+/// Shows a standard error dialog.
 ///
-/// The title is formatted as "Error: {Your Title}".
+/// The title is "Error" and the button is "OK" (both translated). Use it for general
+/// errors of the program.
 ///
-/// # Example
-/// If `title` is "Network Timeout", the heading will appear as "Error: Network Timeout".
-pub fn show_error_title_dialog(
-	parent: &impl IsA<Widget>, 
-	title: &str, 
-	body: &str
-) {
-    let formatted_title = format!("{}: {}", gettext!("Error"), title);
-    show_alert_dialog(
-    	parent, 
-    	&formatted_title, 
-    	body, 
-    	&gettext!("OK")
-    );
+/// # Arguments
+///
+/// * `parent` - The widget the dialog is shown over.
+/// * `body` - The description of the error.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_error_dialog;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// show_error_dialog(&window, "The file could not be opened.");
+/// ```
+pub fn show_error_dialog(parent: &impl IsA<Widget>, body: &str) {
+    show_alert_dialog(parent, &gettext!("Error"), body, &gettext!("OK"));
 }
 
-/// Displays a detailed error dialog with a custom title and a custom button.
+/// Shows an error dialog with your own button label.
 ///
-/// This is the most flexible type of error dialog available in the standard presets.
+/// # Arguments
+///
+/// * `parent` - The widget the dialog is shown over.
+/// * `body` - The description of the error.
+/// * `button_label` - The label of the button (translate it yourself).
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_error_button_dialog;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// show_error_button_dialog(&window, "The connection was lost.", "Close");
+/// ```
+pub fn show_error_button_dialog(parent: &impl IsA<Widget>, body: &str, button_label: &str) {
+    show_alert_dialog(parent, &gettext!("Error"), body, button_label);
+}
+
+/// Shows an error dialog with a detail in the title.
+///
+/// The heading is "Error: *title*" (the word "Error" is translated), the button is "OK".
+///
+/// # Arguments
+///
+/// * `parent` - The widget the dialog is shown over.
+/// * `title` - The detail after "Error:", for example `"Network timeout"`.
+/// * `body` - The description of the error.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_error_title_dialog;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// // the heading reads "Error: Network timeout"
+/// show_error_title_dialog(&window, "Network timeout", "The server did not answer.");
+/// ```
+pub fn show_error_title_dialog(parent: &impl IsA<Widget>, title: &str, body: &str) {
+    show_error_title_button_dialog(parent, title, body, &gettext!("OK"));
+}
+
+/// Shows an error dialog with a detail in the title and your own button label.
+///
+/// The most flexible of the error presets.
+///
+/// # Arguments
+///
+/// * `parent` - The widget the dialog is shown over.
+/// * `title` - The detail after "Error:".
+/// * `body` - The description of the error.
+/// * `button_label` - The label of the button (translate it yourself).
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::show_error_title_button_dialog;
+/// # gtk4::init().unwrap();
+/// # let window = gtk4::Window::new();
+///
+/// show_error_title_button_dialog(&window, "Disk full", "Free some space and try again.", "Close");
+/// ```
 pub fn show_error_title_button_dialog(
-    parent: &impl IsA<Widget>, 
-    title: &str, 
-    body: &str, 
-    button_label: &str
+    parent: &impl IsA<Widget>,
+    title: &str,
+    body: &str,
+    button_label: &str,
 ) {
     let formatted_title = format!("{}: {}", gettext!("Error"), title);
-    show_alert_dialog(
-    	parent, 
-    	&formatted_title, 
-    	body, 
-    	button_label
-    );
+    show_alert_dialog(parent, &formatted_title, body, button_label);
 }

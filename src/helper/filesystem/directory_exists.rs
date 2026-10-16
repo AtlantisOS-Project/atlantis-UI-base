@@ -1,60 +1,52 @@
-//! Simple checks for the existence of files and directories.
+// directory_exists.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Checks whether files and directories exist.
 //!
-//! This module provides lightweight utilities to determine whether a path 
-//! exists on the file system and whether it is of the expected type.
-/**
- * directory_exists.rs
- *
- * (C) 2026 AtlantisOS Project
- * by @NachtsternBuild
- *
- * License: GNU GENERAL PUBLIC LICENSE Version 3
- */
+//! Two small helpers that tell whether a path exists and whether it is of the expected
+//! type.
 
 use std::path::Path;
 
 /// Checks whether a path exists and is a directory.
 ///
-/// This function is more restrictive than a simple existence check, as it returns `false` 
-/// if the path exists but is a regular file.
+/// Stricter than a plain existence check: a regular file at that path gives `false`.
 ///
 /// # Arguments
-/// * `path` - The path to check (accepts `&str`, `String`, `PathBuf`).
 ///
-/// # Usage:
+/// * `path` - The path to check (`&str`, `String`, `PathBuf`, …).
 ///
-/// ```rust
-/// fn main() {
-///   if directory_exists("/mnt/c/Users") {
-///       println!("Directory exists!");
-///   }
-/// }
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::directory_exists;
+///
+/// assert!(directory_exists("/"));
+/// assert!(!directory_exists("/this/path/does/not/exist"));
 /// ```
 pub fn directory_exists<P: AsRef<Path>>(path: P) -> bool {
-    let p = path.as_ref();
-    p.exists() && p.is_dir()
+    path.as_ref().is_dir()
 }
 
-/// Checks whether a file or directory exists at the specified path.
+/// Checks whether a file or directory exists at the path.
 ///
-/// Unlike `directory_exists`, this function only checks for 
-/// physical presence on the disk, regardless of file type.
+/// Unlike [`directory_exists`] the type does not matter, only the presence on disk.
 ///
 /// # Arguments
-/// * `path` - The path to be checked.
 ///
-/// # Usage:
+/// * `path` - The path to check.
 ///
-/// ```rust
-/// Usage:
-/// fn main() {
-///   if directory_exists("/mnt/c/Users") {
-///       println!("Directory exists!");
-///   }
-///   if file_exists("/etc/config.toml") {
-///       println!("File exists!");
-///   }
-/// }
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::file_exists;
+///
+/// assert!(file_exists("/"));
+/// assert!(!file_exists("/this/path/does/not/exist"));
 /// ```
 pub fn file_exists<P: AsRef<Path>>(path: P) -> bool {
     path.as_ref().exists()

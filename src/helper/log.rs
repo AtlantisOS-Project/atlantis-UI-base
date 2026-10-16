@@ -1,15 +1,22 @@
+// log.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
 //! Logging and event display.
 //!
-//! This module provides functions for capturing system events. 
-//! It supports both writing to the Unix syslog and 
-//! graphical display of log streams within the application via VTE.
- 
-/// Interface to the Unix syslog service.
+//! The module captures system events. It supports writing to the Unix syslog and, with the
+//! `log-viewer` feature, the display of the log stream in the application through VTE.
+
 pub mod write_log;
 
-/// Graphical components for displaying Journald logs.
+#[cfg(feature = "log-viewer")]
+#[cfg_attr(docsrs, doc(cfg(feature = "log-viewer")))]
 pub mod write_log_text;
 
-// Re-Export
+// Re-exports
 pub use write_log::*;
+#[cfg(feature = "log-viewer")]
 pub use write_log_text::*;

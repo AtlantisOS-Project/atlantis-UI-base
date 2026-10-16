@@ -1,57 +1,57 @@
-//! Utility tools for checking the availability of system commands.
-//!
-//! This module provides functions to determine whether a specific program 
-//! or executable file is installed on the system and accessible via the environment variables.
-/**
-* command_exists.c
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+// command_exists.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
+//! Checks whether a command is installed.
+//!
+//! This module determines whether a program is installed and reachable through the
+//! `PATH` environment variable.
 
 use std::env;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+
+/// Returns `true` if `path` is a regular file with at least one execute bit set.
+fn is_executable_file(path: &Path) -> bool {
+    path.metadata()
+        .map(|meta| meta.is_file() && meta.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false)
+}
 
 /// Checks whether a command is available on the system.
 ///
-/// The function distinguishes between two scenarios:
-/// 1. **Absolute path:** If the passed string is an absolute path, 
-///    it checks directly whether the file exists at that location.
-/// 2. **Command name:** If only a name (e.g., "ls" or "git") is passed, 
-///    the function searches all directories defined in the environment variable 
-///    `PATH`.
+/// The function distinguishes between two cases:
+///
+/// 1. **Absolute path:** the file at that location must exist and be executable.
+/// 2. **Command name:** (for example `ls` or `git`) every directory listed in `PATH` is
+///    searched for an executable file with that name.
 ///
 /// # Arguments
+///
 /// * `command` - The name of the command or an absolute path to the file.
 ///
-/// # Return Value
-/// Returns `true` if the command was found and is an executable file, 
-/// otherwise `false`.
+/// # Returns
 ///
-/// # Usage:
+/// `true` if an executable file was found, otherwise `false`.
 ///
-/// ```rust
-/// if command_exists_native("cd") {
-/// 	println!("cd exists");
-/// }
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::command_exists_native;
+///
+/// assert!(command_exists_native("sh"));
+/// assert!(!command_exists_native("this-command-does-not-exist"));
 /// ```
 pub fn command_exists_native(command: &str) -> bool {
-    // check if the path is absolute
-    if Path::new(command).is_absolute() {
-        return Path::new(command).exists();
+    let path = Path::new(command);
+    if path.is_absolute() {
+        return is_executable_file(path);
     }
 
-    // search in the path
-    if let Some(paths) = env::var_os("PATH") {
-        for path in env::split_paths(&paths) {
-            let full_path = path.join(command);
-            if full_path.is_file() {
-                return true;
-            }
-        }
-    }
-    false
+    env::var_os("PATH")
+        .map(|paths| env::split_paths(&paths).any(|dir| is_executable_file(&dir.join(command))))
+        .unwrap_or(false)
 }

@@ -1,0 +1,89 @@
+# Example guide for `cargo run --example guide`.
+#
+# The texts are the gettext msgids; translations come from the .po file of the application
+# (GuideLoader translates every visible text with gettext! by default).
+
+title = "GSI"
+
+# Page 1 ─────────────────────────────────────────────────────────────
+[[pages]]
+title = "Notes"
+icon = "dialog-information-symbolic"
+
+[[pages.blocks]]
+paragraph = "GSI (Generic System Image) is an Android system image that requires support for Project Treble."
+
+[[pages.blocks]]
+paragraph = "A GSI lets devices without custom ROM support install newer Android versions manually."
+
+[[pages.blocks]]
+callout = "You can check Treble support from a terminal:"
+kind = "tip"
+title = "Is my device compatible?"
+
+[[pages.blocks]]
+code = "adb shell getprop ro.treble.enabled"
+
+[[pages.blocks]]
+image = "treble-check.png"          # relative to this file
+alt = "Terminal showing the output of the Treble check"
+caption = "Output on a Treble-compatible device: \"true\""
+
+# Page 2 ─────────────────────────────────────────────────────────────
+[[pages]]
+title = "GSI Flashing"
+subtitle = "Preparation"
+
+[[pages.blocks]]
+steps = [
+  "Check if your device is compatible with Project Treble.",
+  "Download a corresponding GSI.",
+  "Prepare the images for the flash.",
+  "Boot your device in Fastboot.",
+  { title = "Open the bootloader.", detail = "Some devices do not support the Fastboot method." },
+]
+
+[[pages.blocks]]
+callout = "The alternatives 'dirty flash' and 'clean flash' are available as flash methods."
+
+# Page 3 ─────────────────────────────────────────────────────────────
+[[pages]]
+title = "Clean Flash"
+
+[[pages.blocks]]
+callout = "All user data will be deleted."
+kind = "danger"
+
+[[pages.blocks]]
+steps = [
+  "Delete all user data.",
+  "Flash the system image.",
+  "If necessary, flash a vbmeta.img.",
+  "Restart your device.",
+]
+
+[[pages.blocks]]
+heading = "Commands"
+
+[[pages.blocks]]
+code = """
+fastboot -w
+fastboot flash system system.img
+fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img
+fastboot reboot"""
+
+# Page 4 ─────────────────────────────────────────────────────────────
+[[pages]]
+title = "Dirty Flash"
+
+[[pages.blocks]]
+callout = "After a 'dirty flash' the user data is retained, but not every GSI starts afterwards."
+kind = "warning"
+
+[[pages.blocks]]
+steps = ["Flash the system image.", "Restart your device."]
+
+[[pages.blocks]]
+code = """
+fastboot flash system system.img
+fastboot reboot"""

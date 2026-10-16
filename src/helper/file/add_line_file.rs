@@ -1,79 +1,87 @@
-//! Utility for safely appending to text files.
+// add_line_file.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Appends lines to text files.
 //!
-//! This module allows you to add a line to the end of a file, including 
-//! duplicate checking and optional backup creation.
-/**
-* add_line_file.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module adds a line to the end of a file, including a duplicate check and an
+//! optional backup.
 
 use std::fs;
-use std::io::{
-	Read, 
-	Write
-};
+use std::io::{self, Write};
 use std::path::Path;
 
-/// Adds a specific line to the end of a file if it does not yet exist.
+/// Adds a line to the end of a file if the file does not contain it yet.
 ///
-/// This function is particularly useful for configuration files where 
-/// entries must not appear more than once.
+/// Useful for configuration files in which an entry must not appear twice.
 ///
-/// # How it works
-/// 1. **Existence check:** If the file does not exist, it is created with the line.
-/// 2. **Duplicate check:** The file is read. If the line (trimmed) already 
-///    exists, the operation is aborted to avoid redundancy.
-/// 3. **Backup:** If `create_backup` is true, a `.bak` copy is created.
-/// 4. **Write:** The line is appended to the file in append mode.
+/// 1. **Duplicate check:** if a line of the file equals `line` (ignoring surrounding
+///    whitespace), nothing is changed.
+/// 2. **Backup:** if `create_backup` is `true` and the file already exists, a copy named
+///    `<path>.bak` is created once. An existing backup is never overwritten.
+/// 3. **Write:** the line is appended. A missing file is created, and a missing line break
+///    at the end of the file is added first, so the new line is never glued to the old one.
 ///
 /// # Arguments
-/// * `create_backup` - Whether to create a backup copy of the original file.
-/// * `path` - The path to the destination file.
-/// * `line` - The text content to be added.
 ///
-/// # Usage:
+/// * `create_backup` - Whether to create a `.bak` copy of the original file.
+/// * `path` - The path of the file.
+/// * `line` - The text to add, without line break.
 ///
-/// ```rust
-/// fn main() {
-///    let file_path = "test.txt";
-///    let new_line = "Some content";
-///    let create_backup = true;
-///    match add_line_file(&create_backup, file_path, new_line) {
-///        Ok(_) => println!("Success!"),
-///        Err(e) => eprintln!("Some errors: {}", e),
-///    }
-/// }
+/// # Errors
+///
+/// Returns an [`io::Error`] if the file cannot be read, copied or written. Finding the
+/// line already present is not an error.
+///
+/// # Examples
+///
 /// ```
-pub fn add_line_file(create_backup: &bool, path: &str, line: &str) -> std::io::Result<()> {
-	if !Path::new(&path).exists() {
-		// create the file if it not exists
-		fs::write(path, line)?;
-	}
-		
-	let mut content = String::new();
-	fs::File::open(path)?.read_to_string(&mut content)?;
-	
-	// check if the content is already in the file
-	if content.lines().any(|l| l.trim() == line) {
-		println!("Entry already exists in {}", path);
-		return Ok(());
-	}
-	
-	// backup of the original file
-	if *create_backup {
-		let backup_path = format!("{}.bak", path);
+/// use atlbase::prelude::add_line_file;
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// let file = dir.path().join("hosts");
+/// let file = file.to_str().unwrap();
+///
+/// add_line_file(&false, file, "127.0.0.1 localhost").unwrap();
+/// add_line_file(&false, file, "127.0.0.1 localhost").unwrap(); // already there
+/// add_line_file(&false, file, "10.0.0.1 server").unwrap();
+///
+/// let content = std::fs::read_to_string(file).unwrap();
+/// assert_eq!(content, "127.0.0.1 localhost\n10.0.0.1 server\n");
+/// ```
+pub fn add_line_file(create_backup: &bool, path: &str, line: &str) -> io::Result<()> {
+    let content = match fs::read_to_string(path) {
+        Ok(content) => content,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
+        Err(e) => return Err(e),
+    };
+
+    if content
+        .lines()
+        .any(|existing| existing.trim() == line.trim())
+    {
+        println!("Entry already exists in {}", path);
+        return Ok(());
+    }
+
+    if *create_backup && Path::new(path).exists() {
+        let backup_path = format!("{}.bak", path);
         if !Path::new(&backup_path).exists() {
             fs::copy(path, &backup_path)?;
             println!("Created backup: {}", backup_path);
         }
     }
-	
-	// write line to file
-    let mut file = fs::OpenOptions::new().append(true).open(path)?;
+
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+    if !content.is_empty() && !content.ends_with('\n') {
+        writeln!(file)?;
+    }
     writeln!(file, "{}", line)?;
     println!("Entry added to {}", path);
 

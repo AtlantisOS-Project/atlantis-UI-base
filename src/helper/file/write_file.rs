@@ -1,88 +1,88 @@
-//! A universal tool for writing files and creating directory structures.
+// write_file.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Writes files and creates the directory structure above them.
 //!
-//! This module simplifies data storage by dynamically constructing paths from 
-//! a base directory (Home or Root) and a list of subdirectories.
-/**
-* write_file.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The path is assembled from a base directory (home directory or any other directory) and
+//! a list of subdirectories.
 
 use directories::UserDirs;
 use std::fs;
+use std::io;
 use std::path::PathBuf;
 
-/// Writes content to a file and creates the entire directory structure if necessary.
+/// Writes `content` to a file and creates all missing directories above it.
 ///
-/// This function is highly flexible: It can operate either in the user's home directory 
-/// or at any specified location (e.g., in the root filesystem).
-///
-/// # How it works
-/// 1. **Determine base path:** If `base_path` is `None`, the home directory is used.
-/// 2. **Path construction:** The segments from `path_list` are appended to the base path.
-/// 3. **Directory creation:** Any missing subdirectories are automatically created.
-/// 4. **Write file:** The content is finally written to the file (overwriting existing data).
+/// 1. **Base path:** `base_path`, or the home directory of the user if it is `None`.
+/// 2. **Path:** the segments of `path_list` and finally `filename` are appended.
+/// 3. **Directories:** missing directories are created.
+/// 4. **Write:** the content is written; an existing file is overwritten.
 ///
 /// # Arguments
-/// * `filename` - The name of the file to be created.
-/// * `content` - The text content to be saved.
-/// * `base_path` - Optional starting point. `None` corresponds to the home directory (`~/`).
-/// * `path_list` - An array of subdirectories (e.g., `&["Documents", "Projects"]`).
 ///
-/// # Error Handling
-/// Returns a `std::io::Result`. Errors occur if the home directory 
-/// cannot be determined or if write permissions are missing in the destination directory.
+/// * `filename` - The name of the file.
+/// * `content` - The text to store.
+/// * `base_path` - The start of the path; `None` means the home directory.
+/// * `path_list` - The subdirectories below the base path, for example
+///   `&["Documents", "Projects"]`.
 ///
-/// # Usage:
+/// # Errors
 ///
-/// ```rust
-/// use std::path::PathBuf;
+/// Returns an [`io::Error`] if the home directory cannot be determined, a directory cannot
+/// be created or the file cannot be written.
 ///
-/// // Create ~/Atlantis/logs/session.log
-/// let _ = write_file(
-///     "session.log", 
-///     "Log-Content...", 
-///     None, 
-///     &["Atlantis", "logs"]
-/// );
+/// # Examples
 ///
-/// // Create /etc/atlantis/config.toml 
-/// let _ = write_file(
-///     "config.toml", 
-///     "# Config", 
-///     Some(PathBuf::from("/")), 
-///     &["etc", "atlantis"]
-/// );
 /// ```
-pub fn write_file(filename: &str, content: &str, base_path: Option<PathBuf>, path_list: &[&str]) -> std::io::Result<()> {
-	// create base path
-	let mut full_path = match base_path {
-		Some(path) => path,
-		None => {
-			let user_dirs = UserDirs::new()
-				.ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Home directory not found"))?;
-			PathBuf::from(user_dirs.home_dir())
-		}
-	};
-	
-	// add subdirs
-	for direc in path_list {
-		full_path.push(direc);
-	}
-	
-	// add filename
-	full_path.push(filename);
-	
-	// create path structure
-	if let Some(parent) = full_path.parent() {
-		fs::create_dir_all(parent)?;
-	}
-	
-	// write file
-	fs::write(&full_path, content)?;
-	
-	Ok(())
+/// use atlbase::prelude::write_file;
+///
+/// let root = tempfile::tempdir().unwrap();
+///
+/// // creates <root>/etc/atlantis/config.toml
+/// write_file(
+///     "config.toml",
+///     "# Config",
+///     Some(root.path().to_path_buf()),
+///     &["etc", "atlantis"],
+/// )
+/// .unwrap();
+///
+/// let file = root.path().join("etc/atlantis/config.toml");
+/// assert_eq!(std::fs::read_to_string(file).unwrap(), "# Config");
+/// ```
+///
+/// Without a base path the file lands in the home directory, here `~/Atlantis/logs/session.log`:
+///
+/// ```no_run
+/// # use atlbase::prelude::write_file;
+/// write_file("session.log", "Log content", None, &["Atlantis", "logs"]).unwrap();
+/// ```
+pub fn write_file(
+    filename: &str,
+    content: &str,
+    base_path: Option<PathBuf>,
+    path_list: &[&str],
+) -> io::Result<()> {
+    let mut full_path = match base_path {
+        Some(path) => path,
+        None => {
+            let user_dirs = UserDirs::new().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::NotFound, "Home directory not found")
+            })?;
+            user_dirs.home_dir().to_path_buf()
+        }
+    };
+
+    full_path.extend(path_list);
+    full_path.push(filename);
+
+    if let Some(parent) = full_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    fs::write(&full_path, content)
 }

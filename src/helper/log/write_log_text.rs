@@ -1,60 +1,54 @@
-//! Graphical display of system logs within the application.
+// write_log_text.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Graphical display of the system log inside the application.
 //!
-//! This module allows messages captured via Syslog/Journald 
-//! to be displayed directly in a window. It uses the VTE library to embed a 
-//! terminal widget that reads `journalctl` in real time.
-/**
-* write_log_text.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+//! The module shows the messages that [`init_syslog`](crate::helper::log::write_log::init_syslog)
+//! sends to syslog/journald in a window. It embeds a VTE terminal that follows `journalctl`
+//! in real time.
+//!
+//! The module needs the feature `log-viewer` (enabled by default) and VTE
+//! (`libvte-2.91-gtk4`) at build and run time.
+//!
+//! # Packaging
+//!
+//! `journalctl` must be installed and the user must be allowed to read the journal. Inside a
+//! Flatpak sandbox neither is the case, so the window stays empty; hide the log button
+//! there (see [`get_execution_environment`](crate::helper::configuration::application_environment::get_execution_environment)).
 
-use adw::prelude::*;
-use adw::{
-	ApplicationWindow, 
-	HeaderBar, 
-	ToolbarView
-};
-use gtk4::{
-	Box as GtkBox, 
-	Button, 
-	Label, 
-	ListBox, 
-	ListBoxRow, 
-	MenuButton, 
-	Popover, 
-	Image, 
-	Orientation, 
-	Align
-};
-use vte4::Terminal;
-use vte4::TerminalExtManual;
-use vte4::TerminalExt;
-use std::process;
 use crate::gettext;
+use adw::prelude::*;
+use adw::{ApplicationWindow, HeaderBar, ToolbarView};
+use gtk4::{
+    Align, Box as GtkBox, Button, Image, Label, ListBox, ListBoxRow, MenuButton, Orientation,
+    Popover,
+};
+use vte4::{Terminal, TerminalExt, TerminalExtManual};
 
-/// Opens a new window displaying the syslog entries for the current domain.
+/// Opens a window that follows the syslog entries of an application.
 ///
-/// This function asynchronously starts a `journalctl` process filtered on the 
-/// specified `domain` and immediately displays new entries.
+/// A `journalctl -f -t <domain>` process is started in an embedded terminal; new entries
+/// appear immediately, older ones are not shown. Errors while starting the process are printed
+/// to `stderr`.
 ///
 /// # Arguments
-/// * `app` - The active Libadwaita app instance.
-/// * `domain` - The text domain or program name to filter by.
 ///
-/// # Usage:
+/// * `app` - The running Libadwaita application.
+/// * `domain` - The identifier of the messages, that is the `app_name` passed to
+///   [`init_syslog`](crate::helper::log::write_log::init_syslog).
 ///
-/// ```rust
-/// let button1 = Button::new();
-/// button1.set_child(Some(&hbox1));
-/// button1.set_tooltip_text(Some(&gettext!("Show Log"))); 
-/// let app_clone = app.clone();
-/// button1.connect_clicked(move |_| {
-///    show_log_viewer(&app_clone, domain);
-/// });
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::*;
+/// # gtk4::init().unwrap();
+/// # let app = adw::Application::builder().application_id("org.example.Demo").build();
+///
+/// show_log_viewer(&app, "my-app");
 /// ```
 pub fn show_log_viewer(app: &adw::Application, domain: &str) {
     let log_window = ApplicationWindow::builder()
@@ -71,128 +65,102 @@ pub fn show_log_viewer(app: &adw::Application, domain: &str) {
     toolbar_view.add_top_bar(&header_bar);
 
     let terminal = Terminal::new();
-    
-	// use rgb structure
     terminal.set_color_bold(Some(&gtk4::gdk::RGBA::new(1.0, 1.0, 1.0, 1.0)));
     terminal.set_scrollback_lines(1000);
+    terminal.feed(b"Starting logging...\r\n");
 
-    let cmd_str = format!("echo 'Starting Logging...'; journalctl -f -n 0 -t {} --output=short", domain);
-	let argv = vec![
-	    "/bin/sh".to_string(), 
-	    "-c".to_string(), 
-	    cmd_str
-	];
+    // The identifier is an argument of journalctl, not part of a shell command line.
+    let argv = [
+        "journalctl",
+        "-f",
+        "-n",
+        "0",
+        "-t",
+        domain,
+        "--output=short",
+    ];
 
     terminal.spawn_async(
         vte4::PtyFlags::DEFAULT,
-        None, // Working dir
-        &argv.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
-        &[], // Env
-        glib::SpawnFlags::SEARCH_PATH, // use SEARCH_PATH
-        || {}, 
+        None, // working directory
+        &argv,
+        &[], // environment
+        glib::SpawnFlags::SEARCH_PATH,
+        || {},
         -1,
         None::<&gio::Cancellable>,
-        move |result| {
-            match result {
-                Ok(pid) => println!("Journald-Log started (PID: {:?})", pid),
-                Err(e) => eprintln!("Error with starting: {}", e),
-            }
+        move |result| match result {
+            Ok(pid) => println!("Journald-Log started (PID: {:?})", pid),
+            Err(e) => eprintln!("Error with starting: {}", e),
         },
     );
-    
-    // present the window
+
     toolbar_view.set_content(Some(&terminal));
     log_window.set_content(Some(&toolbar_view));
     log_window.present();
 }
 
-
-/// Closes the application immediately.
-fn kill_program() {
-    process::exit(0); 
-}
-
-/// Creates a customized header bar with a popover menu.
+/// Creates a menu button for a header bar with the entries "Show Log" and "Exit".
 ///
-/// The menu contains options to open the log viewer and to quit 
-/// the application. Ideal for integration into the main view.
+/// "Show Log" opens [`show_log_viewer`]; "Exit" quits the application with
+/// `Application::quit`. Ideal for the main view of an application.
 ///
 /// # Arguments
-/// * `app` - The active Libadwaita app instance.
-/// * `domain` - The domain for the log filter.
 ///
-/// # Return Value
-/// A `GtkBox` that can be inserted into a headerbar as a widget.
+/// * `app` - The running Libadwaita application.
+/// * `domain` - The identifier of the messages for the log viewer.
 ///
-/// # Usage:
+/// # Returns
 ///
-/// ```rust
-/// let toolbar_view = ToolbarView::new();
-/// toolbar_view.set_vexpand(true);
-/// toolbar_view.set_hexpand(true);
-/// let header_bar = HeaderBar::new();
-/// header_bar.set_title_widget(Some(&Label::new(Some(&gettext!("Test UIBase")))));
-/// let custom_header_content = create_custom_headerbar(app, language::LIB_DOMAIN);
-/// header_bar.pack_end(&custom_header_content);
-/// toolbar_view.add_top_bar(&header_bar);
-/// ``` 
-pub fn create_custom_headerbar(app: &adw::Application, domain: &'static str) -> GtkBox {
+/// A [`gtk4::Box`] that can be packed into a header bar.
+///
+/// # Examples
+///
+/// ```no_run
+/// use adw::prelude::*;
+/// use atlbase::ui_prelude::*;
+/// # gtk4::init().unwrap();
+/// # let app = adw::Application::builder().application_id("org.example.Demo").build();
+///
+/// let header_bar = adw::HeaderBar::new();
+/// header_bar.pack_end(&create_custom_headerbar(&app, "my-app"));
+/// ```
+pub fn create_custom_headerbar(app: &adw::Application, domain: &str) -> GtkBox {
     let headerbar_box = GtkBox::new(Orientation::Horizontal, 0);
     let menu_button = MenuButton::new();
     let popover = Popover::new();
     let list_box = ListBox::new();
 
-    // Item 1: Show Log 
-    let row1 = ListBoxRow::new();
-    let hbox1 = GtkBox::new(Orientation::Horizontal, 6);
-    let icon1 = Image::from_icon_name("utilities-system-monitor-symbolic");
-    let label1 = Label::new(Some(&gettext!("Show Log")));
-    
-    hbox1.append(&icon1);
-    hbox1.append(&label1);
-	
-	// button 1
-    let button1 = Button::new();
-    button1.set_child(Some(&hbox1));
-    button1.set_tooltip_text(Some(&gettext!("Show Log")));
-    button1.set_halign(Align::Start);
-    button1.add_css_class("pill");
-    
+    // entry 1: show the log
+    let log_button = menu_entry("utilities-system-monitor-symbolic", &gettext!("Show Log"));
+    let (app_clone, domain) = (app.clone(), domain.to_string());
+    log_button.connect_clicked(move |_| show_log_viewer(&app_clone, &domain));
+    list_box.append(&ListBoxRow::builder().child(&log_button).build());
+
+    // entry 2: quit the application
+    let exit_button = menu_entry("process-stop", &gettext!("Exit"));
+    exit_button.set_tooltip_text(Some(&gettext!("Exit the application")));
     let app_clone = app.clone();
-    button1.connect_clicked(move |_| {
-        show_log_viewer(&app_clone, domain);
-    });
+    exit_button.connect_clicked(move |_| app_clone.quit());
+    list_box.append(&ListBoxRow::builder().child(&exit_button).build());
 
-    row1.set_child(Some(&button1));
-    list_box.append(&row1);
-
-    // Item 2: Exit
-    let row2 = ListBoxRow::new();
-    let hbox2 = GtkBox::new(Orientation::Horizontal, 6);
-    let icon2 = Image::from_icon_name("process-stop");
-    let label2 = Label::new(Some(&gettext!("Exit")));
-
-    hbox2.append(&icon2);
-    hbox2.append(&label2);
-	
-	// button 2
-    let button2 = Button::new();
-    button2.set_child(Some(&hbox2));
-    button2.set_tooltip_text(Some(&gettext!("Kill App")));
-    button2.set_halign(Align::Start);
-    button2.add_css_class("pill");
-    
-    button2.connect_clicked(|_| {
-        kill_program();
-    });
-
-    row2.set_child(Some(&button2));
-    list_box.append(&row2);
-
-    // build the popover menu
     popover.set_child(Some(&list_box));
     menu_button.set_popover(Some(&popover));
     headerbar_box.append(&menu_button);
 
     headerbar_box
+}
+
+/// A pill button with an icon and a text for the popover menu.
+fn menu_entry(icon_name: &str, label: &str) -> Button {
+    let content = GtkBox::new(Orientation::Horizontal, 6);
+    content.append(&Image::from_icon_name(icon_name));
+    content.append(&Label::new(Some(label)));
+
+    let button = Button::new();
+    button.set_child(Some(&content));
+    button.set_tooltip_text(Some(label));
+    button.set_halign(Align::Start);
+    button.add_css_class("pill");
+    button
 }

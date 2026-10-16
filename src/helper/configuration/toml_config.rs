@@ -1,55 +1,60 @@
-//! Management of TOML configuration files for AtlantisOS applications.
-//!
-//! This module uses the `confy` and `serde` crates to 
-//! persistently store and read simple key-value pairs 
-//! in the user's default configuration directory (e.g., `~/.config/`).
-/**
-* toml_config.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*/
+// toml_config.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
 
-use serde::{
-	Serialize, 
-	Deserialize
-};
+//! TOML configuration files for AtlantisOS applications.
+//!
+//! The module uses `confy` and `serde` to store simple key-value pairs persistently in the
+//! default configuration directory of the user. The file is
+//! `<config dir>/<app_name>/default-config.toml`, where the configuration directory follows
+//! the XDG rules (`$XDG_CONFIG_HOME`, usually `~/.config`).
+//!
+//! # Packaging
+//!
+//! Flatpak and Snap redirect `$XDG_CONFIG_HOME` into the private data directory of the
+//! application (`~/.var/app/<id>/config`, `~/snap/<name>/<revision>/.config`). The functions
+//! follow that automatically, so the settings of a packaged application never leak into
+//! the host configuration.
+
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Data structure for AtlantisOS configurations.
+/// Data structure of the stored configuration.
 ///
-/// Uses a [HashMap] to flexibly store various configuration keys 
-/// and their values as strings.
+/// A map of string keys to string values. You do not create it yourself; use [`get_config`]
+/// and [`set_config`].
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct AtlConfigs {
-	/// Internal storage for key-value pairs.
+    /// Key-value pairs of the configuration.
     data: HashMap<String, String>,
 }
 
-/// Reads a value from an application's configuration file.
+/// Reads a value from the configuration file of an application.
 ///
-/// Loads the configuration file based on the application name. If the file 
-/// does not exist, a default empty structure is used.
+/// If the file does not exist or cannot be read, an empty configuration is used.
 ///
 /// # Arguments
-/// * `app_name` - The name of the application (determines the file name/directory).
-/// * `key` - The name of the configuration key being searched for.
 ///
-/// # Return Value
-/// Returns `Some(String)` if the key exists, otherwise `None`.
+/// * `app_name` - The name of the application; it names the directory of the file.
+/// * `key` - The key to look up.
 ///
-/// # Usage:
+/// # Returns
 ///
-/// ```rust
-/// fn main() {
-///    match get_config("atl_test", "theme") {
-///        Some(val) => println!("Found: {}", val),
-///        None => println!("Key not found!"),
-///    }
+/// `Some(value)` if the key exists, otherwise `None`.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::prelude::get_config;
+///
+/// match get_config("my-app", "theme") {
+///     Some(value) => println!("Found: {}", value),
+///     None => println!("Key not found"),
 /// }
-/// ``` 
+/// ```
 pub fn get_config(app_name: &str, key: &str) -> Option<String> {
     let cfg: AtlConfigs = confy::load(app_name, None).unwrap_or_default();
     cfg.data.get(key).cloned()
@@ -57,40 +62,43 @@ pub fn get_config(app_name: &str, key: &str) -> Option<String> {
 
 /// Saves or updates a value in the configuration file.
 ///
-/// First loads the current state of the file, adds the new key-value pair 
-/// or overwrites an existing one, and then writes the entire structure 
-/// back to the hard drive.
+/// The current content of the file is loaded, the key is inserted or overwritten, and the
+/// whole structure is written back. A missing, empty or corrupt file is replaced by a fresh
+/// configuration that contains only the new key.
 ///
 /// # Arguments
-/// * `app_name` - The name of the application (determines the storage location at `~/.config/app_name`).
-/// * `key` - The identifier for the setting.
-/// * `value` - The value to be saved.
 ///
-/// # Error Handling
-/// Returns a [confy::ConfyError] if file permissions are missing or 
-/// serialization fails.
+/// * `app_name` - The name of the application; it names the directory of the file.
+/// * `key` - The identifier of the setting.
+/// * `value` - The value to store.
 ///
-/// # Usage:
+/// # Errors
 ///
-/// ```rust
-/// fn main() {
-///    if let Err(e) = set_config("atl_test", "theme", "dark") {
-///        eprintln!("Error at saving: {}", e);
-///    }
-///    set_config_val("atl_test", "port", "8080").unwrap();
-///    let port: u16 = get_config_val("port")
-///        .and_then(|v| v.parse().ok())
-///        .unwrap_or(3000); // default value
-///	 println!("Port: {}", port);
-/// }
+/// Returns a [`confy::ConfyError`] if the directory cannot be created, the file cannot be
+/// written (missing permissions) or the data cannot be serialized.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::prelude::{get_config, set_config};
+///
+/// set_config("my-app", "port", "8080").expect("cannot save the setting");
+///
+/// let port: u16 = get_config("my-app", "port")
+///     .and_then(|value| value.parse().ok())
+///     .unwrap_or(3000); // default value
+/// println!("Port: {}", port);
 /// ```
 pub fn set_config(app_name: &str, key: &str, value: &str) -> Result<(), confy::ConfyError> {
-    // load existing configuration or create new 
-    let mut cfg: AtlConfigs = confy::load(app_name, None).unwrap_or_default();
-    
-    // insert the values and update the file
+    // load the file and start with an empty structure if it is empty or unreadable
+    let mut cfg: AtlConfigs = match confy::load(app_name, None) {
+        Ok(config) => config,
+        Err(confy::ConfyError::GeneralLoadError(_)) => AtlConfigs::default(),
+        Err(confy::ConfyError::BadTomlData(_)) => AtlConfigs::default(),
+        Err(e) => return Err(e),
+    };
+
     cfg.data.insert(key.to_string(), value.to_string());
-    
-    // write the file
+
     confy::store(app_name, None, cfg)
 }

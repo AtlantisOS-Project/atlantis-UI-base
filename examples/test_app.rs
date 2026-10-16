@@ -1,44 +1,34 @@
-/**
-* test_app.rs
-*
-* (C) Copyright 2026 AtlantisOS Project
-* by @NachtsternBuild
-*
-* License: GNU GENERAL PUBLIC LICENSE Version 3
-*
-* Usage:
-* cargo run --example test_app
-*/
+// test_app.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! The big test application: nearly every function of the library in one window.
+//!
+//! ```text
+//! cargo run --example test_app
+//! ```
+//!
+//! The smaller examples are easier to read: `helper_tools` (no window), `dialogs`, `guide`.
 
 use adw::prelude::*;
-use adw::{
-	Application, 
-	ApplicationWindow, 
-	HeaderBar, 
-	ToolbarView
-};
+use adw::{Application, ApplicationWindow, HeaderBar, ToolbarView};
 use gtk4::{
-	Box as GtkBox, 
-	Label, 
-	Orientation, 
-	Stack, 
-	StackTransitionType, 
-	Align, 
-	glib, 
-	Button, 
-	Grid
+    Align, Box as GtkBox, Button, Grid, Label, Orientation, Stack, StackTransitionType, glib,
 };
 use std::path::PathBuf;
 
 // atl functions
-use atlbase::helper::language::language;
-use atlbase::design::utils::create_special_button;
-use atlbase::design::utils::create_entry;
-use atlbase::design::dialogs::dialog;
-use atlbase::design::dialogs::about_dialog::AboutInfo;
 use atlbase::design::chooser::file_chooser;
 use atlbase::design::chooser::folder_chooser;
+use atlbase::design::dialogs::about_dialog::AboutInfo;
+use atlbase::design::dialogs::dialog;
 use atlbase::design::utils::command_pkexec_ui::*;
+use atlbase::design::utils::create_entry;
+use atlbase::design::utils::create_special_button;
+use atlbase::helper::language::language;
 // use the extra gettext macro
 use atlbase::gettext;
 // use this for all preludes from the lib.rs
@@ -91,21 +81,19 @@ frame {
 }
 "#;
 
-
 // define the pages for the stack
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Page {
     Home,
     Settings,
-    StandardDialog
-    //UserManagement,
-    //Statistics,
-    //Logs,
+    StandardDialog, //UserManagement,
+                    //Statistics,
+                    //Logs,
 }
 
 // implement all the pages and there names
 impl Page {
-    fn to_id(&self) -> &str {
+    fn to_id(self) -> &'static str {
         match self {
             Page::Home => "home",
             Page::Settings => "settings",
@@ -119,7 +107,7 @@ impl Page {
 
 // test page with all the test options
 fn create_home_page(stack: &Stack) -> GtkBox {
-	let container = GtkBox::new(Orientation::Vertical, 12); // spacing between the main groups
+    let container = GtkBox::new(Orientation::Vertical, 12); // spacing between the main groups
     container.set_valign(Align::Center);
     container.set_hexpand(true);
     container.set_vexpand(true);
@@ -131,198 +119,200 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     // create a grid
     let grid = Grid::new();
     grid.set_column_spacing(10); // spacing between columns
-    grid.set_row_spacing(10);    // spacing between rows
+    grid.set_row_spacing(10); // spacing between rows
     grid.set_halign(Align::Center);
     grid.set_hexpand(true);
     grid.set_vexpand(true);
-	
-	// about dialog
-	let info = AboutInfo {
-	    app_icon: "atlantis-os-logo".to_string(),
-	    app_name: "Atlbase Test".to_string(),
-	    developer_name: "NachtsternBuild".to_string(),
-	    version: "2026.1.0".to_string(),
-	    release_notes_version: "1.0.0".to_string(),
-	    release_notes: "<p>Test Release</p>".to_string(),
-	    comments: "Some UI".to_string(),
-	    website: "https://example.org".to_string(),
-	    issue_url: "https://example.org/issues".to_string(),
-	    support_url: "https://example.org/support".to_string(),
-	    copyright: "© 2026 AtlantisOS Project".to_string(),
-	    developers: vec!["NachtsternBuild".to_string(), "OpenSource Contributor".to_string()],
-	    artists: vec!["Gnome DesignTeam".to_string()],
-	    documentation_url: "https://docs.atlantisos.org".to_string(),
-	    font_usage: "Some cool font".to_string(),
-	    special_thanks: vec!["GNOME Team".to_string(), "Rust Community".to_string()],
-	    translator_credits: "Translated by AtlantisOS Project".to_string(),
-	};
-	
-	let info_clone = info.clone();
-	let btn_about = create_special_button::create_button_icon_position(
-		"dialog-information-symbolic",
-		"About Dialog",
-		Align::Center,
-		move |btn| {
-			show_about_dialog(btn, info_clone.clone());
-		}
-	);
-	
-	// grid.attach(widget, spalte, zeile, breite, höhe)
-	// grid.attach(widget, column, row, width, height)
-    grid.attach(&btn_about, 0, 0, 1, 1);
-	
-    // test dialog button
-    let btn_dialog = create_special_button::create_button_icon_position(
-        "dialog-information-symbolic", 
-        "Test Dialog", 
+
+    // about dialog
+    let info = AboutInfo {
+        app_icon: "atlantis-os-logo".to_string(),
+        app_name: "Atlbase Test".to_string(),
+        developer_name: "NachtsternBuild".to_string(),
+        version: "2026.1.0".to_string(),
+        release_notes_version: "1.0.0".to_string(),
+        release_notes: "<p>Test Release</p>".to_string(),
+        comments: "Some UI".to_string(),
+        website: "https://example.org".to_string(),
+        issue_url: "https://example.org/issues".to_string(),
+        support_url: "https://example.org/support".to_string(),
+        copyright: "© 2026 AtlantisOS Project".to_string(),
+        developers: vec![
+            "NachtsternBuild".to_string(),
+            "OpenSource Contributor".to_string(),
+        ],
+        artists: vec!["Gnome DesignTeam".to_string()],
+        documentation_url: "https://docs.atlantisos.org".to_string(),
+        font_usage: "Some cool font".to_string(),
+        special_thanks: vec!["GNOME Team".to_string(), "Rust Community".to_string()],
+        translator_credits: "Translated by AtlantisOS Project".to_string(),
+    };
+
+    let info_clone = info.clone();
+    let btn_about = create_special_button::create_button_icon_position(
+        "dialog-information-symbolic",
+        "About Dialog",
         Align::Center,
         move |btn| {
-            dialog::show_alert_dialog(btn, &gettext!("Dialog Titel"), &gettext!("Inhalt des Dialogs"), &gettext!("OK"));
-        }
+            show_about_dialog(btn, info_clone.clone());
+        },
+    );
+
+    // grid.attach(widget, spalte, zeile, breite, höhe)
+    // grid.attach(widget, column, row, width, height)
+    grid.attach(&btn_about, 0, 0, 1, 1);
+
+    // test dialog button
+    let btn_dialog = create_special_button::create_button_icon_position(
+        "dialog-information-symbolic",
+        "Test Dialog",
+        Align::Center,
+        move |btn| {
+            dialog::show_alert_dialog(
+                btn,
+                &gettext!("Dialog Titel"),
+                &gettext!("Inhalt des Dialogs"),
+                &gettext!("OK"),
+            );
+        },
     );
     grid.attach(&btn_dialog, 1, 0, 1, 1);
-    
+
     // test filechooser
-	// define callback
-	fn something(path: PathBuf) {
-		println!("File: {:?}", path);
-	}
-	
-	let btn_test_file_chooser = create_special_button::create_button_icon(
-		"media-zip-symbolic",
-		"Test Filechooser",
-		move |btn| {
-			file_chooser::show_file_chooser(btn, something);
-		}
-	);
-	grid.attach(&btn_test_file_chooser, 2, 0, 1, 1);
-    
+    // define callback
+    fn something(path: PathBuf) {
+        println!("File: {:?}", path);
+    }
+
+    let btn_test_file_chooser = create_special_button::create_button_icon(
+        "media-zip-symbolic",
+        "Test Filechooser",
+        move |btn| {
+            file_chooser::show_file_chooser(btn, something);
+        },
+    );
+    grid.attach(&btn_test_file_chooser, 2, 0, 1, 1);
+
     // testing log
     let btn_test_log = create_special_button::create_button_icon_position(
-        "dialog-information-symbolic", 
-        "Test Log", 
+        "dialog-information-symbolic",
+        "Test Log",
         Align::Center,
         move |_| {
-        	println!("Test Log");
+            println!("Test Log");
             log::info!("UI successful started");
-    		log::error!("Critical Error found!");
-        }
+            log::error!("Critical Error found!");
+        },
     );
     grid.attach(&btn_test_log, 0, 1, 1, 1);
-    
+
     // testing spinner dialog
-    let btn_spinner_test = create_special_button::create_button_icon(
-    	"update",
-    	"Test Spinner",
-    	move |btn| {
-    		// get the main window with the button
-        	if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-    			show_spinner_dialog(
-					window,
-  					"System-Update",
-  					"Please wait...",
-  					vec![
-  						vec!["sleep".to_string(), "5".to_string()], 
-  						vec!["echo".to_string(), "'Ready'".to_string()]
-  					],
-  					IndicatorType::Spinner ,
-  					Some(Box::new(|res| {
-				        match res {
-						    Ok(out) => println!("Success: {}", out),
-						    Err(err) => eprintln!("Error: {}", err),
-						}
-					}))
-  				);
-    		}
-    	}  
-    );
+    let btn_spinner_test =
+        create_special_button::create_button_icon("update", "Test Spinner", move |btn| {
+            // get the main window with the button
+            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+                show_spinner_dialog(
+                    window,
+                    "System-Update",
+                    "Please wait...",
+                    vec![
+                        vec!["sleep".to_string(), "5".to_string()],
+                        vec!["echo".to_string(), "'Ready'".to_string()],
+                    ],
+                    IndicatorType::Spinner,
+                    Some(Box::new(|res| match res {
+                        Ok(out) => println!("Success: {}", out),
+                        Err(err) => eprintln!("Error: {}", err),
+                    })),
+                );
+            }
+        });
     grid.attach(&btn_spinner_test, 1, 1, 1, 1);
-    
+
     // test filechooser
-	// define callback
-	fn some_folder(path: PathBuf) {
-		println!("Path: {:?}", path);
-	}
-	
-	let btn_test_folder_chooser = create_special_button::create_button_icon(
-		"media-zip-symbolic",
-		"Test Folderchooser",
-		move |btn| {
-			folder_chooser::show_folder_chooser(btn, some_folder);
-		}
-	);
-	grid.attach(&btn_test_folder_chooser, 2, 1, 1, 1);
-    
-    // testing progress dialog
-    let btn_progress_test = create_special_button::create_button_icon(
-    	"update",
-    	"Test Progress",
-    	move |btn| {
-    		// get the main window with the button
-        	if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-    			show_spinner_dialog(
-					window,
-  					"System-Update",
-  					"Please wait...",
-  					vec![
-  						vec!["sleep".to_string(), "5".to_string()], 
-  						vec!["echo".to_string(), "'Ready'".to_string()],
-  					],
-  					IndicatorType::ProgressBar,
-  					Some(Box::new(|res| {
-				        match res {
-						    Ok(out) => println!("Success: {}", out),
-						    Err(err) => eprintln!("Error: {}", err),
-						}
-					}))
-  				);
-    		}
-    	}
+    // define callback
+    fn some_folder(path: PathBuf) {
+        println!("Path: {:?}", path);
+    }
+
+    let btn_test_folder_chooser = create_special_button::create_button_icon(
+        "media-zip-symbolic",
+        "Test Folderchooser",
+        move |btn| {
+            folder_chooser::show_folder_chooser(btn, some_folder);
+        },
     );
+    grid.attach(&btn_test_folder_chooser, 2, 1, 1, 1);
+
+    // testing progress dialog
+    let btn_progress_test =
+        create_special_button::create_button_icon("update", "Test Progress", move |btn| {
+            // get the main window with the button
+            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+                show_spinner_dialog(
+                    window,
+                    "System-Update",
+                    "Please wait...",
+                    vec![
+                        vec!["sleep".to_string(), "5".to_string()],
+                        vec!["echo".to_string(), "'Ready'".to_string()],
+                    ],
+                    IndicatorType::ProgressBar,
+                    Some(Box::new(|res| match res {
+                        Ok(out) => println!("Success: {}", out),
+                        Err(err) => eprintln!("Error: {}", err),
+                    })),
+                );
+            }
+        });
     grid.attach(&btn_progress_test, 0, 2, 1, 1);
-    
+
     // function to test a dialog with entry
     fn test_entry_call(test: &str) {
-    	println!("{}", test);
+        println!("{}", test);
     }
-    
+
     let btn_test_entry_dialog = create_special_button::create_button_icon_position(
-    	"error-correct-symbolic",
-    	"Test Entry Dialog",
-    	Align::Center,
-    	move |btn| {
-    		show_entry_dialog(
-    			btn,
-    			"Change Name",
-    			"Add new Name",
-    			"Save",
-    			"Exit",
-    			"Username: ",
-    			"e.g. Donald Duck",
-    			move |name| {
-    				test_entry_call(&name);   			
-    			}
-    		 );
-    	}
+        "error-correct-symbolic",
+        "Test Entry Dialog",
+        Align::Center,
+        move |btn| {
+            show_entry_dialog(
+                btn,
+                "Change Name",
+                "Add new Name",
+                "Save",
+                "Exit",
+                "Username: ",
+                "e.g. Donald Duck",
+                move |name| {
+                    test_entry_call(&name);
+                },
+            );
+        },
     );
     grid.attach(&btn_test_entry_dialog, 2, 2, 1, 1);
-    		
-	// function to test stack
-	let stack_clone = stack.clone(); 
+
+    // function to test stack
+    let stack_clone = stack.clone();
     let btn_test_stack = create_special_button::create_button_icon_position(
-        "dialog-information-symbolic", 
-        "Test Stack", 
+        "dialog-information-symbolic",
+        "Test Stack",
         Align::Center,
         move |_| {
             switch_to_page(&stack_clone, Page::Settings);
-        }
+        },
     );
-	grid.attach(&btn_test_stack, 1, 2, 1, 1);
-	
+    grid.attach(&btn_test_stack, 1, 2, 1, 1);
+
     // entry    Die Bourne Identität
-    let (username_row, username_entry) = create_entry::create_entry(&gettext!("Username:"), Some(&gettext!("Input Username")));
-    let (password_row, password_entry) = create_entry::create_password_entry(&gettext!("Password:"), Some(&gettext!("Input Password")));
-    
+    let (username_row, username_entry) =
+        create_entry::create_entry(&gettext!("Username:"), Some(&gettext!("Input Username")));
+    let (password_row, password_entry) = create_entry::create_password_entry(
+        &gettext!("Password:"),
+        Some(&gettext!("Input Password")),
+    );
+
     // add the entries to the grid, but use to two columns
     grid.attach(&username_row, 0, 3, 2, 1);
     grid.attach(&password_row, 0, 4, 2, 1);
@@ -335,315 +325,296 @@ fn create_home_page(stack: &Stack) -> GtkBox {
         let pass = password_entry.text();
         println!("Login Try -> User: {}, Pass: {}", user, pass);
     });
-    
-	grid.attach(&btn_login, 0, 5, 2, 1);
-	
-	// functions to test the a spinner/porgressbar dialog that run a function
-	fn test_function_dialog(val1: &str, val2: &str) -> bool {
-		let status = run_command(&["sleep", "5"]);
-		match status {
-	    	Ok(s) => println!("Ends with code: {}", s),
-        	Err(e) => eprintln!("Error: {}", e),
-    	}
-		println!("Value 1: {}", val1);
-		println!("Value 2: {}", val2);
-		true
-	}
-	
-	let test1 = "Content".to_string();
-	let test2 = "Other Content".to_string();
-	
-	let btn_test_function_dialog = create_special_button::create_button_icon_position(
+
+    grid.attach(&btn_login, 0, 5, 2, 1);
+
+    // functions to test the a spinner/porgressbar dialog that run a function
+    fn test_function_dialog(val1: &str, val2: &str) -> bool {
+        let status = run_command(&["sleep", "5"]);
+        match status {
+            Ok(s) => println!("Ends with code: {}", s),
+            Err(e) => eprintln!("Error: {}", e),
+        }
+        println!("Value 1: {}", val1);
+        println!("Value 2: {}", val2);
+        true
+    }
+
+    let test1 = "Content".to_string();
+    let test2 = "Other Content".to_string();
+
+    let btn_test_function_dialog = create_special_button::create_button_icon_position(
         "alacarte-symbolic",
         "Test Dialog that run function",
         Align::Center,
         move |btn| {
             if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-                let p1 = test1.clone(); 
+                let p1 = test1.clone();
                 let p2 = test2.clone();
 
                 show_task_dialog(
-                    window, 
+                    window,
                     "System Update",
                     "Please wait...",
                     IndicatorType::ProgressBar, // IndicatorType::Spinner
-                    move || { 
-                        test_function_dialog(&p1, &p2)
-                    }
+                    move || test_function_dialog(&p1, &p2),
                 );
             }
-        }
+        },
     );
     grid.attach(&btn_test_function_dialog, 2, 3, 1, 1);
-    
+
     let btn_test_image_function = create_special_button::create_button_icon_position(
-    	"accessories-camera-symbolic",
-    	"Test Image Dialog",
-    	Align::Center,
-    	move |btn| {
-    		if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-    			show_image_dialog(
-        			window,
-         			"Preview",
-         			"Here is the selected image:",
-         			"Done",
-        			"assets/test.jpg",
-        			400,
-        			400
-     			);
-     		}
-    	}
+        "accessories-camera-symbolic",
+        "Test Image Dialog",
+        Align::Center,
+        move |btn| {
+            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+                show_image_dialog(
+                    window,
+                    "Preview",
+                    "Here is the selected image:",
+                    "Done",
+                    "assets/test.jpg",
+                    400,
+                    400,
+                );
+            }
+        },
     );
     grid.attach(&btn_test_image_function, 2, 4, 1, 1);
-	
-	// Test Dialog with box
-	let content_box = GtkBox::builder()
-    	.orientation(Orientation::Vertical)
-    	.spacing(10)
-	    .build();
- 
-	content_box.append(&Label::new(Some("Do you want to continue?")));
-	let test_button = create_special_button::create_button(
-		"Test",
-		move |_| {
-			println!("Button tested!");
-		}
-	);
-	content_box.append(&test_button);
-	
-	let btn_test_box_dialog = create_special_button::create_button_icon_position(
-		"preferences-desktop-keyboard-shortcuts-symbolic",
-		"Test Box Dialog",
-		Align::Center,
-		move |btn| {
-			if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-				show_custom_content_dialog(
-			    	window,
-					"System Update",
-					"A new update is available.",
-					"Install",
-					&content_box
-				);
-			}
-		}
-	);
-	grid.attach(&btn_test_box_dialog, 2, 5, 1, 1);
-    	
-	container.append(&grid);
-	container
+
+    // Test Dialog with box
+    let content_box = GtkBox::builder()
+        .orientation(Orientation::Vertical)
+        .spacing(10)
+        .build();
+
+    content_box.append(&Label::new(Some("Do you want to continue?")));
+    let test_button = create_special_button::create_button("Test", move |_| {
+        println!("Button tested!");
+    });
+    content_box.append(&test_button);
+
+    let btn_test_box_dialog = create_special_button::create_button_icon_position(
+        "preferences-desktop-keyboard-shortcuts-symbolic",
+        "Test Box Dialog",
+        Align::Center,
+        move |btn| {
+            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+                show_custom_content_dialog(
+                    window,
+                    "System Update",
+                    "A new update is available.",
+                    "Install",
+                    &content_box,
+                );
+            }
+        },
+    );
+    grid.attach(&btn_test_box_dialog, 2, 5, 1, 1);
+
+    container.append(&grid);
+    container
 }
 
 // helper funtion for create the stack
 fn create_settings_page(stack: &Stack) -> GtkBox {
-	let container = GtkBox::new(Orientation::Vertical, 12);
-	container.set_valign(Align::Center);
-	container.set_hexpand(true);
-	container.set_vexpand(true);
-	
-	// test run a command
-	let status = run_command(&["echo", "test apt update..."]);
-	match status {
-	    Ok(s) => println!("Ends with code: {}", s),
+    let container = GtkBox::new(Orientation::Vertical, 12);
+    container.set_valign(Align::Center);
+    container.set_hexpand(true);
+    container.set_vexpand(true);
+
+    // test run a command
+    let status = run_command(&["echo", "test apt update..."]);
+    match status {
+        Ok(s) => println!("Ends with code: {}", s),
         Err(e) => eprintln!("Error: {}", e),
     }
-	
-	// test capture output of a command
-	match capture_command_output(&["date"]) {
-		Ok(out) => println!("The output was: {}", out.trim()),
+
+    // test capture output of a command
+    match capture_command_output(&["date"]) {
+        Ok(out) => println!("The output was: {}", out.trim()),
         Err(e) => eprintln!("Error during capture: {}", e),
-	}
-	
-	// stack switch to the standard dialogs
-	let stack_clone1 = stack.clone();
-	let btn_test_dialogs = create_special_button::create_button_icon_position(
-		"folder-templates-symbolic",
-		"Teste Standard Dialogs",
-		Align::Center,
-		move |_| {
-			switch_to_page(&stack_clone1, Page::StandardDialog);
-		}
-	);
-	container.append(&btn_test_dialogs);
-	
-	// test the pkexec dialog
-	let btn_test_pkexec_dialog = create_special_button::create_button_icon_position(
-		"ephy-shield-safe-symbolic",
-		"Teste pkexec dialog",
-		Align::Center,
-		move |btn| {
-			if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-				commands_pkexec_spinner(
-					window,
-					vec![
-						vec!["ls".to_string(), "/root".to_string()],
-						vec!["sleep".to_string(), "3".to_string()]
-					],
-					"Test pkexec dilaog",
-					"Testing."
-				);
-			}
-		}
-	);
-	container.append(&btn_test_pkexec_dialog);
-		
-	// back to the homepage
-	let stack_clone = stack.clone();
-	let btn_back = create_special_button::create_button_icon_position(
-		"dialog-information-symbolic",
-		"Back",
-		Align::Center,
-		move |_| {
-			switch_to_page(&stack_clone, Page::Home);
-		}
-	);
-	container.append(&btn_back);
-	container
+    }
+
+    // stack switch to the standard dialogs
+    let stack_clone1 = stack.clone();
+    let btn_test_dialogs = create_special_button::create_button_icon_position(
+        "folder-templates-symbolic",
+        "Teste Standard Dialogs",
+        Align::Center,
+        move |_| {
+            switch_to_page(&stack_clone1, Page::StandardDialog);
+        },
+    );
+    container.append(&btn_test_dialogs);
+
+    // test the pkexec dialog
+    let btn_test_pkexec_dialog = create_special_button::create_button_icon_position(
+        "ephy-shield-safe-symbolic",
+        "Teste pkexec dialog",
+        Align::Center,
+        move |btn| {
+            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+                commands_pkexec_spinner(
+                    window,
+                    vec![
+                        vec!["ls".to_string(), "/root".to_string()],
+                        vec!["sleep".to_string(), "3".to_string()],
+                    ],
+                    "Test pkexec dilaog",
+                    "Testing.",
+                );
+            }
+        },
+    );
+    container.append(&btn_test_pkexec_dialog);
+
+    // back to the homepage
+    let stack_clone = stack.clone();
+    let btn_back = create_special_button::create_button_icon_position(
+        "dialog-information-symbolic",
+        "Back",
+        Align::Center,
+        move |_| {
+            switch_to_page(&stack_clone, Page::Home);
+        },
+    );
+    container.append(&btn_back);
+    container
 }
 
 // testing all the standard dialogs
-fn create_test_standard_dialogs(stack: &Stack) -> GtkBox {	
-	let container = GtkBox::new(Orientation::Vertical, 12);
-	container.set_valign(Align::Center);
-	container.set_hexpand(true);
-	container.set_vexpand(true);
-		
-	let stack_clone1 = stack.clone();	
-	let btn1 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Dialog 1",
-		move |_| {
-			show_info_dialog(&stack_clone1, "test");
-		}
-	);
-	container.append(&btn1);
-	
-	let stack_clone2 = stack.clone();
-	let btn2 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Dialog 2",
-		move |_| {
-			show_info_button_dialog(&stack_clone2, "test", "TEST");
-		}
-	);
-	container.append(&btn2);
-	
-	let stack_clone3 = stack.clone();
-	let btn3 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Dialog 3",
-		move |_| {
-			show_dialog_title(&stack_clone3, "Test", "test");
-		}
-	);
-	container.append(&btn3);
-	
-	let stack_clone4 = stack.clone();
-	let btn4 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Dialog 4",
-		move |_| {
-			show_error_dialog(&stack_clone4, "test");
-		}
-	);
-	container.append(&btn4);
-	
-	let stack_clone5 = stack.clone();
-	let btn5 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Dialog 5",
-		move |_| {
-			show_error_button_dialog(&stack_clone5, "test", "TEST");
-		}
-	);
-	container.append(&btn5);
-	
-	let stack_clone6 = stack.clone();
-	let btn6 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Dialog 6",
-		move |_| {
-			show_error_title_dialog(&stack_clone6, "Test", "test");
-		}
-	);
-	container.append(&btn6);
-	
-	let stack_clone7 = stack.clone();
-	let btn7 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Dialog 7",
-		move |_| {
-			show_error_title_button_dialog(&stack_clone7, "Test", "test", "TEST");
-		}
-	);
-	container.append(&btn7);
-	
-	let btn8 = create_special_button::create_button_icon(
-		"folder-saved-search-symbolic",
-		"Test Return Dialog",
-		move |btn| {
-			if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
-    			show_spinner_dialog_return_output(
-					window, 
-    				"System-Update", 
-    				"Updating System...", 
-    				vec![
-    					vec![
-    						"ls".to_string(),
-    						"./".to_string()
-    					],
-    					vec![
-    						"tree".to_string(),
-    						"./".to_string()
-    					],
-    					vec![
-    						"ls".to_string(),
-    						"-l".to_string()
-    					]
-    				], 
-    				IndicatorType::Spinner, 
-    				Some(Box::new(|res| {
-        				match res {
-            				Ok(success_list) => {
-                				println!("Success!");
-                				for cmd in success_list {
-                    				println!("-> [{}]: {}", cmd.command, cmd.stdout);
-                				}
-            				}
-            				Err(failed_chain) => {
-                				println!("Abort!");
-                				for cmd in failed_chain {
-                				    if cmd.success {
-                				        println!(" [OK] {}", cmd.command);
-                    				} else {
-                    				    println!(" [ERROR] {}", cmd.command);
-                    				    println!("  Stderr: {}", cmd.stderr);
-            	    	    		}
-            	    			}	
-            				}
-        				}
-    				}))
-				);
-			}
-		}
-	);
-	container.append(&btn8);
-	
-			
-	let stack_clone = stack.clone();
-	let btn_back = create_special_button::create_button_icon_position(
-		"folder-templates-symbolic",
-		"Back",
-		Align::Center,
-		move |_| {
-			switch_to_page(&stack_clone, Page::Settings);
-		}
-	);
-	container.append(&btn_back);
-	
-	container
+fn create_test_standard_dialogs(stack: &Stack) -> GtkBox {
+    let container = GtkBox::new(Orientation::Vertical, 12);
+    container.set_valign(Align::Center);
+    container.set_hexpand(true);
+    container.set_vexpand(true);
+
+    let stack_clone1 = stack.clone();
+    let btn1 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Dialog 1",
+        move |_| {
+            show_info_dialog(&stack_clone1, "test");
+        },
+    );
+    container.append(&btn1);
+
+    let stack_clone2 = stack.clone();
+    let btn2 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Dialog 2",
+        move |_| {
+            show_info_button_dialog(&stack_clone2, "test", "TEST");
+        },
+    );
+    container.append(&btn2);
+
+    let stack_clone3 = stack.clone();
+    let btn3 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Dialog 3",
+        move |_| {
+            show_dialog_title(&stack_clone3, "Test", "test");
+        },
+    );
+    container.append(&btn3);
+
+    let stack_clone4 = stack.clone();
+    let btn4 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Dialog 4",
+        move |_| {
+            show_error_dialog(&stack_clone4, "test");
+        },
+    );
+    container.append(&btn4);
+
+    let stack_clone5 = stack.clone();
+    let btn5 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Dialog 5",
+        move |_| {
+            show_error_button_dialog(&stack_clone5, "test", "TEST");
+        },
+    );
+    container.append(&btn5);
+
+    let stack_clone6 = stack.clone();
+    let btn6 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Dialog 6",
+        move |_| {
+            show_error_title_dialog(&stack_clone6, "Test", "test");
+        },
+    );
+    container.append(&btn6);
+
+    let stack_clone7 = stack.clone();
+    let btn7 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Dialog 7",
+        move |_| {
+            show_error_title_button_dialog(&stack_clone7, "Test", "test", "TEST");
+        },
+    );
+    container.append(&btn7);
+
+    let btn8 = create_special_button::create_button_icon(
+        "folder-saved-search-symbolic",
+        "Test Return Dialog",
+        move |btn| {
+            if let Some(window) = btn.root().and_downcast_ref::<adw::ApplicationWindow>() {
+                show_spinner_dialog_return_output(
+                    window,
+                    "System-Update",
+                    "Updating System...",
+                    vec![
+                        vec!["ls".to_string(), "./".to_string()],
+                        vec!["tree".to_string(), "./".to_string()],
+                        vec!["ls".to_string(), "-l".to_string()],
+                    ],
+                    IndicatorType::Spinner,
+                    Some(Box::new(|res| match res {
+                        Ok(success_list) => {
+                            println!("Success!");
+                            for cmd in success_list {
+                                println!("-> [{}]: {}", cmd.command, cmd.stdout);
+                            }
+                        }
+                        Err(failed_chain) => {
+                            println!("Abort!");
+                            for cmd in failed_chain {
+                                if cmd.success {
+                                    println!(" [OK] {}", cmd.command);
+                                } else {
+                                    println!(" [ERROR] {}", cmd.command);
+                                    println!("  Stderr: {}", cmd.stderr);
+                                }
+                            }
+                        }
+                    })),
+                );
+            }
+        },
+    );
+    container.append(&btn8);
+
+    let stack_clone = stack.clone();
+    let btn_back = create_special_button::create_button_icon_position(
+        "folder-templates-symbolic",
+        "Back",
+        Align::Center,
+        move |_| {
+            switch_to_page(&stack_clone, Page::Settings);
+        },
+    );
+    container.append(&btn_back);
+
+    container
 }
-
-
 
 /**
 * @brief Function to switch between the pages
@@ -654,7 +625,7 @@ fn switch_to_page(stack: &Stack, target: Page) {
     // Check if page loaded
     if stack.child_by_name(id).is_none() {
         println!("Load page: {}...", id);
-        
+
         // create the pages
         let widget = match target {
             Page::Home => create_home_page(stack),
@@ -664,8 +635,8 @@ fn switch_to_page(stack: &Stack, target: Page) {
             //Page::Statistics => create_stats_page(stack),
             //Page::Logs => create_logs_page(stack),
         };
-		
-		// add the pages to the stack
+
+        // add the pages to the stack
         stack.add_named(&widget, Some(id));
     }
 
@@ -677,20 +648,20 @@ fn switch_to_page(stack: &Stack, target: Page) {
 * Main function that create the basic gtk/adw UI
 */
 fn build_ui(app: &adw::Application) {
-	// init syslog
-	let test_domain = "atl_test";
+    // init syslog
+    let test_domain = "atl_test";
     init_syslog(test_domain).expect("Unable to initialize Syslog");
     // init language
     let test_dir = env!("COMPILED_LOCALE_DIR");
     language::init_language(test_domain, test_dir, false);
-    
+
     // init style
     use_adw_provider(ADW_CUSTOM_CSS);
-    
+
     // testing temp file
     write_to_temp("Hello World!").unwrap();
     write_to_temp("\nSecond Line").unwrap();
-	write_to_temp("\nLast Line").unwrap();
+    write_to_temp("\nLast Line").unwrap();
 
     match read_from_temp() {
         Ok(content) => println!("Content of file: \n{}", content),
@@ -704,10 +675,10 @@ fn build_ui(app: &adw::Application) {
 
     clear_temp_file().unwrap();
     println!("After Clear: '{}'", read_from_temp().unwrap());
-    
+
     write_to_temp("Hello World!").unwrap();
     println!("The file will be deleted as soon as the program closes.");
-    
+
     // test using a config file
     // set a config
     if let Err(e) = set_config(test_domain, "theme", "dark") {
@@ -715,34 +686,34 @@ fn build_ui(app: &adw::Application) {
     }
     // get a config
     match get_config(test_domain, "theme") {
-         Some(val) => println!("Found: {}", val),
-         None => println!("Key not found!"),
-    }   
-    
+        Some(val) => println!("Found: {}", val),
+        None => println!("Key not found!"),
+    }
+
     // get the app enviroment
     const SEARCH_STRING: &str = "fastboot-assistant";
-	const SOURCES_DIR: &str = "/etc/apt/sources.list.d";
-	let current_env = check_application_environment(SEARCH_STRING, SOURCES_DIR);   
-	match current_env {
-       AppEnvironment::Flatpak => println!("Action for Flatpak"),
-       AppEnvironment::Ppa => println!("Action for PPA"),
-       _ => println!("Other enviroment"),
+    const SOURCES_DIR: &str = "/etc/apt/sources.list.d";
+    let current_env = check_application_environment(SEARCH_STRING, SOURCES_DIR);
+    match current_env {
+        AppEnvironment::Flatpak => println!("Action for Flatpak"),
+        AppEnvironment::Ppa => println!("Action for PPA"),
+        _ => println!("Other enviroment"),
     }
-    	    
+
     // add a toolbar
     let toolbar_view = ToolbarView::new();
     toolbar_view.set_vexpand(true);
     toolbar_view.set_hexpand(true);
     let header_bar = HeaderBar::new();
-	
-	// set the title for the page
+
+    // set the title for the page
     header_bar.set_title_widget(Some(&Label::new(Some(&gettext!("Test UIBase")))));
     let custom_header_content = create_custom_headerbar(app, test_domain);
-    
+
     // add the custom headerbar
     header_bar.pack_end(&custom_header_content);
     toolbar_view.add_top_bar(&header_bar);
-    
+
     // create a stack
     let stack = Stack::builder()
         .transition_type(StackTransitionType::SlideLeftRight)
@@ -750,20 +721,20 @@ fn build_ui(app: &adw::Application) {
         .hexpand(true)
         .build();
 
-	toolbar_view.set_content(Some(&stack));
-	
+    toolbar_view.set_content(Some(&stack));
+
     // initial load only the 'home' page
     switch_to_page(&stack, Page::Home);
-	
-	// create the window
+
+    // create the window
     let window = ApplicationWindow::builder()
         .application(app)
         .content(&toolbar_view)
         .default_width(800)
         .default_height(600)
         .build();
-	
-	// present the window
+
+    // present the window
     window.present();
 }
 

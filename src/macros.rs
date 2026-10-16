@@ -1,40 +1,51 @@
-//! Global macros for the AtlantisOS project.
+// macros.rs
+//
+// (C) Copyright 2026 AtlantisOS Project
+// by @NachtsternBuild
+//
+// License: GNU GENERAL PUBLIC LICENSE Version 3
+
+//! Macros of the library.
 //!
-//! This module contains useful macros that simplify complex function calls 
-//! and improve code readability throughout the project.
-/// Macro for easily translating strings.
+//! Macros defined with `#[macro_export]` are always documented at the crate root; this
+//! module only exists so that the macros have a place in the module overview.
+//!
+//! * [`gettext!`](crate::gettext!) — translates a string.
+
+/// Translates a string with gettext.
 ///
-/// This macro wraps the call to `dgettext`. It automatically uses the 
-/// text domain currently specified in the language settings. This eliminates the need 
-/// to manually pass the domain for each individual string.
+/// The macro calls [`translate`](crate::helper::language::language::translate): the text is
+/// looked up in the text domain set by
+/// [`init_language`](crate::helper::language::language::init_language) first and then in the
+/// domain of this library ([`LIB_DOMAIN`](crate::helper::language::language::LIB_DOMAIN)).
+/// You do not have to pass a domain, and the crate that uses the macro does not need a
+/// dependency on `gettext-rs`.
 ///
-/// # How it works
-/// The macro calls `get_current_domain()` and passes this, along with the 
-/// message, to the `gettextrs` library.
+/// If no translation is found (or [`init_language`] was never called), the original string
+/// is returned.
 ///
 /// # Arguments
-/// * `$msgid` - The string to be translated (string literal).
 ///
-/// # Return Value
-/// The translated string as a `String`. If no translation is found, 
-/// the original string is returned.
+/// * `$msgid` - The text to translate; anything that implements `AsRef<str>`.
 ///
-/// # Usage:
+/// # Returns
 ///
-/// ```rust
-/// use crate::gettext;
+/// The translated text as a `String`.
 ///
-/// fn main() {
-///     let message = gettext!("Welcome to AtlantisOS");
-///     println!("{}", message);
-/// }
+/// # Examples
+///
 /// ```
+/// use atlbase::gettext;
+///
+/// // Without a translation catalog the text is returned unchanged.
+/// let message = gettext!("Welcome to AtlantisOS");
+/// assert_eq!(message, "Welcome to AtlantisOS");
+/// ```
+///
+/// [`init_language`]: crate::helper::language::language::init_language
 #[macro_export]
 macro_rules! gettext {
-    ($msgid:expr) => {
-        gettextrs::dgettext(
-            &$crate::helper::language::language::get_current_domain(), 
-            $msgid
-        )
+    ($msgid:expr $(,)?) => {
+        $crate::helper::language::language::translate($msgid)
     };
 }
