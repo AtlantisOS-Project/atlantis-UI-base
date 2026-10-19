@@ -14,8 +14,7 @@
 //! higher priority `STYLE_PROVIDER_PRIORITY_USER`, so they always win: that is the place for
 //! your own adjustments.
 
-use crate::design::theme::load_adw_provider::use_adw_provider_with_priority;
-use gtk4::{STYLE_PROVIDER_PRIORITY_APPLICATION, gdk};
+use crate::design::theme::load_adw_provider as theme;
 use std::cell::Cell;
 
 /// The default stylesheet of the guide widgets.
@@ -77,17 +76,5 @@ thread_local! {
 
 /// Registers [`GUIDE_CSS`] exactly once per thread. The guide widgets call this themselves.
 pub(super) fn ensure_default_style() {
-    DEFAULT_STYLE.with(|done| {
-        if done.get() {
-            return;
-        }
-        // Without a display (for example in unit tests) nothing can be registered yet;
-        // try again later.
-        if gdk::Display::default().is_none() {
-            return;
-        }
-        // Lower priority than `use_adw_provider`, so applications can always override it.
-        use_adw_provider_with_priority(GUIDE_CSS, STYLE_PROVIDER_PRIORITY_APPLICATION);
-        done.set(true);
-    });
+    theme::ensure_default_style(&DEFAULT_STYLE, GUIDE_CSS);
 }

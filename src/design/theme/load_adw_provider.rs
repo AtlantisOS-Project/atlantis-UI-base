@@ -13,8 +13,11 @@
 use adw::StyleManager;
 use gtk4::prelude::*;
 use gtk4::{
-    CssProvider, STYLE_PROVIDER_PRIORITY_USER, gdk, style_context_add_provider_for_display,
+    CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, STYLE_PROVIDER_PRIORITY_USER, gdk,
+    style_context_add_provider_for_display,
 };
+use std::cell::Cell;
+use std::thread::LocalKey;
 
 /// Registers CSS for the whole application and keeps it up to date.
 ///
@@ -101,4 +104,20 @@ pub fn use_adw_provider_with_priority(css_content: &str, priority: u32) -> CssPr
     });
 
     provider
+}
+
+/// Registers the default style of a part of the library, once per thread.
+///
+/// `done` is a `thread_local!` flag of the caller. The style gets the priority
+/// `STYLE_PROVIDER_PRIORITY_APPLICATION`, lower than [`use_adw_provider`], so applications can
+/// always override it. Without a display (for example in unit tests) nothing is registered and
+/// the next call tries again.
+pub(crate) fn ensure_default_style(done: &'static LocalKey<Cell<bool>>, css: &str) {
+    done.with(|done| {
+        if done.get() || gdk::Display::default().is_none() {
+            return;
+        }
+        use_adw_provider_with_priority(css, STYLE_PROVIDER_PRIORITY_APPLICATION);
+        done.set(true);
+    });
 }

@@ -97,6 +97,23 @@ let guide = GuideLoader::new().load_resource("/org/example/App/guides/intro.toml
 GuideView::present_in_stack(&stack, "intro", &guide, "home");
 ```
 
+A guide can also do something. A `button` block reports its click to your application, so a
+setup assistant can be a guide, too:
+
+```toml
+[[pages.blocks]]
+button = "Choose folder"
+action = "choose-folder"
+icon = "folder-open-symbolic"
+```
+
+```rust
+let view = GuideView::present_in_stack(&stack, "setup", &guide, "home");
+view.connect_action(|_view, action| {
+    if action == "choose-folder" { /* open a folder chooser */ }
+});
+```
+
 ## Packaging
 
 How to build deb, rpm, Flatpak, Snap and AppImage packages of an application that uses

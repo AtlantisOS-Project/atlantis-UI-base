@@ -67,6 +67,12 @@ fn build_ui(app: &adw::Application) {
         demo_button("Error", "dialog-error-symbolic", |b| {
             show_error_title_dialog(b, "Network timeout", "The server did not answer.");
         }),
+        demo_button("Success", "emblem-ok-symbolic", |b| {
+            show_success_dialog(b, "The update was installed.");
+        }),
+        demo_button("Warning", "dialog-warning-symbolic", |b| {
+            show_warning_dialog(b, "The battery is low. Plug in the charger.");
+        }),
         demo_button("Custom content", "view-list-symbolic", |b| {
             let content = GtkBox::new(Orientation::Vertical, 6);
             content.append(&gtk4::Label::new(Some("Any widgets can be placed here.")));
@@ -167,8 +173,12 @@ fn build_ui(app: &adw::Application) {
                 &window,
                 "Working",
                 "Please wait...",
+                // the first steps take a while, so the progress bar can be seen; the
+                // third command fails and ends the chain
                 vec![
+                    vec!["sleep".into(), "2".into()],
                     vec!["echo".into(), "step one".into()],
+                    vec!["sleep".into(), "1".into()],
                     vec!["ls".into(), "/does/not/exist".into()],
                     vec!["echo".into(), "never reached".into()],
                 ],

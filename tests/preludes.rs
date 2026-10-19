@@ -33,8 +33,8 @@ use atlbase::ui_prelude::{
     show_custom_content_dialog, show_dialog_title, show_entry_dialog, show_error_button_dialog,
     show_error_dialog, show_error_title_button_dialog, show_error_title_dialog, show_file_chooser,
     show_folder_chooser, show_image_dialog, show_info_button_dialog, show_info_dialog,
-    show_spinner_dialog, show_spinner_dialog_return_output, show_task_dialog, use_adw_provider,
-    use_adw_provider_with_priority,
+    show_spinner_dialog, show_spinner_dialog_return_output, show_success_dialog, show_task_dialog,
+    show_warning_dialog, use_adw_provider, use_adw_provider_with_priority,
 };
 
 #[test]

@@ -70,7 +70,7 @@ fn main() -> glib::ExitCode {
 ## Features
 
 - GTK 4.20 + Libadwaita 1.8 integration
-- Dialogs: alert, information, error, text input, about, image, custom content, spinner and progress
+- Dialogs: information, success, warning and error (each with its own color and mark), alert, text input, about, image, custom content, spinner and progress
   bar for commands or Rust functions
 - Multi-page guides (`carousel`): swipeable instructions built in code or loaded from TOML
 - File and folder choosers, widget factories (buttons, entries, icon labels), CSS provider that
@@ -252,7 +252,7 @@ cargo test                  # everything: unit tests, tests/ and the examples in
 |---|---|
 | `cargo test --lib` | Unit tests inside `src/` (locale directory lookup, TOML guides, `pkexec` commands, terminals) |
 | `cargo test --tests` | Everything in `tests/` |
-| `cargo test --doc` | The code examples of the API documentation (89 of them are compiled, many run) |
+| `cargo test --doc` | The code examples of the API documentation (all are compiled, many run) |
 | `cargo test --test helper_files` | One file of `tests/`; replace the name with another file |
 | `cargo test --test helper_files add_line` | Only the tests whose name contains `add_line` |
 | `cargo test --no-default-features --lib --tests` | The same without the optional features |

@@ -15,8 +15,9 @@
 //! * **from a TOML file** (feature `carousel-toml`, on by default) with [`GuideLoader`]
 //!
 //! The building blocks of a page are paragraphs, headings, bullet lists, numbered steps,
-//! code blocks with a copy button, images (with caption and alternative text) and notes
-//! in four colors (info, tip, warning, danger).
+//! code blocks with a copy button, images (with caption and alternative text), notes
+//! in four colors (info, tip, warning, danger) and buttons ([`ActionButton`]) that report a
+//! click to the application, so a guide can also be used for a setup assistant.
 //!
 //! # Examples
 //!
@@ -83,7 +84,9 @@ mod view;
 #[cfg(feature = "carousel-toml")]
 mod load;
 
-pub use model::{Block, Callout, CalloutKind, Guide, Image, ImageSource, Labels, Page, Step};
+pub use model::{
+    ActionButton, Block, Callout, CalloutKind, Guide, Image, ImageSource, Labels, Page, Step,
+};
 pub use render::{block_widget, page_widget};
 pub use style::GUIDE_CSS;
 pub use view::GuideView;

@@ -47,11 +47,18 @@
 //! [[pages.blocks]]
 //! steps = ["First step", { title = "Second", detail = "with a second line" }]
 //! start = 1                           # optional: number of the first step
+//!
+//! [[pages.blocks]]
+//! button = "Choose folder"            # text of the button
+//! action = "choose-folder"            # required: the name the application gets
+//! icon = "folder-open-symbolic"       # optional
 //! ```
 //!
 //! Every block has **exactly one** content key: `heading`, `paragraph`, `markup` (Pango
-//! markup), `bullets`, `steps`, `code`, `image` or `callout`. The other keys (`start`,
-//! `caption`, `alt`, `max_height`, `kind`, `title`) belong to one specific content key.
+//! markup), `bullets`, `steps`, `code`, `image`, `callout` or `button`. The other keys
+//! (`start`, `caption`, `alt`, `max_height`, `kind`, `title`, `action`, `icon`) belong to one
+//! specific content key. A button is reported by
+//! [`GuideView::connect_action`](super::GuideView::connect_action).
 //! Unknown keys are an error, so typos are noticed immediately.
 //!
 //! Short blocks can be written in one line:
@@ -72,7 +79,7 @@ use std::rc::Rc;
 use gtk4::{gio, glib};
 use serde::Deserialize;
 
-use super::model::{Block, Callout, CalloutKind, Guide, Image, Labels, Page, Step};
+use super::model::{ActionButton, Block, Callout, CalloutKind, Guide, Image, Labels, Page, Step};
 use crate::gettext;
 
 // ───────────────────────────── Errors ─────────────────────────────
@@ -572,7 +579,8 @@ struct Ctx<'a> {
     snap: Option<PathBuf>,
 }
 
-const CONTENT_KEYS: &str = "heading, paragraph, markup, bullets, steps, code, image, callout";
+const CONTENT_KEYS: &str =
+    "heading, paragraph, markup, bullets, steps, code, image, callout, button";
 
 impl Ctx<'_> {
     fn tr(&self, text: &str) -> String {
@@ -594,6 +602,7 @@ impl Ctx<'_> {
             ("code", def.code.is_some()),
             ("image", def.image.is_some()),
             ("callout", def.callout.is_some()),
+            ("button", def.button.is_some()),
         ]
         .into_iter()
         .filter_map(|(name, set)| set.then_some(name))
@@ -615,9 +624,12 @@ impl Ctx<'_> {
             "steps" => &["start"],
             "image" => &["caption", "alt", "max_height"],
             "callout" => &["kind", "title"],
+            "button" => &["action", "icon"],
             _ => &[],
         };
         for (name, set) in [
+            ("action", def.action.is_some()),
+            ("icon", def.icon.is_some()),
             ("start", def.start.is_some()),
             ("caption", def.caption.is_some()),
             ("alt", def.alt.is_some()),
@@ -694,6 +706,18 @@ impl Ctx<'_> {
                     callout = callout.title(self.tr(title));
                 }
                 Block::Callout(callout)
+            }
+            "button" => {
+                let Some(action) = def.action else {
+                    return Err(
+                        "a `button` block needs `action` (the name the application gets)".into(),
+                    );
+                };
+                let mut button = ActionButton::new(action, self.tr(&def.button.unwrap()));
+                if let Some(icon) = def.icon {
+                    button = button.icon(icon);
+                }
+                Block::Button(button)
             }
             _ => unreachable!("kind comes from the list above"),
         })
@@ -795,7 +819,10 @@ struct BlockDef {
     code: Option<String>,
     image: Option<String>,
     callout: Option<String>,
+    button: Option<String>,
     // extra keys
+    action: Option<String>,
+    icon: Option<String>,
     start: Option<u32>,
     caption: Option<String>,
     alt: Option<String>,
@@ -1099,6 +1126,39 @@ blocks = [
         assert!(
             e.contains("loud") && e.contains("tip"),
             "unknown callout kind should list the options: {e}"
+        );
+    }
+
+    #[test]
+    fn a_button_block_has_an_action_and_translated_text() {
+        let loader = GuideLoader::new().translate(|s| format!("<{s}>"));
+        let guide = loader
+            .load_str(
+                "title = \"T\"\n[[pages]]\ntitle = \"P\"\n[[pages.blocks]]\n\
+                 button = \"Choose\"\naction = \"choose-folder\"\nicon = \"folder-open-symbolic\"\n",
+            )
+            .unwrap();
+        let Block::Button(button) = &guide.pages[0].blocks[0] else {
+            panic!("expected a button");
+        };
+        assert_eq!(button.label, "<Choose>");
+        assert_eq!(
+            button.action, "choose-folder",
+            "the action name is not translated"
+        );
+        assert_eq!(button.icon.as_deref(), Some("folder-open-symbolic"));
+    }
+
+    #[test]
+    fn a_button_without_action_is_an_error() {
+        let head = "title = \"T\"\n[[pages]]\ntitle = \"P\"\n[[pages.blocks]]\n";
+        let e = err_text(&format!("{head}button = \"Go\"\n"));
+        assert!(e.contains("needs `action`"), "{e}");
+
+        let e = err_text(&format!("{head}paragraph = \"x\"\naction = \"go\"\n"));
+        assert!(
+            e.contains("`action` is not valid in a `paragraph` block"),
+            "{e}"
         );
     }
 

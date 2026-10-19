@@ -27,9 +27,11 @@ fn main() {
         ("entry factories", entry_factories),
         ("button factories", button_factories),
         ("css provider", css_provider),
+        ("status dialogs", status_dialogs),
         ("guide navigation", guide_navigation),
         ("guide in a stack", guide_in_a_stack),
         ("guide with a missing image", guide_with_missing_image),
+        ("guide with a button", guide_with_button),
     ];
 
     for (name, check) in checks {
@@ -83,6 +85,30 @@ fn css_provider() {
     assert_ne!(first, second);
 }
 
+fn status_dialogs() {
+    // an adw::Window can host dialogs without a running application
+    let window = adw::Window::new();
+
+    for show in [
+        |w: &adw::Window| show_info_dialog(w, "Saved"),
+        |w: &adw::Window| show_error_dialog(w, "Disk full"),
+        |w: &adw::Window| show_error_title_dialog(w, "Network", "Timeout"),
+        |w: &adw::Window| show_dialog_title(w, "Backup", "Done"),
+        |w: &adw::Window| show_success_dialog(w, "Installed"),
+        |w: &adw::Window| show_warning_dialog(w, "Battery low"),
+    ] {
+        show(&window);
+        let dialog = window.visible_dialog().expect("the dialog is shown");
+        // a long text must not break the dialog
+        assert!(!dialog.title().is_empty());
+        dialog.force_close();
+        assert!(window.visible_dialog().is_none());
+    }
+
+    show_error_dialog(&window, &"a very long error text\n".repeat(200));
+    assert!(window.visible_dialog().is_some());
+}
+
 fn sample_guide() -> Guide {
     Guide::new("Tour")
         .page(Page::new("One").paragraph("first"))
@@ -132,4 +158,43 @@ fn guide_with_missing_image() {
     let page = Page::new("Images").image(Image::from_file("/does/not/exist.png").alt("missing"));
     let widget = page_widget(&page, &Labels::default());
     assert!(widget.first_child().is_some());
+}
+
+/// The first button below `widget` that has the CSS class `class`.
+fn find_button(widget: &gtk4::Widget, class: &str) -> Option<gtk4::Button> {
+    if let Some(button) = widget.downcast_ref::<gtk4::Button>()
+        && button.has_css_class(class)
+    {
+        return Some(button.clone());
+    }
+    let mut child = widget.first_child();
+    while let Some(current) = child {
+        if let Some(found) = find_button(&current, class) {
+            return Some(found);
+        }
+        child = current.next_sibling();
+    }
+    None
+}
+
+fn guide_with_button() {
+    let guide =
+        Guide::new("Setup").page(Page::new("Folder").button("choose-folder", "Choose folder"));
+    let view = GuideView::new(&guide);
+
+    let actions = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let log = actions.clone();
+    view.connect_action(move |_, action| log.borrow_mut().push(action.to_string()));
+
+    let button = find_button(view.upcast_ref(), "pill").expect("the page has a pill button");
+    button.emit_clicked();
+    button.emit_clicked();
+    assert_eq!(*actions.borrow(), ["choose-folder", "choose-folder"]);
+
+    // outside of a GuideView a click does nothing
+    let alone = block_widget(
+        &Block::Button(ActionButton::new("x", "X")),
+        &Labels::default(),
+    );
+    find_button(&alone, "pill").unwrap().emit_clicked();
 }

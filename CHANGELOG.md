@@ -10,9 +10,6 @@ This file is also shown as a web page: [`docs/index.html`](docs/index.html).
 
 ## [0.2.0] — unreleased
 
-The version is set in `Cargo.toml`, but 0.2.0 is not on crates.io yet; the latest release there is
-0.1.9.
-
 ### Upgrade guide
 
 What you have to look at when you update. Everything not listed here keeps working as before.
@@ -44,12 +41,13 @@ standalone `adw-guide` crate and is integrated into `design`.
 |---|---|
 | `Guide::new(title)`, `.page(page)`, `.labels(labels)` | A guide: title, pages, navigation labels |
 | `Page::new(title)`, `.subtitle()`, `.icon()` | A page |
-| `Page::heading()`, `.paragraph()`, `.markup()`, `.bullets()`, `.steps()`, `.steps_from()`, `.code()`, `.image()`, `.callout()`, `.block()` | The blocks of a page |
+| `Page::heading()`, `.paragraph()`, `.markup()`, `.bullets()`, `.steps()`, `.steps_from()`, `.code()`, `.image()`, `.callout()`, `.button()`, `.block()` | The blocks of a page |
+| `ActionButton::new(action, label)`, `.icon()`, `Block::Button` | A button on a page; a click is reported to the application (TOML: `button = "Text"`, `action = "id"`, `icon = "…"`) |
 | `Step::new(title)`, `.detail()` | A numbered step with a second line |
 | `Callout::info()`, `::tip()`, `::warning()`, `::danger()`, `.title()` | Highlighted notes |
 | `Image::from_file()`, `::from_resource()`, `::from_texture()`, `.caption()`, `.alt()`, `.max_height()` | Screenshots with caption and alternative text |
 | `Labels::default()`, `Labels::localized()` | Navigation texts (English / translated) |
-| `GuideView::new()`, `::present_in_stack()`, `::present_dialog()`, `.connect_finished()`, `.page()`, `.n_pages()`, `.set_page()` | The widget |
+| `GuideView::new()`, `::present_in_stack()`, `::present_dialog()`, `.connect_finished()`, `.connect_action()`, `.page()`, `.n_pages()`, `.set_page()` | The widget |
 | `GuideLoader` (feature `carousel-toml`) | `new`, `translate`, `base_dir`, `base_resource`, `image_data_subdir`, `image_dir`, `load_str`, `load_file`, `load_resource` |
 | `GuideError` (feature `carousel-toml`) | `Parse`, `Io`, `Resource`, `Invalid` with the position of the problem |
 | `page_widget()`, `block_widget()` | Render a page or a block without `GuideView` |
@@ -68,6 +66,8 @@ library (no second CSS manager); `present_dialog` is always available (no `dialo
 | `LIB_DOMAIN` | `helper::language` | The text domain of the library (`"atlbase"`); its catalogs are compiled in |
 | `translate(msgid)` | `helper::language` | What `gettext!` calls: application domain first, library domain second |
 | `AppEnvironment::AppImage` | `helper::configuration` | Detected through `$APPIMAGE`; `get_execution_environment()` returns `"appimage"` |
+| `show_success_dialog(parent, body)` | `design::dialogs` | Green circle with a check mark; title "Success" (translated) |
+| `show_warning_dialog(parent, body)` | `design::dialogs` | Yellow circle with an "!"; title "Warning" (translated) |
 | `use_adw_provider_with_priority(css, priority)` | `design::theme` | Like `use_adw_provider` with an explicit priority |
 | `AboutInfo: Default` | `design::dialogs` | `AboutInfo { app_name: …, ..Default::default() }` |
 | `IndicatorType: Debug, Clone, Copy, PartialEq, Eq, Hash` | `design::dialogs` | Was without any derive |
@@ -171,6 +171,8 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 | Function | Before | Now |
 |---|---|---|
 | `show_file_chooser`, `show_folder_chooser` | printed an error when the user cancelled | cancelling is silent; other errors are printed |
+| `show_info_dialog`, `show_info_button_dialog`, `show_dialog_title` | an alert dialog with a heading, a text and a highlighted button; looked the same as an error dialog | a blue circle with an "i", the heading, the text, a neutral button |
+| `show_error_dialog`, `show_error_button_dialog`, `show_error_title_dialog`, `show_error_title_button_dialog` | the same plain alert dialog, only the heading said "Error" | a red circle with an "!", a red heading and a solid red button; the text can be selected and copied, a long text scrolls |
 | `show_about_dialog` | headings "Documentation", "Fonts", "Special thanks to" were English only; empty sections were shown | headings are translated; sections without content are left out |
 | `show_entry_dialog` | the buttons held strong references to the dialog (memory leak) | weak references |
 | `show_spinner_dialog`, `show_spinner_dialog_return_output`, `show_task_dialog` | three copies of the same code with three slightly different looks; the progress bar timer ran forever; `show_task_dialog` put the title into Pango markup (a `&` or `<` broke it) | one implementation: same look (`title-3` heading, spinner 96 px, bar 250 px wide), the timer stops with the dialog, titles are plain text |
@@ -219,8 +221,12 @@ breaking release (not decided).
 * A panic in `run_command(&[])` and `capture_command_output(&[])`.
 * Wrong documentation: copy-pasted texts in `create_button_icon*`, a password example that read the
   wrong field, examples that called functions that do not exist, unresolved links.
-* Doc examples that did not compile or called functions that do not exist; all 89 examples are
+* Doc examples that did not compile or called functions that do not exist; all examples are
   compiled (and, where possible, run) by `cargo test --doc` now.
+
+* The progress bar of the `dialogs` example was never visible: its commands ended within a few
+  milliseconds, so only the final error appeared. The example now uses commands that take a few
+  seconds.
 
 ### Security
 

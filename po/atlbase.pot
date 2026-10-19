@@ -20,11 +20,11 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-#: src/design/chooser/file_chooser.rs:50
+#: src/design/chooser/file_chooser.rs:52
 msgid "Choose File"
 msgstr ""
 
-#: src/design/chooser/folder_chooser.rs:50
+#: src/design/chooser/folder_chooser.rs:52
 msgid "Choose folder"
 msgstr ""
 
@@ -40,19 +40,19 @@ msgstr ""
 msgid "Done"
 msgstr ""
 
-#: src/design/dialogs/standard_dialogs.rs:107 src/design/dialogs/standard_dialogs.rs:128 src/design/dialogs/standard_dialogs.rs:181
+#: src/design/dialogs/standard_dialogs.rs:344 src/design/dialogs/standard_dialogs.rs:365 src/design/dialogs/standard_dialogs.rs:418
 msgid "Error"
 msgstr ""
 
-#: src/design/carousel/model.rs:68 src/helper/log/write_log_text.rs:130
+#: src/design/carousel/model.rs:68 src/helper/log/write_log_text.rs:141
 msgid "Exit"
 msgstr ""
 
-#: src/helper/log/write_log_text.rs:131
+#: src/helper/log/write_log_text.rs:142
 msgid "Exit the application"
 msgstr ""
 
-#: src/design/dialogs/about_dialog.rs:135
+#: src/design/dialogs/about_dialog.rs:136
 msgid "Fonts"
 msgstr ""
 
@@ -60,11 +60,11 @@ msgstr ""
 msgid "Image not found"
 msgstr ""
 
-#: src/design/dialogs/standard_dialogs.rs:40 src/design/dialogs/standard_dialogs.rs:63
+#: src/design/dialogs/standard_dialogs.rs:231 src/design/dialogs/standard_dialogs.rs:254
 msgid "Information"
 msgstr ""
 
-#: src/helper/log/write_log_text.rs:55 src/helper/log/write_log_text.rs:60
+#: src/helper/log/write_log_text.rs:58 src/helper/log/write_log_text.rs:63
 msgid "Log Viewer"
 msgstr ""
 
@@ -72,14 +72,22 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
-#: src/design/dialogs/standard_dialogs.rs:84 src/design/dialogs/standard_dialogs.rs:152
+#: src/design/dialogs/standard_dialogs.rs:275 src/design/dialogs/standard_dialogs.rs:389
 msgid "OK"
 msgstr ""
 
-#: src/helper/log/write_log_text.rs:124
+#: src/helper/log/write_log_text.rs:135
 msgid "Show Log"
 msgstr ""
 
-#: src/design/dialogs/about_dialog.rs:140
+#: src/design/dialogs/about_dialog.rs:145
 msgid "Special thanks to"
+msgstr ""
+
+#: src/design/dialogs/standard_dialogs.rs:298
+msgid "Success"
+msgstr ""
+
+#: src/design/dialogs/standard_dialogs.rs:321
+msgid "Warning"
 msgstr ""

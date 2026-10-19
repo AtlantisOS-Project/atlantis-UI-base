@@ -48,7 +48,14 @@ mod imp {
     impl ObjectImpl for GuideView {
         fn signals() -> &'static [glib::subclass::Signal] {
             static SIGNALS: OnceLock<Vec<glib::subclass::Signal>> = OnceLock::new();
-            SIGNALS.get_or_init(|| vec![glib::subclass::Signal::builder("finished").build()])
+            SIGNALS.get_or_init(|| {
+                vec![
+                    glib::subclass::Signal::builder("finished").build(),
+                    glib::subclass::Signal::builder("action")
+                        .param_types([String::static_type()])
+                        .build(),
+                ]
+            })
         }
     }
 
@@ -64,6 +71,9 @@ glib::wrapper! {
     /// * `finished` — emitted when the user presses the left button ("Exit") on the first
     ///   page or the right button ("Done") on the last page. Connect with
     ///   [`connect_finished`](Self::connect_finished).
+    /// * `action` — emitted with the name of the action when the user clicks a button block
+    ///   ([`ActionButton`](super::ActionButton)). Connect with
+    ///   [`connect_action`](Self::connect_action).
     ///
     /// # Style
     ///
@@ -181,6 +191,38 @@ impl GuideView {
                 .get::<GuideView>()
                 .expect("argument 0 of the signal is the GuideView");
             f(&view);
+            None
+        })
+    }
+
+    /// Connects a handler to the `action` signal: the user clicked a button block
+    /// ([`ActionButton`](super::ActionButton)). The handler gets the view and the name of the
+    /// action.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use atlbase::ui_prelude::{Guide, GuideView, Page};
+    /// # gtk4::init().unwrap();
+    ///
+    /// let guide = Guide::new("Setup")
+    ///     .page(Page::new("Folder").button("choose-folder", "Choose folder"));
+    /// let view = GuideView::new(&guide);
+    /// view.connect_action(|view, action| {
+    ///     if action == "choose-folder" {
+    ///         println!("the user wants to choose a folder (page {})", view.page());
+    ///     }
+    /// });
+    /// ```
+    pub fn connect_action<F: Fn(&Self, &str) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("action", false, move |args| {
+            let view = args[0]
+                .get::<GuideView>()
+                .expect("argument 0 of the signal is the GuideView");
+            let action = args[1]
+                .get::<String>()
+                .expect("argument 1 of the signal is the name of the action");
+            f(&view, &action);
             None
         })
     }

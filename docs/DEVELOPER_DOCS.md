@@ -87,8 +87,8 @@ generated from the source: `cargo doc --open` (or docs.rs).
 
 | Item | Purpose |
 |---|---|
-| `Guide`, `Page`, `Block`, `Step`, `Callout`, `CalloutKind`, `Image`, `ImageSource`, `Labels` | The content of a guide (builders) |
-| `GuideView` | The widget: `new`, `present_in_stack`, `present_dialog`, `connect_finished`, `page`, `set_page` |
+| `Guide`, `Page`, `Block`, `Step`, `Callout`, `CalloutKind`, `ActionButton`, `Image`, `ImageSource`, `Labels` | The content of a guide (builders) |
+| `GuideView` | The widget: `new`, `present_in_stack`, `present_dialog`, `connect_finished`, `connect_action`, `page`, `set_page` |
 | `GuideLoader`, `GuideError` | Load guides from TOML (feature `carousel-toml`) |
 | `page_widget`, `block_widget` | Render a page or a block without `GuideView` |
 | `GUIDE_CSS` | The default style |
@@ -102,8 +102,9 @@ generated from the source: `cargo doc --open` (or docs.rs).
 | Function | Purpose |
 |---|---|
 | `show_alert_dialog(parent, title, body, button)` | Basic alert dialog |
-| `show_info_dialog`, `show_info_button_dialog`, `show_dialog_title` | Information dialogs |
-| `show_error_dialog`, `show_error_button_dialog`, `show_error_title_dialog`, `show_error_title_button_dialog` | Error dialogs |
+| `show_info_dialog`, `show_info_button_dialog`, `show_dialog_title` | Information dialogs (blue "i") |
+| `show_success_dialog`, `show_warning_dialog` | Success (green check mark) and warning (yellow "!") dialogs |
+| `show_error_dialog`, `show_error_button_dialog`, `show_error_title_dialog`, `show_error_title_button_dialog` | Error dialogs (red "!") |
 | `show_custom_content_dialog(parent, title, body, button, content)` | Alert dialog with your own widgets |
 | `show_entry_dialog(…, on_submit) -> adw::Dialog` | Dialog with a text field |
 | `show_image_dialog(…, path, width, height)` | Image preview |

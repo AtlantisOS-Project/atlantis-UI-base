@@ -16,8 +16,11 @@ use adw::prelude::*;
 use gtk4::glib::{self, clone};
 use gtk4::{gdk, gio, pango};
 
-use super::model::{Block, Callout, CalloutKind, Image, ImageSource, Labels, Page, Step};
+use super::model::{
+    ActionButton, Block, Callout, CalloutKind, Image, ImageSource, Labels, Page, Step,
+};
 use super::style::ensure_default_style;
+use super::view::GuideView;
 
 /// Renders a page (header and all blocks) as a vertical box.
 ///
@@ -81,6 +84,7 @@ pub fn block_widget(block: &Block, labels: &Labels) -> gtk4::Widget {
         Block::Code(text) => code(text, labels),
         Block::Image(image) => picture(image, labels),
         Block::Callout(callout) => callout_box(callout),
+        Block::Button(button) => action_button(button),
     }
 }
 
@@ -253,6 +257,31 @@ fn code(text: &str, labels: &Labels) -> gtk4::Widget {
     root.append(&label);
     root.append(&button);
     root.upcast()
+}
+
+/// A pill button. A click is passed on to the [`GuideView`] the button lives in (nothing
+/// happens if the block is used without a `GuideView`).
+fn action_button(button: &ActionButton) -> gtk4::Widget {
+    let content = adw::ButtonContent::builder().label(&button.label).build();
+    if let Some(icon) = &button.icon {
+        content.set_icon_name(icon);
+    }
+    let widget = gtk4::Button::builder()
+        .child(&content)
+        .halign(gtk4::Align::Center)
+        .css_classes(["pill"])
+        .build();
+
+    let action = button.action.clone();
+    widget.connect_clicked(move |widget| {
+        if let Some(view) = widget
+            .ancestor(GuideView::static_type())
+            .and_downcast::<GuideView>()
+        {
+            view.emit_by_name::<()>("action", &[&action]);
+        }
+    });
+    widget.upcast()
 }
 
 fn callout_box(callout: &Callout) -> gtk4::Widget {

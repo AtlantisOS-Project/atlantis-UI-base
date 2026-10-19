@@ -167,8 +167,8 @@ pub mod prelude {
 pub mod ui_prelude {
     pub use crate::design::{
         carousel::{
-            Block, Callout, CalloutKind, Guide, GuideView, Image, ImageSource, Labels, Page, Step,
-            block_widget, page_widget,
+            ActionButton, Block, Callout, CalloutKind, Guide, GuideView, Image, ImageSource,
+            Labels, Page, Step, block_widget, page_widget,
         },
         chooser::{file_chooser::show_file_chooser, folder_chooser::show_folder_chooser},
         dialogs::{
@@ -183,7 +183,7 @@ pub mod ui_prelude {
             standard_dialogs::{
                 show_dialog_title, show_error_button_dialog, show_error_dialog,
                 show_error_title_button_dialog, show_error_title_dialog, show_info_button_dialog,
-                show_info_dialog,
+                show_info_dialog, show_success_dialog, show_warning_dialog,
             },
         },
         theme::load_adw_provider::{use_adw_provider, use_adw_provider_with_priority},

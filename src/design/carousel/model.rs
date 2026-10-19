@@ -233,6 +233,11 @@ impl Page {
     pub fn callout(self, callout: Callout) -> Self {
         self.block(Block::Callout(callout))
     }
+
+    /// Appends a button that reports a click to the application, see [`ActionButton`].
+    pub fn button(self, action: impl Into<String>, label: impl Into<String>) -> Self {
+        self.block(Block::Button(ActionButton::new(action, label)))
+    }
 }
 
 /// The building blocks of a page.
@@ -262,6 +267,54 @@ pub enum Block {
     Image(Image),
     /// A highlighted note.
     Callout(Callout),
+    /// A button that reports a click to the application.
+    Button(ActionButton),
+}
+
+/// A button on a page. A click is reported by the
+/// [`action` signal of the GuideView](super::GuideView::connect_action) with the `action`
+/// name, so a guide can do more than explain: choose a folder, start a check, …
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::ui_prelude::{ActionButton, Guide, Page};
+///
+/// let button = ActionButton::new("choose-folder", "Choose folder").icon("folder-open-symbolic");
+/// let guide = Guide::new("Setup").page(Page::new("Folder").block(button.into()));
+/// assert_eq!(guide.pages[0].blocks.len(), 1);
+/// ```
+#[derive(Clone, Debug)]
+pub struct ActionButton {
+    /// The name the application gets when the button is clicked.
+    pub action: String,
+    /// The text of the button.
+    pub label: String,
+    /// The name of a symbolic icon in front of the text.
+    pub icon: Option<String>,
+}
+
+impl ActionButton {
+    /// Creates a button.
+    pub fn new(action: impl Into<String>, label: impl Into<String>) -> Self {
+        Self {
+            action: action.into(),
+            label: label.into(),
+            icon: None,
+        }
+    }
+
+    /// Sets the icon, for example `"folder-open-symbolic"`.
+    pub fn icon(mut self, icon_name: impl Into<String>) -> Self {
+        self.icon = Some(icon_name.into());
+        self
+    }
+}
+
+impl From<ActionButton> for Block {
+    fn from(button: ActionButton) -> Self {
+        Block::Button(button)
+    }
 }
 
 /// A numbered step with an optional second line.
