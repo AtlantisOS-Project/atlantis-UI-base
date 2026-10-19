@@ -2,7 +2,6 @@
 
 [![crates.io](https://img.shields.io/crates/v/atlbase.svg)](https://crates.io/crates/atlbase)
 [![docs.rs](https://docs.rs/atlbase/badge.svg)](https://docs.rs/atlbase)
-[![CodeQL](https://github.com/AtlantisOS-Project/atlantis-UI-base/actions/workflows/codeql.yml/badge.svg)](https://github.com/AtlantisOS-Project/atlantis-UI-base/actions/workflows/codeql.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
 Modern GTK4 + Libadwaita foundation library for Rust applications.
