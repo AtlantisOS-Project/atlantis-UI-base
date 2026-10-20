@@ -11,7 +11,10 @@
 //! stylesheets and keeps them correct when the system switches between the light and the
 //! dark style.
 
+pub mod app_icon;
+
 pub mod load_adw_provider;
 
 // Re-exports
+pub use app_icon::*;
 pub use load_adw_provider::*;

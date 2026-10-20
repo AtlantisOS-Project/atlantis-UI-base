@@ -1,34 +1,24 @@
-# Changelog
-
-All notable changes to [`atlbase`](https://crates.io/crates/atlbase) are documented here: new
-functions, functions whose behavior or call changed, and functions that were removed (with the
-reason and the replacement).
-
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Before 1.0 a
-change of the minor version (`0.x`) may break the API, which is why this release is **0.2.0**.
-This file is also shown as a web page: [`docs/index.html`](docs/index.html).
-
 ## [0.2.0] — unreleased
 
 ### Upgrade guide
 
 What you have to look at when you update. Everything not listed here keeps working as before.
 
-| Area | Before | Now | What to do |
-|---|---|---|---|
-| `AppEnvironment` | 5 variants | new variant `AppImage` | Add a match arm, or use `_ =>` |
-| `check_application_environment` | ended the process (`exit(1)`) when the APT directory could not be read; a missing directory gave `LocalDeb` | returns `AppEnvironment::Unknown` in both cases and never exits | Handle `Unknown` (for example rpm or Arch systems) |
-| `use_adw_provider` | returned `()` | returns the `CssProvider` | Nothing; ignore the value as before |
-| `use_adw_provider` (2nd call) | the first stylesheet replaced the second one on a theme change | every call is independent | Nothing; remove workarounds |
-| `create_custom_headerbar` | `domain: &'static str`; "Exit" ended the process with `exit(0)` | `domain: &str`; "Exit" calls `Application::quit` | Nothing; shutdown handlers run now |
-| `init_language` | looked into `./po` first; panicked when gettext rejected a path | no `./po`; prints a warning instead of panicking | Pass your locale directory as `default_dir` or set `ATL_LOCALEDIR` |
-| `gettext!` | needed `gettext-rs` as a direct dependency of your crate | works without it | You may remove `gettext-rs` if you only used it for the macro |
-| `delete_files_and_parents` | deleted the files of **every** parent directory on the way up | deletes files only in the given directory | Nothing; this was a data-loss bug |
-| `delete_files_in_dir` | no protection at all | refuses system paths, the home directory and its standard folders | Nothing |
-| Cargo features | `vte4` always compiled | feature `log-viewer` (default on) | Use `default-features = false` to drop VTE |
-| Dependencies | `tokio`, `networkmanager` and `thiserror` always compiled | only with `experimental-api` | Nothing; `libdbus` is no longer needed to build |
-| Rust version | not declared | `rust-version = "1.92"` | Use Rust 1.92 or newer (gtk4 0.11 needs it anyway) |
-| Version | 0.1.9 | 0.2.0 | Change `atlbase = "0.1"` to `"0.2"` (Cargo does not update across `0.x` on its own) |
+| Area                            | Before                                                                                                      | Now                                                               | What to do                                                                          |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `AppEnvironment`                | 5 variants                                                                                                  | new variant `AppImage`                                            | Add a match arm, or use `_ =>`                                                      |
+| `check_application_environment` | ended the process (`exit(1)`) when the APT directory could not be read; a missing directory gave `LocalDeb` | returns `AppEnvironment::Unknown` in both cases and never exits   | Handle `Unknown` (for example rpm or Arch systems)                                  |
+| `use_adw_provider`              | returned `()`                                                                                               | returns the `CssProvider`                                         | Nothing; ignore the value as before                                                 |
+| `use_adw_provider` (2nd call)   | the first stylesheet replaced the second one on a theme change                                              | every call is independent                                         | Nothing; remove workarounds                                                         |
+| `create_custom_headerbar`       | `domain: &'static str`; "Exit" ended the process with `exit(0)`                                             | `domain: &str`; "Exit" calls `Application::quit`                  | Nothing; shutdown handlers run now                                                  |
+| `init_language`                 | looked into `./po` first; panicked when gettext rejected a path                                             | no `./po`; prints a warning instead of panicking                  | Pass your locale directory as `default_dir` or set `ATL_LOCALEDIR`                  |
+| `gettext!`                      | needed `gettext-rs` as a direct dependency of your crate                                                    | works without it                                                  | You may remove `gettext-rs` if you only used it for the macro                       |
+| `delete_files_and_parents`      | deleted the files of **every** parent directory on the way up                                               | deletes files only in the given directory                         | Nothing; this was a data-loss bug                                                   |
+| `delete_files_in_dir`           | no protection at all                                                                                        | refuses system paths, the home directory and its standard folders | Nothing                                                                             |
+| Cargo features                  | `vte4` always compiled                                                                                      | feature `log-viewer` (default on)                                 | Use `default-features = false` to drop VTE                                          |
+| Dependencies                    | `tokio`, `networkmanager` and `thiserror` always compiled                                                   | only with `experimental-api`                                      | Nothing; `libdbus` is no longer needed to build                                     |
+| Rust version                    | not declared                                                                                                | `rust-version = "1.92"`                                           | Use Rust 1.92 or newer (gtk4 0.11 needs it anyway)                                  |
+| Version                         | 0.1.9                                                                                                       | 0.2.0                                                             | Change `atlbase = "0.1"` to `"0.2"` (Cargo does not update across `0.x` on its own) |
 
 ### Added
 
@@ -59,6 +49,35 @@ library (no second CSS manager); `present_dialog` is always available (no `dialo
 `gettext!` when no `translate` function is set; relative image paths also search `$APPDIR/usr/share`
 (AppImage).
 
+#### New building blocks (moved over from the Fastboot-Assistant)
+
+These pieces were written for the Fastboot-Assistant, a program with many pages, and were
+repeated on page after page there. They are generic, so they live here now and every program
+that uses AtlBase gets them. `cargo run --example pages` shows the UI blocks together.
+
+| Item | Module | What it does |
+|---|---|---|
+| `command_line(program, args)` | `helper::commands` | Builds a `Vec<String>` command line for the progress dialogs from `&str` and `String` arguments |
+| `shell_line(command)` | `helper::commands` | Quotes a command line for a shell (for `open_terminal_by_desktop`) |
+| `command_output_timeout(command, limit)` | `helper::commands` | Output of a command (stdout, then stderr); `None` if it cannot be started or is too slow, and then it is killed |
+| `move_file_into(source, target_dir, new_name)` | `helper::filesystem` | Moves and renames a file, also to another file system (copy and delete) |
+| `require_dir_name(dir, name)`, `remove_dir_all_if_exists(dir)`, `clear_directory_except(dir, keep)` | `helper::filesystem` | Cleaning up a working folder safely: delete only if the folder has the expected name; a missing folder is fine |
+| `read_common_options(args)`, `CliOptions`, `CliRequest`, `apply_debug_options(options, flatpak_id)`, `version_text(name, version, env)`, `COMMON_OPTIONS_HELP`, `debug_mode()`, `set_debug_mode()`, `fallback_language()` | `helper::cli` | `-debug` (`-snp`, `-flp`, `-lang`), `--version` and `--help` for every AtlantisOS program |
+| `current_environment(search_string, source_dir)` | `helper::configuration` | `check_application_environment`, determined once and remembered |
+| `AppEnvironment::label()`, `AppEnvironment::is_sandboxed()`, `running_in_wsl()` | `helper::configuration` | A readable package name; Flatpak or Snap; Windows Subsystem for Linux |
+| `SystemInfo::collect()`, `package_version(package)`, `os_release_value`, `cpu_model`, `gpu_model`, `language_code` | `helper::sysinfo` | Distribution, kernel, processor, graphics card, desktop, session and installed Debian package versions |
+| `ArchiveFormat`, `detect_format(path)`, `decompress(path, dir, format)`, `decompress_file(path, dir)` | `helper::archive` (feature `archive`) | Recognizes tar, tar.xz, tar.gz, tar.bz2, xz, gz, bz2, zip and 7z by the first bytes and unpacks them; a damaged archive leaves the folder unchanged |
+| `run_background(work, done)` | `design::utils` | Slow work in a thread, its result in the main loop |
+| `create_page_container()`, `create_rows_box()`, `create_scrolling_page(rows, bottom)`, `create_clamped_scrolling_page(content, bottom, max_width)`, `create_heading(text)`, `create_text_label(text)`, `create_pill_button(icon, label, suggested, on_click)` | `design::utils` | The parts a page is made of |
+| `MenuEntry`, `MenuGridStyle`, `create_button_grid(entries, columns, style)` | `design::utils` | A grid of big buttons; a long text is cut to the column in the font that is used, so the window never gets wider |
+| `show_stack_page(stack, id, rebuild, build)` | `design::utils` | Pages of a `gtk4::Stack` that are built when they are first shown (or on every visit) |
+| `StackWindow::new(app, title, width, height)`, `.present(show_first)` | `design::utils` | A window of fixed size with a header bar and a stack; no slide animation to the first page |
+| `StatusRow::new(title)`, `.set_result(ok, text)`, `.is_ok()` | `design::utils` | A row with a spinner that turns into a check mark or a warning |
+| `show_confirm_dialog(parent, heading, body, confirm_label, on_confirm)` | `design::dialogs` | "Cancel" (the default) and a red button before something cannot be undone |
+| `show_work_dialog(parent, title, message, work)` | `design::dialogs` | A spinner while a closure runs in the background, then a success or error dialog |
+| `CommandTask`, `TaskOutcome`, `ErrorHint`, `task_error_text(error, hint)` | `design::dialogs` | A chain of commands with a progress dialog, a result dialog and optional explanations for known errors |
+| `FormDialog`, `PickRow`, `Pick`, `create_combo_row`, `selected_index`, `on_selection_change`, `create_switch_row` | `design::form` | Dialogs with a form: drop-down menus, switches, and rows to choose files or a folder |
+
 #### New functions and types in existing modules
 
 | Item | Module | What it does |
@@ -68,6 +87,8 @@ library (no second CSS manager); `present_dialog` is always available (no `dialo
 | `AppEnvironment::AppImage` | `helper::configuration` | Detected through `$APPIMAGE`; `get_execution_environment()` returns `"appimage"` |
 | `show_success_dialog(parent, body)` | `design::dialogs` | Green circle with a check mark; title "Success" (translated) |
 | `show_warning_dialog(parent, body)` | `design::dialogs` | Yellow circle with an "!"; title "Warning" (translated) |
+| `ensure_app_icon(icon_name, icon_file)` | `design::theme` | Makes the icon theme find the icon of the program (installed, AppImage, Snap, next to the program, or from a file) and sets the icon of all windows; `show_about_dialog` calls it |
+| `AboutInfo::icon_file` | `design::dialogs` | A file with the icon (SVG or PNG) for when the icon is not installed, e.g. while developing |
 | `use_adw_provider_with_priority(css, priority)` | `design::theme` | Like `use_adw_provider` with an explicit priority |
 | `AboutInfo: Default` | `design::dialogs` | `AboutInfo { app_name: …, ..Default::default() }` |
 | `IndicatorType: Debug, Clone, Copy, PartialEq, Eq, Hash` | `design::dialogs` | Was without any derive |
@@ -82,6 +103,7 @@ library (no second CSS manager); `present_dialog` is always available (no `dialo
 |---|---|---|
 | `carousel-toml` | on | `GuideLoader` and `GuideError` (adds the `toml` crate) |
 | `log-viewer` | on | `show_log_viewer`, `create_custom_headerbar` (adds VTE) |
+| `archive` | off | `helper::archive` (adds `tar`, `xz2`, `flate2`, `bzip2`, `zip`, `sevenz-rust`) |
 
 #### New files and directories
 
@@ -90,10 +112,12 @@ library (no second CSS manager); `present_dialog` is always available (no `dialo
 | `examples/helper_tools.rs` | Helper functions in a command line program (no window) |
 | `examples/dialogs.rs` | Every dialog in one application (language, syslog, CSS) |
 | `examples/guide.rs`, `examples/assets/guide.toml` | Guides from TOML and from code |
+| `examples/pages.rs` | A program with several pages: the building blocks above together |
 | `tests/` | Integration tests (see the README) |
 | `po/atlbase.pot`, `po/de.po` | Translations of the library (`po/` had no translation before) |
+| `po/update-pot.sh` | Collects the texts into `po/atlbase.pot` and merges them into the catalogs |
 | `docs/PACKAGING.md` | deb, rpm, Flatpak, Snap and AppImage |
-| `docs/index.html`, `CHANGELOG.md` | This changelog as a web page and as text |
+| `CHANGELOG/`, `docs/index.html` | This changelog as text (one file per version series) and as a web page |
 
 ### Changed
 
@@ -127,7 +151,7 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 
 | Function | Before | Now |
 |---|---|---|
-| `get_execution_environment` | `"flatpak"`, `"snap"`, `"native"` | also `"appimage"` |
+| `get_execution_environment` | `"flatpak"`, `"snap"`, `"native"` | also `"appimage"`; `"flatpak"` also when `$FLATPAK_ID` is set (as `-debug -flp` does) |
 | `check_application_environment` | see the upgrade guide | returns `AppImage` / `Unknown`; never ends the process |
 | `set_config` | failed if the file was empty or corrupt | starts a new configuration in that case |
 
@@ -246,9 +270,3 @@ breaking release (not decided).
   says Libadwaita 1.8 (what the code requires).
 * Examples that need a feature declare it (`required-features`), and `tests/design_gtk.rs` runs
   without the test harness because GTK needs the main thread.
-
-## [0.1.9] — 2026-06-03
-
-The last release before this changelog. See the
-[git history](https://github.com/AtlantisOS-Project/atlantis-UI-base/commits/main) for the changes
-of earlier versions.

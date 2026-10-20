@@ -13,11 +13,18 @@
 //! it for real.
 
 use adw::prelude::*;
-use atlbase::ui_prelude::*;
-use std::cell::Cell;
+use atlbase::{prelude::command_line, ui_prelude::*};
+use std::cell::{Cell, RefCell};
+use std::path::PathBuf;
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 fn main() {
+    // the private icon theme of `ensure_app_icon` goes to the cache directory
+    let cache = tempfile::tempdir().unwrap();
+    // SAFETY: nothing else runs yet.
+    unsafe { std::env::set_var("XDG_CACHE_HOME", cache.path()) };
+
     if adw::init().is_err() {
         println!("design_gtk: skipped, there is no display");
         return;
@@ -32,6 +39,17 @@ fn main() {
         ("guide in a stack", guide_in_a_stack),
         ("guide with a missing image", guide_with_missing_image),
         ("guide with a button", guide_with_button),
+        ("page layout", page_layout),
+        ("button grid", button_grid),
+        ("lazy stack pages", lazy_stack_pages),
+        ("stack window", stack_window),
+        ("form dialog", form_dialog),
+        ("pick row", pick_row),
+        ("confirm dialog", confirm_dialog),
+        ("background work", background_work),
+        ("work dialog", work_dialog),
+        ("command task", command_task),
+        ("app icon", app_icon),
     ];
 
     for (name, check) in checks {
@@ -197,4 +215,376 @@ fn guide_with_button() {
         &Labels::default(),
     );
     find_button(&alone, "pill").unwrap().emit_clicked();
+}
+
+/// Runs the main loop until `done` is true; fails after ten seconds.
+fn wait_until(what: &str, done: impl Fn() -> bool) {
+    let context = glib::MainContext::default();
+    let start = Instant::now();
+    while !done() {
+        assert!(start.elapsed() < Duration::from_secs(10), "timeout: {what}");
+        context.iteration(false);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+/// The title of the dialog that is shown over `window`.
+fn dialog_title(window: &adw::Window) -> Option<String> {
+    window
+        .visible_dialog()
+        .map(|dialog| dialog.title().to_string())
+}
+
+fn page_layout() {
+    let container = create_page_container();
+    assert_eq!(container.orientation(), gtk4::Orientation::Vertical);
+
+    let rows = create_rows_box();
+    let heading = create_heading("Devices");
+    assert!(heading.has_css_class("title-3"));
+    rows.append(&heading);
+    let text = create_text_label("A long text that wraps");
+    assert!(text.wraps() && text.halign() == gtk4::Align::Start);
+    rows.append(&text);
+
+    let clicks = Rc::new(Cell::new(0));
+    let counter = clicks.clone();
+    let main = create_pill_button("go-previous-symbolic", "Back", true, move |_| {
+        counter.set(counter.get() + 1)
+    });
+    assert!(main.has_css_class("pill") && main.has_css_class("suggested-action"));
+    main.emit_clicked();
+    assert_eq!(clicks.get(), 1);
+    let plain = create_pill_button("go-previous-symbolic", "Back", false, |_| {});
+    assert!(!plain.has_css_class("suggested-action"));
+
+    let page = create_scrolling_page(&rows, &plain);
+    assert_eq!(page.observe_children().n_items(), 2);
+    assert!(plain.parent().is_some_and(|parent| parent == page));
+}
+
+fn button_grid() {
+    let clicked = Rc::new(RefCell::new(Vec::new()));
+    let entries: Vec<MenuEntry> = ["One", "Two", "Three"]
+        .into_iter()
+        .map(|name| {
+            let log = clicked.clone();
+            MenuEntry::new("go-next-symbolic", name, move |_| {
+                log.borrow_mut().push(name)
+            })
+        })
+        .collect();
+
+    let style = MenuGridStyle {
+        css_class: "big",
+        ..MenuGridStyle::default()
+    };
+    let grid = create_button_grid(&entries, 2, style);
+
+    // two columns: the third entry is in the second row
+    let second = grid.child_at(1, 0).expect("a second column");
+    assert!(grid.child_at(0, 1).is_some());
+    assert!(grid.child_at(1, 1).is_none());
+
+    let button = second.downcast::<gtk4::Button>().unwrap();
+    assert!(button.has_css_class("big"));
+    assert_eq!(button.tooltip_text().as_deref(), Some("Two"));
+    button.emit_clicked();
+    assert_eq!(*clicked.borrow(), ["Two"]);
+
+    // no CSS class and no column do not break anything
+    let plain = create_button_grid(&entries, 0, MenuGridStyle::default());
+    assert!(plain.child_at(0, 2).is_some(), "0 columns means 1 column");
+}
+
+fn page_builder(built: &Rc<Cell<u32>>) -> impl FnOnce() -> gtk4::Widget + use<> {
+    let built = built.clone();
+    move || {
+        built.set(built.get() + 1);
+        gtk4::Label::new(Some("page")).upcast()
+    }
+}
+
+fn lazy_stack_pages() {
+    let stack = gtk4::Stack::new();
+    let built = Rc::new(Cell::new(0));
+
+    show_stack_page(&stack, "home", false, page_builder(&built));
+    show_stack_page(&stack, "home", false, page_builder(&built));
+    assert_eq!(built.get(), 1, "a static page is built once");
+
+    show_stack_page(&stack, "live", true, page_builder(&built));
+    let first = stack.child_by_name("live").unwrap();
+    show_stack_page(&stack, "live", true, page_builder(&built));
+    assert_eq!(built.get(), 3, "a live page is built on every visit");
+    assert_ne!(first, stack.child_by_name("live").unwrap());
+    assert_eq!(stack.visible_child_name().as_deref(), Some("live"));
+}
+
+fn stack_window() {
+    let app = adw::Application::builder()
+        .application_id("org.atlantis.AtlbaseTest")
+        .build();
+    // windows may only be added after the start-up of the application
+    app.register(gio::Cancellable::NONE).unwrap();
+    let window = StackWindow::new(&app, "Demo", 640, 480);
+    let built = Rc::new(Cell::new(0));
+
+    window.present(|stack| show_stack_page(stack, "home", false, page_builder(&built)));
+    assert_eq!(window.stack.visible_child_name().as_deref(), Some("home"));
+    assert_eq!(
+        window.stack.transition_type(),
+        gtk4::StackTransitionType::None,
+        "no animation to the first page"
+    );
+    wait_until("the animation is back", || {
+        window.stack.transition_type() == gtk4::StackTransitionType::SlideLeftRight
+    });
+    window.window.close();
+}
+
+fn form_dialog() {
+    let window = adw::Window::new();
+    let form = FormDialog::new("Backup", "Start");
+
+    let group = form.group(Some("Partition"));
+    let partition = create_combo_row("Partition", &["boot".to_string(), "vendor".to_string()]);
+    let root = create_switch_row("Root", "Use root access");
+    group.add(&partition);
+    group.add(&root);
+    assert_eq!(selected_index(&partition), 0);
+    assert!(!root.is_active());
+
+    let changes = Rc::new(Cell::new(0));
+    let counter = changes.clone();
+    on_selection_change(&partition, move || counter.set(counter.get() + 1));
+    partition.set_selected(1);
+    assert_eq!((selected_index(&partition), changes.get()), (1, 1));
+
+    let started = Rc::new(Cell::new(0));
+    let counter = started.clone();
+    form.on_ok(move || counter.set(counter.get() + 1));
+    form.present(&window);
+    assert_eq!(dialog_title(&window).as_deref(), Some("Backup"));
+
+    let ok = find_button(form.widget().child().as_ref().unwrap(), "suggested-action")
+        .expect("the dialog has a main button");
+    assert_eq!(ok.label().as_deref(), Some("Start"));
+    form.set_ok_enabled(false);
+    assert!(!ok.is_sensitive());
+    form.set_ok_enabled(true);
+    form.set_ok_visible(false);
+    assert!(!ok.is_visible());
+    form.set_ok_visible(true);
+
+    ok.emit_clicked();
+    assert_eq!(started.get(), 1);
+}
+
+fn pick_row() {
+    let seen = Rc::new(RefCell::new(Vec::<PathBuf>::new()));
+    let log = seen.clone();
+    let row = PickRow::new("Image", Pick::File, None, move |paths| {
+        *log.borrow_mut() = paths.to_vec()
+    });
+    assert!(row.path().is_none() && row.paths().is_empty());
+    assert_eq!(
+        row.row.subtitle().as_deref().unwrap_or_default(),
+        "Nothing chosen"
+    );
+
+    row.set_paths(vec![PathBuf::from("/a/boot.img")]);
+    assert_eq!(row.path(), Some(PathBuf::from("/a/boot.img")));
+    assert_eq!(
+        row.row.subtitle().as_deref().unwrap_or_default(),
+        "/a/boot.img"
+    );
+    assert_eq!(*seen.borrow(), [PathBuf::from("/a/boot.img")]);
+
+    row.set_paths(
+        ["/a/1.img", "/a/2.img", "/a/3.img"]
+            .map(PathBuf::from)
+            .to_vec(),
+    );
+    assert_eq!(
+        row.row.subtitle().as_deref().unwrap_or_default(),
+        "/a/1.img (+2)"
+    );
+    assert_eq!(row.paths().len(), 3);
+
+    // another kind of choice starts again
+    row.set_pick(Pick::Folder, "Folder");
+    assert!(row.paths().is_empty() && seen.borrow().is_empty());
+    assert_eq!(row.row.title().as_str(), "Folder");
+}
+
+fn confirm_dialog() {
+    let window = adw::Window::new();
+    let confirmed = Rc::new(Cell::new(0));
+    let counter = confirmed.clone();
+    show_confirm_dialog(&window, "Delete?", "Gone forever.", "Delete", move || {
+        counter.set(counter.get() + 1)
+    });
+
+    let dialog = window
+        .visible_dialog()
+        .and_downcast::<adw::AlertDialog>()
+        .expect("an alert dialog is shown");
+    assert_eq!(dialog.heading().as_deref(), Some("Delete?"));
+    assert_eq!(dialog.default_response().as_deref(), Some("cancel"));
+    assert_eq!(
+        dialog.response_appearance("confirm"),
+        adw::ResponseAppearance::Destructive
+    );
+
+    dialog.emit_by_name::<()>("response", &[&"cancel"]);
+    assert_eq!(confirmed.get(), 0, "cancel does nothing");
+    dialog.emit_by_name::<()>("response", &[&"confirm"]);
+    assert_eq!(confirmed.get(), 1);
+}
+
+fn background_work() {
+    let main_thread = std::thread::current().id();
+    let result = Rc::new(RefCell::new(None));
+    let slot = result.clone();
+    run_background(
+        move || (6 * 7, std::thread::current().id() != main_thread),
+        move |value| {
+            // the result arrives on the main thread again
+            assert_eq!(std::thread::current().id(), main_thread);
+            *slot.borrow_mut() = Some(value);
+        },
+    );
+    wait_until("the background work", || result.borrow().is_some());
+    assert_eq!(*result.borrow(), Some((42, true)));
+}
+
+fn work_dialog() {
+    let window = adw::Window::new();
+
+    show_work_dialog(&window, "Copying", "Please wait...", || {
+        Ok("It worked.".into())
+    });
+    assert_eq!(dialog_title(&window).as_deref(), Some("Copying"));
+    wait_until("the success dialog", || {
+        dialog_title(&window).as_deref() == Some("Success")
+    });
+
+    show_work_dialog(&window, "Copying", "Please wait...", || {
+        Err("Disk full".into())
+    });
+    wait_until("the error dialog", || {
+        dialog_title(&window).as_deref() == Some("Error")
+    });
+}
+
+fn command_task() {
+    let window = adw::Window::new();
+
+    // without commands nothing happens
+    CommandTask::new("Empty", "...", Vec::new()).run(&window);
+    assert!(window.visible_dialog().is_none());
+
+    CommandTask::new(
+        "Check",
+        "Please wait...",
+        vec![command_line("true", ["-x"])],
+    )
+    .success_message("Done.")
+    .run(&window);
+    assert_eq!(dialog_title(&window).as_deref(), Some("Check"));
+    wait_until("the success dialog", || {
+        dialog_title(&window).as_deref() == Some("Success")
+    });
+
+    CommandTask::new(
+        "Check",
+        "Please wait...",
+        vec![command_line("sh", ["-c", "echo locked >&2; exit 1"])],
+    )
+    .explain_errors(|error| {
+        error
+            .contains("locked")
+            .then(|| "It is locked.".to_string())
+    })
+    .run(&window);
+    wait_until("the error dialog", || {
+        dialog_title(&window).as_deref() == Some("Error")
+    });
+
+    CommandTask::new("Output", "...", vec![command_line("echo", ["hello"])])
+        .show_output("Result")
+        .run(&window);
+    wait_until("the output dialog", || {
+        dialog_title(&window).as_deref() == Some("Result")
+    });
+}
+
+fn has_icon(name: &str) -> bool {
+    gtk4::IconTheme::for_display(&gtk4::gdk::Display::default().unwrap()).has_icon(name)
+}
+
+const SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#3d6fb0"/></svg>"##;
+
+fn app_icon() {
+    let dir = tempfile::tempdir().unwrap();
+    let cache = glib::user_cache_dir();
+
+    // an icon that exists nowhere is not found, and nothing breaks
+    assert!(!ensure_app_icon("org.atlantis.NoSuchIcon", None));
+    assert!(!ensure_app_icon(
+        "org.atlantis.NoSuchIcon",
+        Some(&dir.path().join("missing.svg"))
+    ));
+
+    // from a file in the source tree: an SVG goes to `scalable`
+    let svg = dir.path().join("icon.svg");
+    std::fs::write(&svg, SVG).unwrap();
+    assert!(!has_icon("org.atlantis.FromSvg"));
+    assert!(ensure_app_icon("org.atlantis.FromSvg", Some(&svg)));
+    assert!(has_icon("org.atlantis.FromSvg"));
+    assert!(
+        cache
+            .join("atlbase/icons/hicolor/scalable/apps/org.atlantis.FromSvg.svg")
+            .is_file()
+    );
+
+    // a PNG goes to the standard size that is closest to its width
+    let png = dir.path().join("icon.png");
+    gtk4::gdk_pixbuf::Pixbuf::new(gtk4::gdk_pixbuf::Colorspace::Rgb, true, 8, 60, 60)
+        .unwrap()
+        .savev(&png, "png", &[])
+        .unwrap();
+    assert!(ensure_app_icon("org.atlantis.FromPng", Some(&png)));
+    assert!(
+        cache
+            .join("atlbase/icons/hicolor/64x64/apps/org.atlantis.FromPng.png")
+            .is_file()
+    );
+
+    // an AppDir: <APPDIR>/usr/share/icons/hicolor/…
+    let apps = dir
+        .path()
+        .join("AppDir/usr/share/icons/hicolor/scalable/apps");
+    std::fs::create_dir_all(&apps).unwrap();
+    std::fs::write(apps.join("org.atlantis.InAppDir.svg"), SVG).unwrap();
+    assert!(!has_icon("org.atlantis.InAppDir"));
+    // SAFETY: the test runs on the main thread and nothing else reads the variable.
+    unsafe { std::env::set_var("APPDIR", dir.path().join("AppDir")) };
+    assert!(ensure_app_icon("org.atlantis.InAppDir", None));
+    unsafe { std::env::remove_var("APPDIR") };
+
+    // the about dialog does the same with its own fields
+    let window = adw::Window::new();
+    show_about_dialog(
+        &window,
+        AboutInfo {
+            app_icon: "org.atlantis.InAbout".into(),
+            icon_file: Some(svg),
+            app_name: "Demo".into(),
+            ..AboutInfo::default()
+        },
+    );
+    assert!(window.visible_dialog().is_some());
+    assert!(has_icon("org.atlantis.InAbout"));
 }

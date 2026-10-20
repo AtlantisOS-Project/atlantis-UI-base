@@ -25,6 +25,8 @@ pub mod chooser;
 
 pub mod dialogs;
 
+pub mod form;
+
 pub mod theme;
 
 pub mod utils;
@@ -32,5 +34,6 @@ pub mod utils;
 // Re-exports
 pub use chooser::*;
 pub use dialogs::*;
+pub use form::*;
 pub use theme::*;
 pub use utils::*;

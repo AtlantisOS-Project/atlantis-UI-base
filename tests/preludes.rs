@@ -24,6 +24,16 @@ use atlbase::prelude::{
     read_from_temp, remove_line_from_temp, run_command, search_file_directory, search_string_file,
     set_config, set_language_dir, write_file, write_to_temp,
 };
+// the building blocks for programs with many pages
+#[cfg(feature = "archive")]
+use atlbase::prelude::{ArchiveFormat, decompress, decompress_file, detect_format};
+use atlbase::prelude::{
+    CliOptions, CliRequest, SystemInfo, apply_debug_options, clear_directory_except, command_line,
+    command_output_timeout, cpu_model, current_environment, debug_mode, fallback_language,
+    gpu_model, language_code, move_file_into, os_release_value, package_version,
+    read_common_options, remove_dir_all_if_exists, require_dir_name, running_in_wsl,
+    set_debug_mode, shell_line, version_text,
+};
 use atlbase::ui_prelude::{
     CommandResult, GuideView, ImageSource, Step, block_widget, command_pkexec_progressbar,
     command_pkexec_spinner, commands_pkexec_progressbar, commands_pkexec_spinner, create_button,
@@ -35,6 +45,14 @@ use atlbase::ui_prelude::{
     show_folder_chooser, show_image_dialog, show_info_button_dialog, show_info_dialog,
     show_spinner_dialog, show_spinner_dialog_return_output, show_success_dialog, show_task_dialog,
     show_warning_dialog, use_adw_provider, use_adw_provider_with_priority,
+};
+use atlbase::ui_prelude::{
+    CommandTask, ErrorHint, FormDialog, MenuAction, MenuEntry, MenuGridStyle, Pick, PickRow,
+    StackWindow, StatusRow, TaskOutcome, create_button_grid, create_clamped_scrolling_page,
+    create_combo_row, create_heading, create_page_container, create_pill_button, create_rows_box,
+    create_scrolling_page, create_switch_row, create_text_label, ensure_app_icon,
+    on_selection_change, run_background, selected_index, show_confirm_dialog, show_stack_page,
+    show_work_dialog, task_error_text,
 };
 
 #[test]

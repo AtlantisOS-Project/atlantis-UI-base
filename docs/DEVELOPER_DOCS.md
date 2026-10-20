@@ -22,6 +22,19 @@ generated from the source: `cargo doc --open` (or docs.rs).
 * **Tests:** unit tests sit next to the code, integration tests in `tests/`, programs that show
   how to use the library in `examples/`.
 
+## `helper::cli`
+
+The command line options all AtlantisOS programs share: `-debug` (with the flags `-snp`, `-flp`, `-lang`), `--version`, `--help`.
+
+| Item | Purpose |
+|---|---|
+| `read_common_options(args) -> Result<CliOptions, CliRequest>` | Read the options without side effects; `Err` is a request for the version or for help |
+| `CliOptions { debug, fake_snap, fake_flatpak, fallback_language, gtk_args }` | The result; `gtk_args` goes to `Application::run_with_args` |
+| `apply_debug_options(&options, flatpak_id)` | Turn the debug mode on and fake `$SNAP` / `$FLATPAK_ID` (call it at the start of `main`) |
+| `debug_mode()`, `set_debug_mode(on)`, `fallback_language()` | The state of the process |
+| `version_text(name, version, environment) -> String` | `Demo [Flatpak] 1.0.0` |
+| `COMMON_OPTIONS_HELP` | The option lines of `--help` |
+
 ## `helper::commands`
 
 | Function | Purpose |
@@ -32,6 +45,9 @@ generated from the source: `cargo doc --open` (or docs.rs).
 | `capture_command_output(args: &[&str]) -> io::Result<String>` | Run a command, return its `stdout` |
 | `open_terminal_by_desktop(function_command: &str)` | Open the terminal of the desktop and run a command |
 | `open_url(url: &str)` | Open a URL or file with the default application |
+| `command_line(program, args) -> Vec<String>` | Build a command line for the progress dialogs (`&str` and `String` arguments) |
+| `shell_line(command: &[String]) -> String` | Quote a command line for a shell (a terminal) |
+| `command_output_timeout(command: &[String], limit) -> Option<String>` | Output of a command (stdout, then stderr); `None` if it cannot be started or is too slow (it is killed) |
 
 ## `helper::configuration`
 
@@ -42,6 +58,9 @@ generated from the source: `cargo doc --open` (or docs.rs).
 | `enum AppEnvironment { Flatpak, Snap, AppImage, Ppa, LocalDeb, Unknown }` | Where the application was installed from |
 | `get_execution_environment() -> String` | `"flatpak"`, `"snap"`, `"appimage"` or `"native"` |
 | `check_application_environment(search_string, source_dir) -> AppEnvironment` | Detect the installation source (APT sources) |
+| `current_environment(search_string, source_dir) -> AppEnvironment` | The same, determined once and remembered |
+| `AppEnvironment::label()`, `.is_sandboxed()` | A readable name; Flatpak or Snap |
+| `running_in_wsl() -> bool` | Windows Subsystem for Linux |
 
 ## `helper::file`
 
@@ -65,6 +84,25 @@ generated from the source: `cargo doc --open` (or docs.rs).
 | `delete_files_in_dir(path)` | Delete the files of a directory (protected directories are refused) |
 | `delete_files_and_parents(path, stop_dir)` / `delete_files_with_parent(path)` | Delete the files, then the empty directory and its empty parents |
 | `search_file_directory(dir, text)` / `search_string_file(dir, text)` | Is there a file whose name contains the text? |
+| `move_file_into(source, target_dir, new_name) -> io::Result<PathBuf>` | Move and rename a file, also to another file system |
+| `require_dir_name(dir, name) -> io::Result<()>` | Refuse (`PermissionDenied`) unless the folder has this name: the check before a cleanup |
+| `remove_dir_all_if_exists(dir)` / `clear_directory_except(dir, keep)` | Delete a folder / its content except some entries; a missing folder is fine |
+
+## `helper::sysinfo`
+
+| Item | Purpose |
+|---|---|
+| `SystemInfo::collect()` | Distribution, version, kernel, processor, graphics card, desktop, language and session (runs `lspci`: call it in the background) |
+| `os_release_value(text, key)`, `cpu_model(cpuinfo)`, `gpu_model(lspci)`, `language_code(lang)` | The parsers behind it, usable on their own |
+| `package_version(package) -> Option<String>` | The installed version of a Debian package (`dpkg-query`) |
+
+## `helper::archive` (feature `archive`)
+
+| Item | Purpose |
+|---|---|
+| `detect_format(path) -> io::Result<Option<ArchiveFormat>>` | Recognize `tar`, `tar.xz`, `tar.gz`, `tar.bz2`, `xz`, `gz`, `bz2`, `zip`, `7z` by the first bytes, not by the name |
+| `decompress(path, output_dir, format)` / `decompress_file(path, output_dir)` | Unpack; a damaged archive leaves `output_dir` as it was. Returns the files that were created |
+| `ArchiveFormat::ALL`, `.label()` | For a menu when the format is unknown |
 
 ## `helper::language`
 
@@ -112,10 +150,28 @@ generated from the source: `cargo doc --open` (or docs.rs).
 | `show_spinner_dialog(…, commands, IndicatorType, on_complete)` | Spinner or progress bar while commands run |
 | `show_spinner_dialog_return_output(…)` | The same, with the result of every command (`CommandResult`) |
 | `show_task_dialog(parent, title, message, IndicatorType, task)` | The same for a Rust function |
+| `CommandTask::new(title, message, commands)` | A chain of commands with a progress dialog and a result dialog; `.progress_bar()`, `.success_message()`, `.show_output()`, `.explain_errors()`, `.run(parent)` |
+| `show_confirm_dialog(parent, heading, body, confirm_label, on_confirm)` | "Cancel" and a red button before something cannot be undone |
+| `show_work_dialog(parent, title, message, work)` | Spinner while a closure `-> Result<String, String>` works; then a success or error dialog |
+
+## `design::form`
+
+Dialogs with a form: a header bar with "Cancel" and an action button, rows in between.
+
+| Item | Purpose |
+|---|---|
+| `FormDialog::new(title, ok_label)` | The dialog; `.group(title)`, `.on_ok(action)`, `.set_ok_enabled()`, `.set_ok_visible()`, `.widget()`, `.present(parent)` |
+| `create_combo_row(title, items)`, `selected_index(row)`, `on_selection_change(row, update)` | A drop-down menu |
+| `create_switch_row(title, subtitle)` | A switch |
+| `PickRow::new(title, Pick, start_in, changed)` | A row that shows the chosen file(s) or folder and has a "Choose…" button; `.path()`, `.paths()`, `.set_paths()`, `.set_pick()` |
+| `Pick::{File, Files, Folder}` | What a `PickRow` lets the user choose |
 
 ## `design::theme`
 
-`use_adw_provider(css) -> CssProvider`, `use_adw_provider_with_priority(css, priority) -> CssProvider`
+| Function | Purpose |
+|---|---|
+| `use_adw_provider(css) -> CssProvider`, `use_adw_provider_with_priority(css, priority) -> CssProvider` | CSS that follows light/dark |
+| `ensure_app_icon(icon_name, icon_file) -> bool` | Make the icon theme find the icon of the program: installed, in an AppDir (`$APPDIR`), in a Snap (`$SNAP`), next to the program, or from a file (source tree); also sets the icon of all windows |
 
 ## `design::utils`
 
@@ -125,3 +181,10 @@ generated from the source: `cargo doc --open` (or docs.rs).
 | `create_label_icon`, `create_label_icon_position` | Icon and label |
 | `create_button`, `create_button_icon`, `create_button_icon_no_callback`, `create_button_two_icon`, `create_button_icon_position` | Pill buttons |
 | `command_pkexec_spinner`, `commands_pkexec_spinner`, `command_pkexec_progressbar`, `commands_pkexec_progressbar` | `pkexec` with a progress dialog |
+| `run_background(work, done)` | Run slow work in a thread and its result in the main loop; the window does not freeze |
+| `create_page_container`, `create_rows_box`, `create_scrolling_page(rows, bottom)`, `create_clamped_scrolling_page(content, bottom, max_width)` | The containers of a page: centered, scrolling list with a button at the bottom, a narrow column |
+| `create_heading`, `create_text_label`, `create_pill_button(icon, label, suggested, on_click)` | Heading, wrapping text, standard pill button with an icon |
+| `MenuEntry::new(icon, label, action)`, `create_button_grid(entries, columns, MenuGridStyle)` | A grid of big buttons; long texts are cut to the column in the font that is used |
+| `show_stack_page(stack, id, rebuild, build)` | Show a page of a `gtk4::Stack`, built when it is first needed (`rebuild`: on every visit) |
+| `StackWindow::new(app, title, width, height)`, `.present(show_first)` | A window of fixed size with a header bar and a stack for the pages |
+| `StatusRow::new(title)`, `.set_result(ok, text)`, `.is_ok()` | A row with a spinner that turns into a check mark or a warning |

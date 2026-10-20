@@ -68,3 +68,71 @@ fn empty_urls_and_terminal_commands_do_nothing() {
     open_url("");
     open_terminal_by_desktop("");
 }
+
+#[test]
+fn command_lines_are_built_from_strings_and_str() {
+    assert_eq!(command_line("ls", ["-l", "/tmp"]), ["ls", "-l", "/tmp"]);
+    assert_eq!(command_line("true", Vec::<String>::new()), ["true"]);
+
+    let image = String::from("boot.img");
+    assert_eq!(
+        command_line("fastboot", ["flash", "boot", &image]),
+        ["fastboot", "flash", "boot", "boot.img"]
+    );
+}
+
+#[test]
+fn shell_lines_keep_every_word_together() {
+    let line = shell_line(&["fastboot".into(), "getvar".into(), "all".into()]);
+    assert_eq!(line, "'fastboot' 'getvar' 'all'");
+    assert_eq!(
+        shell_line(&["echo".into(), "it's".into()]),
+        "'echo' 'it'\\''s'"
+    );
+    assert_eq!(shell_line(&[]), "");
+
+    // a real shell reads it back as the same words
+    let words = ["a b".to_string(), "$HOME".into(), "it's".into(), ";".into()];
+    let output =
+        capture_command_output(&["sh", "-c", &format!("printf '%s|' {}", shell_line(&words))])
+            .unwrap();
+    assert_eq!(output, "a b|$HOME|it's|;|");
+}
+
+#[test]
+fn output_with_a_time_limit() {
+    use std::time::{Duration, Instant};
+
+    let both = command_line("sh", ["-c", "echo out; echo err >&2"]);
+    let text = command_output_timeout(&both, Duration::from_secs(5)).unwrap();
+    assert!(text.contains("out") && text.contains("err"), "{text}");
+
+    // the exit status does not matter, the text does
+    let failing = command_line("sh", ["-c", "echo no; exit 3"]);
+    assert_eq!(
+        command_output_timeout(&failing, Duration::from_secs(5)).as_deref(),
+        Some("no\n")
+    );
+
+    // a program that takes too long is stopped
+    let start = Instant::now();
+    let slow = command_line("sleep", ["5"]);
+    assert_eq!(
+        command_output_timeout(&slow, Duration::from_millis(200)),
+        None
+    );
+    assert!(start.elapsed() < Duration::from_secs(3));
+
+    // a program that does not exist, and an empty command
+    let missing = command_line("no-such-program-xyz", Vec::<String>::new());
+    assert_eq!(
+        command_output_timeout(&missing, Duration::from_secs(1)),
+        None
+    );
+    assert_eq!(command_output_timeout(&[], Duration::from_secs(1)), None);
+
+    // a lot of output does not block the program
+    let big = command_line("sh", ["-c", "head -c 300000 /dev/zero | tr '\\0' x"]);
+    let text = command_output_timeout(&big, Duration::from_secs(10)).unwrap();
+    assert_eq!(text.len(), 300_000);
+}

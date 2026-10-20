@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atlbase 0.1.9\n"
 "Report-Msgid-Bugs-To: https://github.com/AtlantisOS-Project/atlantis-UI-base/issues\n"
-"POT-Creation-Date: 2026-10-16 09:00+0200\n"
+"POT-Creation-Date: 2026-10-20 08:22+0200\n"
 "PO-Revision-Date: 2026-10-16 09:00+0200\n"
 "Last-Translator: AtlantisOS Project\n"
 "Language-Team: German\n"
@@ -16,17 +16,34 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/design/dialogs/command_task.rs:146
+msgid "(no output)"
+msgstr "(keine Ausgabe)"
+
 #: src/design/carousel/model.rs:67
 msgid "Back"
 msgstr "Zurück"
 
-#: src/design/chooser/file_chooser.rs:52
+#: src/design/dialogs/dialog_confirm.rs:48 src/design/form.rs:54
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: src/design/utils/status_row.rs:49
+msgid "Checking..."
+msgstr "Prüfe..."
+
+#: src/design/chooser/file_chooser.rs:52 src/design/form.rs:270
+#: src/design/form.rs:278
 msgid "Choose File"
 msgstr "Datei auswählen"
 
-#: src/design/chooser/folder_chooser.rs:52
+#: src/design/chooser/folder_chooser.rs:52 src/design/form.rs:286
 msgid "Choose folder"
 msgstr "Ordner auswählen"
+
+#: src/design/form.rs:209
+msgid "Choose…"
+msgstr "Auswählen…"
 
 #: src/design/carousel/model.rs:71
 msgid "Copy"
@@ -40,7 +57,9 @@ msgstr "Dokumentation"
 msgid "Done"
 msgstr "Fertig"
 
-#: src/design/dialogs/standard_dialogs.rs:344 src/design/dialogs/standard_dialogs.rs:365 src/design/dialogs/standard_dialogs.rs:418
+#: src/design/dialogs/standard_dialogs.rs:371
+#: src/design/dialogs/standard_dialogs.rs:395
+#: src/design/dialogs/standard_dialogs.rs:448
 msgid "Error"
 msgstr "Fehler"
 
@@ -60,7 +79,8 @@ msgstr "Schriftarten"
 msgid "Image not found"
 msgstr "Bild nicht gefunden"
 
-#: src/design/dialogs/standard_dialogs.rs:231 src/design/dialogs/standard_dialogs.rs:254
+#: src/design/dialogs/standard_dialogs.rs:234
+#: src/design/dialogs/standard_dialogs.rs:263
 msgid "Information"
 msgstr "Information"
 
@@ -72,7 +92,16 @@ msgstr "Protokollanzeige"
 msgid "Next"
 msgstr "Weiter"
 
-#: src/design/dialogs/standard_dialogs.rs:275 src/design/dialogs/standard_dialogs.rs:389
+#: src/design/form.rs:205 src/design/form.rs:249
+msgid "Nothing chosen"
+msgstr "Nichts ausgewählt"
+
+#: src/design/dialogs/standard_dialogs.rs:236
+#: src/design/dialogs/standard_dialogs.rs:287
+#: src/design/dialogs/standard_dialogs.rs:315
+#: src/design/dialogs/standard_dialogs.rs:344
+#: src/design/dialogs/standard_dialogs.rs:373
+#: src/design/dialogs/standard_dialogs.rs:419
 msgid "OK"
 msgstr "OK"
 
@@ -84,10 +113,10 @@ msgstr "Protokoll anzeigen"
 msgid "Special thanks to"
 msgstr "Besonderer Dank an"
 
-#: src/design/dialogs/standard_dialogs.rs:298
+#: src/design/dialogs/standard_dialogs.rs:313
 msgid "Success"
 msgstr "Erfolg"
 
-#: src/design/dialogs/standard_dialogs.rs:321
+#: src/design/dialogs/standard_dialogs.rs:342
 msgid "Warning"
 msgstr "Warnung"

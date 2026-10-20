@@ -8,12 +8,14 @@
   License: GNU GENERAL PUBLIC LICENSE Version 3
 
   The changelog page of AtlBase for GitHub Pages (Settings > Pages > Branch "main", folder "/docs").
-  The text lives in CHANGELOG.md; this page loads it and renders it. No build step and no
+  The text lives in the folder CHANGELOG/: one file per version series (v.0.2.x.md, ...) and
+  CHANGELOG/README.md, which has the intro and the list of the files (newest first). This page
+  loads the list, then every file in it, and renders them as one page. No build step and no
   external script or font: everything is in this file.
 
-  Where the markdown is looked for, in this order:
-    1. CHANGELOG.md             next to this page (copy it here if you want a self-contained site)
-    2. ../CHANGELOG.md          when the repository root is served (python3 -m http.server)
+  Where the folder is looked for, in this order:
+    1. CHANGELOG/               next to this page (copy it here if you want a self-contained site)
+    2. ../CHANGELOG/            when the repository root is served (python3 -m http.server)
     3. raw.githubusercontent    what a Pages site that serves only /docs needs
 -->
 <html lang="en">
@@ -158,14 +160,14 @@
   <p id="status" role="status">Loading the changelog…</p>
   <noscript>
     <p>This page needs JavaScript to show the changelog. You can read it as text:
-    <a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
+    <a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/tree/main/CHANGELOG">CHANGELOG/</a>.</p>
   </noscript>
   <article id="content" hidden></article>
 </main>
 
 <footer>
   <div class="wrap">
-    <span>Source: <a id="source-link" href="https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/CHANGELOG.md">CHANGELOG.md</a></span>
+    <span>Source: <a id="source-link" href="https://github.com/AtlantisOS-Project/atlantis-UI-base/tree/main/CHANGELOG">CHANGELOG/</a></span>
     <span>Get the library: <a href="https://crates.io/crates/atlbase">crates.io/crates/atlbase</a></span>
     <span>GPL-3.0</span>
   </div>
@@ -176,25 +178,41 @@
   'use strict';
 
   // ── where the markdown comes from ──────────────────────────────────────
+  // folders with README.md (the intro and the list of versions) and the files v.*.md
   var SOURCES = [
-    'CHANGELOG.md',
-    '../CHANGELOG.md',
-    'https://raw.githubusercontent.com/AtlantisOS-Project/atlantis-UI-base/main/CHANGELOG.md'
+    'CHANGELOG/',
+    '../CHANGELOG/',
+    'https://raw.githubusercontent.com/AtlantisOS-Project/atlantis-UI-base/main/CHANGELOG/'
   ];
 
   var status = document.getElementById('status');
   var content = document.getElementById('content');
 
+  function fetchText(url) {
+    return fetch(url, { cache: 'no-cache' }).then(function (r) {
+      // a Pages site answers a missing file with an HTML page: only accept real text
+      var type = r.headers.get('content-type') || '';
+      if (!r.ok || /text\/html/i.test(type)) { throw new Error(r.status); }
+      return r.text();
+    });
+  }
+
+  // the first folder that has a README.md; then all the files it lists, as one text
   function load(i) {
     if (i >= SOURCES.length) { return Promise.reject(new Error('not found')); }
-    return fetch(SOURCES[i], { cache: 'no-cache' })
-      .then(function (r) {
-        // a Pages site answers a missing file with an HTML page: only accept real text
-        var type = r.headers.get('content-type') || '';
-        if (!r.ok || /text\/html/i.test(type)) { throw new Error(r.status); }
-        return r.text();
-      })
-      .catch(function () { return load(i + 1); });
+    var base = SOURCES[i];
+    return fetchText(base + 'README.md').then(function (index) {
+      // the intro is everything before the first "## " heading; the files are the links to v.*.md
+      var intro = index.split(/^## /m)[0];
+      var files = [];
+      index.replace(/\]\((v\.[0-9][0-9.]*x?\.md)\)/g, function (_, file) {
+        if (files.indexOf(file) < 0) { files.push(file); }
+        return _;
+      });
+      if (files.length === 0) { throw new Error('no versions listed'); }
+      return Promise.all(files.map(function (file) { return fetchText(base + file); }))
+        .then(function (texts) { return intro + '\n' + texts.join('\n\n'); });
+    }).catch(function () { return load(i + 1); });
   }
 
   // ── a small markdown renderer (the subset the changelog uses) ───────────
@@ -428,7 +446,7 @@
   load(0).then(show).catch(function () {
     status.className = 'error';
     status.innerHTML = 'The changelog could not be loaded. Read it on ' +
-      '<a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/blob/main/CHANGELOG.md">GitHub</a>. ' +
+      '<a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/tree/main/CHANGELOG">GitHub</a>. ' +
       '(When this page is opened from a file, the browser blocks loading; serve the folder with ' +
       '<code>python3 -m http.server</code> instead.)';
   });

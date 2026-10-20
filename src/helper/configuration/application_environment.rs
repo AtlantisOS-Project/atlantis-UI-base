@@ -14,6 +14,7 @@
 use crate::helper::filesystem::search_string_name::search_string_file;
 use std::env;
 use std::path::Path;
+use std::sync::OnceLock;
 
 /// The possible runtime environments of the application.
 ///
@@ -34,13 +35,43 @@ pub enum AppEnvironment {
     Unknown,
 }
 
+impl AppEnvironment {
+    /// A readable name of the package kind, for example for `--version`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use atlbase::prelude::AppEnvironment;
+    ///
+    /// assert_eq!(AppEnvironment::Flatpak.label(), "Flatpak");
+    /// assert_eq!(AppEnvironment::LocalDeb.label(), "Local Debian Package");
+    /// ```
+    pub fn label(self) -> &'static str {
+        match self {
+            AppEnvironment::Flatpak => "Flatpak",
+            AppEnvironment::Snap => "Snap",
+            AppEnvironment::AppImage => "AppImage",
+            AppEnvironment::Ppa => "Debian Package PPA",
+            AppEnvironment::LocalDeb => "Local Debian Package",
+            AppEnvironment::Unknown => "Unknown package",
+        }
+    }
+
+    /// Whether the application runs in a sandbox (Flatpak or Snap).
+    ///
+    /// In a sandbox there is no `pkexec`, no `journalctl` and no terminal of the host.
+    pub fn is_sandboxed(self) -> bool {
+        matches!(self, AppEnvironment::Flatpak | AppEnvironment::Snap)
+    }
+}
+
 /// Returns the name of the current runtime environment.
 ///
 /// The check needs only the file system and the environment variables:
 ///
 /// | Result | Condition |
 /// |---|---|
-/// | `"flatpak"` | the file `/.flatpak-info` exists |
+/// | `"flatpak"` | the file `/.flatpak-info` exists, or `$FLATPAK_ID` is set |
 /// | `"snap"` | `$SNAP` is set |
 /// | `"appimage"` | `$APPIMAGE` is set (the AppImage runtime sets it) |
 /// | `"native"` | none of the above (deb, rpm, `cargo install`, …) |
@@ -54,7 +85,7 @@ pub enum AppEnvironment {
 /// assert!(["flatpak", "snap", "appimage", "native"].contains(&env.as_str()));
 /// ```
 pub fn get_execution_environment() -> String {
-    let name = if Path::new("/.flatpak-info").exists() {
+    let name = if Path::new("/.flatpak-info").exists() || env::var_os("FLATPAK_ID").is_some() {
         "flatpak"
     } else if env::var_os("SNAP").is_some() {
         "snap"
@@ -129,4 +160,33 @@ pub fn check_application_environment(search_string: &str, source_dir: &str) -> A
             }
         }
     }
+}
+
+static CURRENT: OnceLock<AppEnvironment> = OnceLock::new();
+
+/// The environment of the application, determined once and then remembered.
+///
+/// [`check_application_environment`] reads files and prints to the terminal; this function
+/// is meant for code that asks "am I in a sandbox?" in many places. The arguments of the
+/// *first* call are used, later calls ignore theirs.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::current_environment;
+///
+/// let environment = current_environment("fastboot-assistant", "/etc/apt/sources.list.d");
+/// println!("running as {}", environment.label());
+/// assert_eq!(environment, current_environment("other", "/nonexistent"));
+/// ```
+pub fn current_environment(search_string: &str, source_dir: &str) -> AppEnvironment {
+    *CURRENT.get_or_init(|| check_application_environment(search_string, source_dir))
+}
+
+/// Whether the program runs in the Windows Subsystem for Linux (WSL).
+///
+/// WSL is recognized by the Windows drive `/mnt/c/Users`. In WSL the Windows programs
+/// (`adb.exe`, …) are available next to the Linux ones.
+pub fn running_in_wsl() -> bool {
+    Path::new("/mnt/c/Users").is_dir()
 }

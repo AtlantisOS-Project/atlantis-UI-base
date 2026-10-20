@@ -57,6 +57,7 @@
 //! | Feature | Default | Description |
 //! |---|---|---|
 //! | `carousel-toml` | yes | Loads multi-page guides from TOML files ([`GuideLoader`](design::carousel::GuideLoader)). |
+//! | `archive` | no | Recognizes and unpacks archives ([`helper::archive`]): tar, tar.xz, tar.gz, tar.bz2, xz, gz, bz2, zip and 7z. |
 //! | `log-viewer` | yes | Journal viewer window and header bar menu; needs VTE (`libvte-2.91-gtk4`). |
 //! | `experimental-api` | no | Unfinished `system` module. Does not compile yet. |
 //!
@@ -112,8 +113,13 @@ pub mod system;
 /// ```
 pub mod prelude {
     pub use crate::helper::{
+        cli::common_options::{
+            COMMON_OPTIONS_HELP, CliOptions, CliRequest, apply_debug_options, debug_mode,
+            fallback_language, read_common_options, set_debug_mode, version_text,
+        },
         commands::{
             command_exists::command_exists_native,
+            command_line::{command_line, command_output_timeout, shell_line},
             command_pkexec::command_pkexec,
             execute_command::{capture_command_output, run_command},
             open_terminal_desktop::open_terminal_by_desktop,
@@ -121,7 +127,8 @@ pub mod prelude {
         },
         configuration::{
             application_environment::{
-                AppEnvironment, check_application_environment, get_execution_environment,
+                AppEnvironment, check_application_environment, current_environment,
+                get_execution_environment, running_in_wsl,
             },
             toml_config::{get_config, set_config},
         },
@@ -141,8 +148,10 @@ pub mod prelude {
             },
             directory_exists::{directory_exists, file_exists},
             expand_path::expand_path,
+            guarded_delete::{clear_directory_except, remove_dir_all_if_exists, require_dir_name},
             home_dir::get_home_directory,
             make_path::{create_directory, make_path, make_path_dirname},
+            move_file::move_file_into,
             search_file_directory::search_file_directory,
             search_string_name::search_string_file,
         },
@@ -150,6 +159,15 @@ pub mod prelude {
             LIB_DOMAIN, get_current_domain, get_language_dir, init_language, set_language_dir,
         },
         log::write_log::init_syslog,
+        sysinfo::system_info::{
+            SystemInfo, cpu_model, gpu_model, language_code, os_release_value, package_version,
+        },
+    };
+
+    #[cfg(feature = "archive")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "archive")))]
+    pub use crate::helper::archive::archive_format::{
+        ArchiveFormat, decompress, decompress_file, detect_format,
     };
 }
 
@@ -173,11 +191,14 @@ pub mod ui_prelude {
         chooser::{file_chooser::show_file_chooser, folder_chooser::show_folder_chooser},
         dialogs::{
             about_dialog::{AboutInfo, show_about_dialog},
+            command_task::{CommandTask, ErrorHint, TaskOutcome, task_error_text},
             dialog::show_alert_dialog,
+            dialog_confirm::show_confirm_dialog,
             dialog_custom::show_custom_content_dialog,
             dialog_entry::show_entry_dialog,
             dialog_function::show_task_dialog,
             dialog_spinner_return::{CommandResult, show_spinner_dialog_return_output},
+            dialog_work::show_work_dialog,
             dialogs_spinner::{IndicatorType, show_spinner_dialog},
             image_dialog::show_image_dialog,
             standard_dialogs::{
@@ -186,8 +207,16 @@ pub mod ui_prelude {
                 show_info_dialog, show_success_dialog, show_warning_dialog,
             },
         },
-        theme::load_adw_provider::{use_adw_provider, use_adw_provider_with_priority},
+        form::{
+            FormDialog, Pick, PickRow, create_combo_row, create_switch_row, on_selection_change,
+            selected_index,
+        },
+        theme::{
+            app_icon::ensure_app_icon,
+            load_adw_provider::{use_adw_provider, use_adw_provider_with_priority},
+        },
         utils::{
+            background::run_background,
             command_pkexec_ui::{
                 command_pkexec_progressbar, command_pkexec_spinner, commands_pkexec_progressbar,
                 commands_pkexec_spinner,
@@ -198,6 +227,14 @@ pub mod ui_prelude {
                 create_button, create_button_icon, create_button_icon_no_callback,
                 create_button_icon_position, create_button_two_icon,
             },
+            menu_grid::{MenuAction, MenuEntry, MenuGridStyle, create_button_grid},
+            page_layout::{
+                create_clamped_scrolling_page, create_heading, create_page_container,
+                create_pill_button, create_rows_box, create_scrolling_page, create_text_label,
+            },
+            stack_pages::show_stack_page,
+            stack_window::StackWindow,
+            status_row::StatusRow,
         },
     };
 

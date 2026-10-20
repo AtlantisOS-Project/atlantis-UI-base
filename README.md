@@ -13,7 +13,7 @@ in deb, rpm, Flatpak, Snap and AppImage packages.
 
 [crates.io](https://crates.io/crates/atlbase) ·
 [API documentation](https://docs.rs/atlbase) ·
-[Changelog](CHANGELOG.md) ·
+[Changelog](CHANGELOG/README.md) ·
 [Packaging guide](docs/PACKAGING.md) ·
 [User guide](docs/USER_GUIDE.md)
 
@@ -74,7 +74,11 @@ fn main() -> glib::ExitCode {
 - Multi-page guides (`carousel`): swipeable instructions built in code or loaded from TOML
 - File and folder choosers, widget factories (buttons, entries, icon labels), CSS provider that
   follows light/dark
-- Commands: run and capture, `pkexec` with a progress dialog, terminals, URLs
+- Commands: run and capture, with a time limit, `pkexec` with a progress dialog, terminals, URLs
+- Building blocks for programs with many pages: a window with a stack, lazy pages, button grids,
+  forms, a confirm dialog, `CommandTask` (a chain of commands with feedback), background work
+- Archives (feature `archive`): recognize and unpack tar, xz, gz, bz2, zip and 7z
+- The shared command line (`-debug`, `--version`) and system information
 - Files and file system: append lines once, read `KEY=VALUE` files, temporary file, safe deletion
   helpers, path expansion
 - Settings in a TOML file (`get_config`, `set_config`), detection of Flatpak / Snap / AppImage / PPA
@@ -95,6 +99,7 @@ atlbase = "0.2"
 |---|---|---|
 | `carousel-toml` | yes | Load multi-page guides from TOML files (`GuideLoader`) |
 | `log-viewer` | yes | Journal viewer window and header bar menu (needs VTE) |
+| `archive` | no | Recognize and unpack tar, xz, gz, bz2, zip and 7z (`helper::archive`) |
 | `experimental-api` | no | Unfinished `system` module (does not compile yet) |
 
 Without VTE (for example for a Flatpak that uses the GNOME runtime):
@@ -132,8 +137,9 @@ atlbase
 ├── prelude          Everything without a window    use atlbase::prelude::*;
 ├── ui_prelude       Everything with a window       use atlbase::ui_prelude::*;
 ├── macros           gettext!
-├── helper           commands, configuration, file, filesystem, language, log
-├── design           carousel, chooser, dialogs, theme, utils
+├── helper           archive, cli, commands, configuration, file, filesystem, language, log,
+│                    sysinfo
+├── design           carousel, chooser, dialogs, form, theme, utils
 └── system           (feature experimental-api) unfinished
 examples/            complete programs
 tests/               integration tests
@@ -143,17 +149,21 @@ docs/                guides and the changelog page
 
 | Module | Purpose |
 |---|---|
-| `helper::commands` | `run_command`, `capture_command_output`, `command_pkexec`, `open_terminal_by_desktop`, `open_url`, `command_exists_native` |
+| `helper::commands` | `run_command`, `capture_command_output`, `command_output_timeout`, `command_line`, `shell_line`, `command_pkexec`, `open_terminal_by_desktop`, `open_url`, `command_exists_native` |
+| `helper::cli` | `read_common_options`, `apply_debug_options`, `version_text` |
+| `helper::sysinfo` | `SystemInfo`, `package_version` |
+| `helper::archive` | `detect_format`, `decompress`, `decompress_file` (feature `archive`) |
 | `helper::configuration` | `get_config`, `set_config`, `get_execution_environment`, `check_application_environment` |
 | `helper::file` | `add_line_file`, `get_config_value`, `write_file`, `trim_and_clean`, temporary file |
 | `helper::filesystem` | create, check, search, expand and delete paths |
 | `helper::language` | `init_language`, `translate`, `LIB_DOMAIN` |
 | `helper::log` | `init_syslog`, `show_log_viewer`, `create_custom_headerbar` |
-| `design::dialogs` | all dialogs |
+| `design::dialogs` | all dialogs, `CommandTask` |
+| `design::form` | `FormDialog`, `PickRow`, combo and switch rows |
 | `design::carousel` | `Guide`, `Page`, `GuideView`, `GuideLoader` |
 | `design::chooser` | `show_file_chooser`, `show_folder_chooser` |
 | `design::theme` | `use_adw_provider` |
-| `design::utils` | `create_button*`, `create_entry`, `create_label_icon*`, `commands_pkexec_*` |
+| `design::utils` | `create_button*`, `create_entry`, `create_label_icon*`, `commands_pkexec_*`, `StackWindow`, `show_stack_page`, `create_button_grid`, `run_background` |
 
 Every function is listed in [docs/DEVELOPER_DOCS.md](docs/DEVELOPER_DOCS.md) and, with examples, in
 the [API documentation](https://docs.rs/atlbase).
@@ -207,6 +217,7 @@ example builds with `cargo build --examples`.
 | `helper_tools` | The helper functions in a command line program; works in a temporary directory | no |
 | `dialogs` | Every dialog, language, syslog, CSS and the header bar menu | yes |
 | `guide` | Multi-page guides from a TOML file and from code | yes |
+| `pages` | A program with several pages: window with a stack, button grid, form, task and confirm dialogs | yes |
 | `test_app` | Nearly every function in one big window | yes |
 
 ```bash
@@ -215,6 +226,7 @@ cargo run --example dialogs
 cargo run --example guide                # content from examples/assets/guide.toml
 cargo run --example guide -- builder     # the same guide, built in code
 cargo run --example guide -- embedded    # embedded text, images from the data directories
+cargo run --example pages
 cargo run --example test_app
 
 cargo build --release --example dialogs  # optimized build of one example
@@ -254,6 +266,7 @@ cargo test                  # everything: unit tests, tests/ and the examples in
 | `cargo test --doc` | The code examples of the API documentation (all are compiled, many run) |
 | `cargo test --test helper_files` | One file of `tests/`; replace the name with another file |
 | `cargo test --test helper_files add_line` | Only the tests whose name contains `add_line` |
+| `cargo test --features archive` | Everything including the archive module (its unit tests need the feature) |
 | `cargo test --no-default-features --lib --tests` | The same without the optional features |
 
 What `tests/` covers:
@@ -263,7 +276,7 @@ What `tests/` covers:
 | `helper_filesystem.rs`, `helper_home_protection.rs` | create, search, expand and delete paths; the home directory is protected |
 | `helper_files.rs`, `helper_temp_file.rs` | appending lines, `KEY=VALUE` files, the temporary file |
 | `helper_config.rs` | settings in `$XDG_CONFIG_HOME` (also how Flatpak and Snap redirect them) |
-| `helper_commands.rs`, `helper_environment.rs` | running commands, detection of Flatpak / Snap / AppImage / deb |
+| `helper_commands.rs`, `helper_environment.rs`, `helper_cli.rs` | running commands, command lines, detection of Flatpak / Snap / AppImage / deb, the shared command line options |
 | `language_library.rs`, `language_application.rs` | translations of the library and of an application |
 | `carousel_toml.rs`, `design_gtk.rs`, `preludes.rs` | guides, GTK widgets, the exported names |
 
@@ -302,10 +315,12 @@ cargo package --allow-dirty     # does the crate build from the packaged files?
 ## Changelog
 
 All changes — new functions, changed calls and behavior, removed items with their replacements —
-are listed in [CHANGELOG.md](CHANGELOG.md). The same text is available as a web page:
-[`docs/index.html`](docs/index.html) loads the changelog and renders it. For GitHub Pages choose
-*Settings → Pages → Deploy from a branch → `main` / `docs`*; locally it can be viewed with
-`python3 -m http.server` in the repository root and `http://127.0.0.1:8000/docs/`.
+are listed in the folder [CHANGELOG/](CHANGELOG/README.md), one file per version series
+(`v.0.2.x.md`, …). The same text is available as a web page: [`docs/index.html`](docs/index.html)
+builds it from those files (it reads `CHANGELOG/README.md` and every file listed there). For GitHub
+Pages choose *Settings → Pages → Deploy from a branch → `main` / `docs`*; the page then loads the
+files from `raw.githubusercontent.com`. Locally it can be viewed with `python3 -m http.server` in
+the repository root and `http://127.0.0.1:8000/docs/`.
 
 ## License
 

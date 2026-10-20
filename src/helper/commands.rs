@@ -21,6 +21,8 @@
 
 pub mod command_exists;
 
+pub mod command_line;
+
 pub mod command_pkexec;
 
 pub mod execute_command;
@@ -31,6 +33,7 @@ pub mod open_url;
 
 // Re-exports
 pub use command_exists::*;
+pub use command_line::*;
 pub use command_pkexec::*;
 pub use execute_command::*;
 pub use open_terminal_desktop::*;

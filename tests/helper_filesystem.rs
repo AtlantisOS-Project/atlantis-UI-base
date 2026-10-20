@@ -9,7 +9,7 @@
 
 use atlbase::prelude::*;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[test]
 fn directories_are_created_and_checked() {
@@ -130,4 +130,70 @@ fn the_stop_directory_is_never_removed() {
 #[test]
 fn a_missing_path_is_ignored() {
     delete_files_with_parent("/does/not/exist/at/all");
+}
+
+#[test]
+fn a_file_is_moved_and_renamed() {
+    let root = tempfile::tempdir().unwrap();
+    let source = root.path().join("Downloads/lineage-boot.img");
+    fs::create_dir_all(source.parent().unwrap()).unwrap();
+    fs::write(&source, b"image").unwrap();
+
+    let target = move_file_into(&source, &root.path().join("ROM-Install"), "boot.img").unwrap();
+    assert_eq!(target, root.path().join("ROM-Install/boot.img"));
+    assert_eq!(fs::read(&target).unwrap(), b"image");
+    assert!(!source.exists());
+
+    // moving a file onto itself changes nothing
+    assert_eq!(
+        move_file_into(&target, target.parent().unwrap(), "boot.img").unwrap(),
+        target
+    );
+    assert_eq!(fs::read(&target).unwrap(), b"image");
+
+    // an existing file with the new name is replaced
+    let newer = root.path().join("newer.img");
+    fs::write(&newer, b"newer").unwrap();
+    move_file_into(&newer, target.parent().unwrap(), "boot.img").unwrap();
+    assert_eq!(fs::read(&target).unwrap(), b"newer");
+
+    // a missing source is an error and changes nothing
+    assert!(move_file_into(&source, root.path(), "x.img").is_err());
+}
+
+#[test]
+fn only_a_folder_with_the_right_name_is_touched() {
+    let root = tempfile::tempdir().unwrap();
+
+    let other = root.path().join("Documents");
+    fs::create_dir(&other).unwrap();
+    assert!(require_dir_name(&other, "ROM-Install").is_err());
+    assert_eq!(
+        require_dir_name(&other, "ROM-Install").unwrap_err().kind(),
+        std::io::ErrorKind::PermissionDenied
+    );
+    assert!(require_dir_name(&root.path().join("ROM-Install"), "ROM-Install").is_ok());
+    assert!(require_dir_name(Path::new("/"), "ROM-Install").is_err());
+}
+
+#[test]
+fn folders_are_removed_and_cleared() {
+    let root = tempfile::tempdir().unwrap();
+    let dir = root.path().join("work");
+    fs::create_dir_all(dir.join("Backup")).unwrap();
+    fs::create_dir_all(dir.join("lineage/nested")).unwrap();
+    fs::write(dir.join("boot.img"), "x").unwrap();
+    fs::write(dir.join("lineage/nested/system.img"), "x").unwrap();
+    fs::write(dir.join("Backup/boot.img"), "backup").unwrap();
+
+    clear_directory_except(&dir, &["Backup"]).unwrap();
+    assert!(!dir.join("boot.img").exists() && !dir.join("lineage").exists());
+    assert_eq!(fs::read(dir.join("Backup/boot.img")).unwrap(), b"backup");
+
+    // a folder that is gone is fine
+    clear_directory_except(&root.path().join("gone"), &[]).unwrap();
+
+    remove_dir_all_if_exists(&dir).unwrap();
+    assert!(!dir.exists());
+    remove_dir_all_if_exists(&dir).unwrap();
 }

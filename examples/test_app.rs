@@ -127,6 +127,7 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     // about dialog
     let info = AboutInfo {
         app_icon: "atlantis-os-logo".to_string(),
+        icon_file: None,
         app_name: "Atlbase Test".to_string(),
         developer_name: "NachtsternBuild".to_string(),
         version: "2026.1.0".to_string(),

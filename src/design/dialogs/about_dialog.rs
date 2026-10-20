@@ -10,10 +10,12 @@
 //! The module uses [`adw::AboutDialog`] to show consistent information about an
 //! application: version, license, contributors and acknowledgments.
 
+use crate::design::theme::app_icon::ensure_app_icon;
 use crate::gettext;
 use adw::AboutDialog;
 use adw::prelude::*;
 use gtk4::{License, Widget};
+use std::path::PathBuf;
 
 /// All information shown in the "About" dialog.
 ///
@@ -34,6 +36,11 @@ use gtk4::{License, Widget};
 pub struct AboutInfo {
     /// Name of the application icon (from the icon theme).
     pub app_icon: String,
+    /// A file with the icon (SVG or PNG) for when the icon is not installed in the icon theme,
+    /// for example in the source tree while developing. See
+    /// [`ensure_app_icon`](crate::design::theme::app_icon::ensure_app_icon) for the places
+    /// where the icon is looked for first.
+    pub icon_file: Option<PathBuf>,
     /// The display name of the application.
     pub app_name: String,
     /// The main developer or organization.
@@ -89,6 +96,7 @@ pub struct AboutInfo {
 ///
 /// let info = AboutInfo {
 ///     app_icon: "atlantis-os-logo".to_string(),
+///     icon_file: None,
 ///     app_name: "AtlantisOS Dashboard".to_string(),
 ///     developer_name: "NachtsternBuild".to_string(),
 ///     version: "2026.1.0".to_string(),
@@ -109,6 +117,9 @@ pub struct AboutInfo {
 /// show_about_dialog(&main_window, info);
 /// ```
 pub fn show_about_dialog(parent: &impl IsA<Widget>, info: AboutInfo) {
+    // the dialog only knows the name of the icon: make sure the icon theme finds it
+    ensure_app_icon(&info.app_icon, info.icon_file.as_deref());
+
     let about = AboutDialog::builder()
         .application_icon(&info.app_icon)
         .application_name(&info.app_name)

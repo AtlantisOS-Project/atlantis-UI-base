@@ -114,6 +114,35 @@ view.connect_action(|_view, action| {
 });
 ```
 
+## Programs with many pages
+
+A program with a start page, menus and settings keeps its pages in one `gtk4::Stack`. These
+building blocks take the usual work off you (`cargo run --example pages` shows all of them):
+
+```rust
+let window = StackWindow::new(app, "My program", 800, 600);   // fixed size, header bar, stack
+window.present(|stack| show_stack_page(stack, "home", false, || build_home(stack).upcast()));
+```
+
+* **Pages:** `show_stack_page(stack, id, rebuild, build)` builds a page when it is first shown;
+  `rebuild = true` builds it again on every visit (a list of devices, system information).
+  `create_scrolling_page`, `create_clamped_scrolling_page`, `create_heading`, `create_text_label`
+  and `create_pill_button` build the usual page.
+* **Start page and menus:** `create_button_grid(&entries, columns, MenuGridStyle::default())` makes
+  a grid of big buttons from `MenuEntry::new(icon, label, action)`. A text that is too long for the
+  column is cut, whatever the font is.
+* **Slow work:** `run_background(work, done)` runs `work` in a thread and `done` in the main loop.
+  `CommandTask::new(title, message, commands)` runs a chain of commands (build them with
+  `command_line("adb", ["devices"])`) behind a progress dialog and tells the result.
+  `show_work_dialog` does the same for a closure. `show_confirm_dialog` asks before something
+  cannot be undone. `StatusRow` shows a check that is still running.
+* **Forms:** `FormDialog` is a dialog with "Cancel" and an action button; fill it with
+  `create_combo_row`, `create_switch_row` and `PickRow` (a file or folder).
+* **The usual helpers:** `read_common_options` reads `-debug`, `--version` and `--help` the same way in
+  every AtlantisOS program; `SystemInfo::collect()` describes the computer; with the feature
+  `archive`, `decompress_file` unpacks tar, xz, gz, bz2, zip and 7z after recognizing the format by
+  its content.
+
 ## Packaging
 
 How to build deb, rpm, Flatpak, Snap and AppImage packages of an application that uses

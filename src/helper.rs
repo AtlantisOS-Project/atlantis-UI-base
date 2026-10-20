@@ -12,12 +12,17 @@
 //!
 //! | Module | Purpose |
 //! |---|---|
-//! | [`commands`] | Run commands, `pkexec`, terminals, URLs |
+//! | [`cli`] | The command line options all programs share (`-debug`, `--version`) |
+//! | [`commands`] | Run commands, `pkexec`, terminals, URLs, command lines |
 //! | [`configuration`] | TOML settings and runtime environment detection |
 //! | [`file`](mod@file) | Read, write and clean up file contents |
 //! | [`filesystem`] | Create, search and delete files and directories |
 //! | [`language`] | gettext initialization and locale lookup |
 //! | [`log`] | Syslog logger and journal viewer |
+//! | [`sysinfo`] | Distribution, kernel, processor and package versions |
+//! | `archive` | Recognize and unpack archives (feature `archive`) |
+
+pub mod cli;
 
 pub mod commands;
 
@@ -31,10 +36,21 @@ pub mod language;
 
 pub mod log;
 
+pub mod sysinfo;
+
+#[cfg(feature = "archive")]
+#[cfg_attr(docsrs, doc(cfg(feature = "archive")))]
+pub mod archive;
+
 // Re-exports
+pub use cli::*;
 pub use commands::*;
 pub use configuration::*;
 pub use file::*;
 pub use filesystem::*;
 pub use language::*;
 pub use log::*;
+pub use sysinfo::*;
+
+#[cfg(feature = "archive")]
+pub use archive::*;

@@ -30,6 +30,7 @@ fn the_environment_is_detected_from_markers() {
     unsafe {
         std::env::remove_var("SNAP");
         std::env::remove_var("APPIMAGE");
+        std::env::remove_var("FLATPAK_ID");
     }
     assert_eq!(get_execution_environment(), "native");
 
@@ -64,4 +65,40 @@ fn the_environment_is_detected_from_markers() {
         check_application_environment("my-app", dir),
         AppEnvironment::Snap
     );
+
+    // $FLATPAK_ID alone is enough (it is set in a Flatpak, and by `-debug -flp`)
+    unsafe {
+        std::env::remove_var("SNAP");
+        std::env::set_var("FLATPAK_ID", "org.example.App");
+    }
+    assert_eq!(get_execution_environment(), "flatpak");
+    unsafe { std::env::remove_var("FLATPAK_ID") };
+}
+
+#[test]
+fn environments_have_a_label_and_a_sandbox_flag() {
+    assert_eq!(AppEnvironment::Flatpak.label(), "Flatpak");
+    assert_eq!(AppEnvironment::Ppa.label(), "Debian Package PPA");
+    assert_eq!(AppEnvironment::Unknown.label(), "Unknown package");
+
+    for (environment, sandboxed) in [
+        (AppEnvironment::Flatpak, true),
+        (AppEnvironment::Snap, true),
+        (AppEnvironment::AppImage, false),
+        (AppEnvironment::Ppa, false),
+        (AppEnvironment::LocalDeb, false),
+        (AppEnvironment::Unknown, false),
+    ] {
+        assert_eq!(environment.is_sandboxed(), sandboxed, "{environment:?}");
+    }
+}
+
+#[test]
+fn the_current_environment_is_determined_once() {
+    // the first call decides, whatever the later calls say
+    let first = current_environment("my-app", "/does/not/exist");
+    assert_eq!(first, current_environment("other", "/etc"));
+
+    // no panic on any system
+    let _ = running_in_wsl();
 }
