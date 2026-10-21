@@ -72,6 +72,7 @@
 //! ]
 //! ```
 
+use crate::helper::platform::dirs::DataDirs;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -165,80 +166,6 @@ enum ImageRoot {
     Dir(PathBuf),
     /// A subfolder below every XDG data directory.
     DataSubdir(PathBuf),
-}
-
-/// The environment the search folders are derived from. A type of its own instead of direct
-/// access to `std::env`, so the behavior can be tested without changing the process
-/// environment.
-#[derive(Clone, Debug, Default)]
-struct SearchEnv {
-    home: Option<PathBuf>,
-    xdg_data_home: Option<PathBuf>,
-    xdg_data_dirs: Option<String>,
-    /// `$SNAP`, set in Snap packages
-    snap: Option<PathBuf>,
-    /// `$APPDIR`, set by the AppImage runtime
-    appdir: Option<PathBuf>,
-    /// `$FLATPAK_ID` is set, so we run in a Flatpak sandbox
-    flatpak: bool,
-}
-
-impl SearchEnv {
-    fn current() -> Self {
-        let var = |key: &str| std::env::var_os(key).filter(|v| !v.is_empty());
-        Self {
-            home: var("HOME").map(PathBuf::from),
-            xdg_data_home: var("XDG_DATA_HOME").map(PathBuf::from),
-            xdg_data_dirs: var("XDG_DATA_DIRS").and_then(|v| v.into_string().ok()),
-            snap: var("SNAP").map(PathBuf::from),
-            appdir: var("APPDIR").map(PathBuf::from),
-            flatpak: var("FLATPAK_ID").is_some(),
-        }
-    }
-
-    /// XDG data directories in search order (user before system, without duplicates),
-    /// extended by the peculiarities of Flatpak, Snap and AppImage:
-    ///
-    /// * deb/rpm package: `/usr/share` (or `/usr/local/share`)
-    /// * Flatpak: `/app/share`; Flatpak usually sets `XDG_DATA_DIRS` accordingly
-    /// * Snap: `$SNAP/usr/share` and `$SNAP/share`; depending on the Snap extension they
-    ///   are not part of `XDG_DATA_DIRS`
-    /// * AppImage: `$APPDIR/usr/share`
-    fn data_dirs(&self) -> Vec<PathBuf> {
-        let mut dirs: Vec<PathBuf> = Vec::new();
-        let mut push = |dir: PathBuf| {
-            if dir.is_absolute() && !dirs.contains(&dir) {
-                dirs.push(dir);
-            }
-        };
-
-        match (&self.xdg_data_home, &self.home) {
-            (Some(data_home), _) => push(data_home.clone()),
-            (None, Some(home)) => push(home.join(".local/share")),
-            (None, None) => {}
-        }
-        match &self.xdg_data_dirs {
-            Some(list) => list
-                .split(':')
-                .filter(|dir| !dir.is_empty())
-                .for_each(|dir| push(PathBuf::from(dir))),
-            None => {
-                push(PathBuf::from("/usr/local/share"));
-                push(PathBuf::from("/usr/share"));
-            }
-        }
-        if self.flatpak {
-            push(PathBuf::from("/app/share"));
-        }
-        if let Some(snap) = &self.snap {
-            push(snap.join("usr/share"));
-            push(snap.join("share"));
-        }
-        if let Some(appdir) = &self.appdir {
-            push(appdir.join("usr/share"));
-        }
-        dirs
-    }
 }
 
 /// A possible location of an image.
@@ -345,7 +272,7 @@ pub struct GuideLoader {
     base: Option<Base>,
     image_roots: Vec<ImageRoot>,
     /// Only for tests; otherwise the process environment is read.
-    env: Option<SearchEnv>,
+    env: Option<DataDirs>,
 }
 
 impl fmt::Debug for GuideLoader {
@@ -433,7 +360,7 @@ impl GuideLoader {
     }
 
     #[cfg(test)]
-    fn with_env(mut self, env: SearchEnv) -> Self {
+    fn with_env(mut self, env: DataDirs) -> Self {
         self.env = Some(env);
         self
     }
@@ -487,7 +414,7 @@ impl GuideLoader {
     // ── internal ──
 
     /// All folders for installed images in search order.
-    fn image_search_dirs(&self, env: &SearchEnv) -> Vec<PathBuf> {
+    fn image_search_dirs(&self, env: &DataDirs) -> Vec<PathBuf> {
         let mut dirs = Vec::new();
         for root in &self.image_roots {
             match root {
@@ -516,7 +443,7 @@ impl GuideLoader {
             return Err(invalid("guide", "no pages; add at least one `[[pages]]`"));
         }
 
-        let env = self.env.clone().unwrap_or_else(SearchEnv::current);
+        let env = self.env.clone().unwrap_or_else(DataDirs::current);
         let ctx = Ctx {
             loader: self,
             base,
@@ -1210,13 +1137,14 @@ blocks = [
     fn data_dirs_follow_xdg_and_add_flatpak_and_snap() {
         // user first; duplicates, empty and relative entries are dropped; Flatpak, Snap and
         // AppImage follow
-        let env = SearchEnv {
+        let env = DataDirs {
             home: Some("/home/u".into()),
             xdg_data_home: None,
             xdg_data_dirs: Some("/opt/a::/usr/share:/opt/a:relative".into()),
             snap: Some("/snap/x/1".into()),
             appdir: Some("/tmp/.mount_x".into()),
             flatpak: true,
+            ..DataDirs::default()
         };
         assert_eq!(
             env.data_dirs(),
@@ -1232,16 +1160,16 @@ blocks = [
         );
 
         // XDG_DATA_HOME replaces ~/.local/share
-        let env = SearchEnv {
+        let env = DataDirs {
             home: Some("/home/u".into()),
             xdg_data_home: Some("/data".into()),
-            ..SearchEnv::default()
+            ..DataDirs::default()
         };
         assert_eq!(env.data_dirs()[0], PathBuf::from("/data"));
 
         // without XDG_DATA_DIRS the defaults of the specification apply (Debian: /usr/share)
         assert_eq!(
-            SearchEnv::default().data_dirs(),
+            DataDirs::default().data_dirs(),
             paths(&["/usr/local/share", "/usr/share"])
         );
     }
@@ -1250,9 +1178,9 @@ blocks = [
     fn finds_installed_images_in_xdg_data_dirs() {
         let tmp = scratch("xdg");
         touch(&tmp.join("share/myapp/guides/a.png"));
-        let env = SearchEnv {
-            xdg_data_dirs: Some(format!("/nonexistent:{}", tmp.join("share").display())),
-            ..SearchEnv::default()
+        let env = DataDirs {
+            xdg_data_dirs: Some(format!("/nonexistent:{}", tmp.join("share").display()).into()),
+            ..DataDirs::default()
         };
         let loader = GuideLoader::new()
             .image_data_subdir("myapp/guides")
@@ -1273,11 +1201,11 @@ blocks = [
     fn flatpak_and_snap_locations_are_searched_without_xdg_data_dirs() {
         let tmp = scratch("snap");
         touch(&tmp.join("usr/share/myapp/a.png"));
-        let env = SearchEnv {
+        let env = DataDirs {
             // this is how some Snaps look: $SNAP/usr/share is missing in XDG_DATA_DIRS
             xdg_data_dirs: Some("/nonexistent".into()),
             snap: Some(tmp.clone()),
-            ..SearchEnv::default()
+            ..DataDirs::default()
         };
         let loader = GuideLoader::new().image_data_subdir("myapp").with_env(env);
         assert_eq!(
@@ -1291,9 +1219,9 @@ blocks = [
     fn fixed_dirs_and_absolute_paths_get_the_snap_prefix() {
         let tmp = scratch("pkgdatadir");
         touch(&tmp.join("usr/share/myapp/a.png"));
-        let env = SearchEnv {
+        let env = DataDirs {
             snap: Some(tmp.clone()),
-            ..SearchEnv::default()
+            ..DataDirs::default()
         };
 
         // PKGDATADIR was compiled in as /usr/share/myapp, but it lives below $SNAP
@@ -1319,9 +1247,9 @@ blocks = [
         let tmp = scratch("beside");
         touch(&tmp.join("src/guides/a.png"));
         touch(&tmp.join("share/myapp/a.png"));
-        let env = SearchEnv {
-            xdg_data_dirs: Some(tmp.join("share").display().to_string()),
-            ..SearchEnv::default()
+        let env = DataDirs {
+            xdg_data_dirs: Some(tmp.join("share").into_os_string()),
+            ..DataDirs::default()
         };
 
         // development: an old installed version must not hide the image in the source tree
@@ -1351,9 +1279,9 @@ blocks = [
         let tmp = scratch("order");
         touch(&tmp.join("dev/a.png"));
         touch(&tmp.join("share/myapp/a.png"));
-        let env = SearchEnv {
-            xdg_data_dirs: Some(tmp.join("share").display().to_string()),
-            ..SearchEnv::default()
+        let env = DataDirs {
+            xdg_data_dirs: Some(tmp.join("share").into_os_string()),
+            ..DataDirs::default()
         };
 
         let dev_first = GuideLoader::new()
@@ -1375,9 +1303,9 @@ blocks = [
 
     #[test]
     fn missing_image_falls_back_to_the_path_next_to_the_guide() {
-        let env = SearchEnv {
+        let env = DataDirs {
             xdg_data_dirs: Some("/nonexistent".into()),
-            ..SearchEnv::default()
+            ..DataDirs::default()
         };
         let loader = GuideLoader::new()
             .base_dir("/guides")

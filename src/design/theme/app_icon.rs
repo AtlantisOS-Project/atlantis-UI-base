@@ -14,6 +14,7 @@
 //! (AppImage) or from a prefix that is not in `$XDG_DATA_DIRS`: the dialog then shows a
 //! "missing image" icon. [`ensure_app_icon`] closes these gaps.
 
+use crate::helper::platform::dirs::{AppDirs, DataDirs};
 use gtk4::{IconTheme, gdk};
 use std::env;
 use std::fs;
@@ -25,28 +26,27 @@ const SIZES: [i32; 13] = [16, 22, 24, 32, 36, 48, 64, 72, 96, 128, 192, 256, 512
 
 /// Folders with icons that a sandbox or a relocated installation uses.
 fn icon_dirs() -> Vec<PathBuf> {
-    let mut dirs = Vec::new();
-    // AppImage: the AppDir; Snap: the root of the snap
-    for variable in ["APPDIR", "SNAP"] {
-        if let Some(root) = env::var_os(variable) {
-            dirs.push(PathBuf::from(root).join("usr/share/icons"));
+    let places = DataDirs::current();
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    let mut push = |dir: PathBuf| {
+        if !dirs.contains(&dir) {
+            dirs.push(dir);
         }
+    };
+    // AppImage: the AppDir; Snap: the root of the snap
+    for root in places.app_roots() {
+        push(root.join("usr/share/icons"));
     }
     // Flatpak and the usual prefixes, in case $XDG_DATA_DIRS lacks them
-    dirs.extend(
-        [
-            "/app/share/icons",
-            "/usr/local/share/icons",
-            "/usr/share/icons",
-        ]
-        .map(PathBuf::from),
-    );
+    push(PathBuf::from("/app/share/icons"));
+    push(PathBuf::from("/usr/local/share/icons"));
+    push(PathBuf::from("/usr/share/icons"));
     // <prefix>/bin/<program> with <prefix>/share/icons next to it
     if let Some(prefix) = env::current_exe()
         .ok()
         .and_then(|exe| exe.parent()?.parent().map(Path::to_path_buf))
     {
-        dirs.push(prefix.join("share/icons"));
+        push(prefix.join("share/icons"));
     }
     dirs
 }
@@ -76,10 +76,9 @@ fn theme_dir(file: &Path) -> (String, &'static str) {
 /// Copies `file` into a private `hicolor` theme in the cache directory of the user and
 /// returns the folder to add to the search path of the icon theme.
 fn install_icon_file(icon_name: &str, file: &Path) -> io::Result<PathBuf> {
-    let cache =
-        directories::ProjectDirs::from("", "", crate::helper::language::language::LIB_DOMAIN)
-            .map(|dirs| dirs.cache_dir().join("icons"))
-            .ok_or_else(|| io::Error::other("no cache directory"))?;
+    let cache = AppDirs::new(crate::helper::language::language::LIB_DOMAIN)
+        .map(|dirs| dirs.cache_dir().join("icons"))
+        .ok_or_else(|| io::Error::other("no cache directory"))?;
 
     let (size, extension) = theme_dir(file);
     let target = cache

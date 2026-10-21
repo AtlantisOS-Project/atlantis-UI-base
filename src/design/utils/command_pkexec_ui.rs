@@ -19,20 +19,32 @@
 //! and the error is shown by the dialog callback; do not offer such actions there.
 
 use crate::design::dialogs::dialogs_spinner::{IndicatorType, show_spinner_dialog};
+use crate::helper::platform::elevate::elevation_command;
 use gtk4::Widget;
 use gtk4::prelude::IsA;
 
-/// Prefixes every non-empty command with `pkexec`; empty commands are dropped.
+/// Puts the elevation mechanism of the system (`pkexec` on Linux) in front of every command;
+/// empty commands are dropped.
 fn with_pkexec(commands: Vec<Vec<String>>) -> Vec<Vec<String>> {
     commands
         .into_iter()
-        .filter(|command| !command.is_empty())
-        .map(|command| {
-            let mut full_command = vec!["pkexec".to_string()];
-            full_command.extend(command);
-            full_command
-        })
+        .filter_map(|command| elevation_command(&command))
         .collect()
+}
+
+/// Runs the commands with `pkexec` behind a progress dialog; nothing happens without commands.
+fn pkexec_dialog(
+    parent: &impl IsA<Widget>,
+    commands: Vec<Vec<String>>,
+    title: &str,
+    text: &str,
+    indicator: IndicatorType,
+) {
+    let commands = with_pkexec(commands);
+    if commands.is_empty() {
+        return;
+    }
+    show_spinner_dialog(parent, title, text, commands, indicator, None);
 }
 
 /// Runs one privileged command with a spinner dialog.
@@ -105,11 +117,7 @@ pub fn commands_pkexec_spinner(
     title: &str,
     text: &str,
 ) {
-    let commands = with_pkexec(commands);
-    if commands.is_empty() {
-        return;
-    }
-    show_spinner_dialog(parent, title, text, commands, IndicatorType::Spinner, None);
+    pkexec_dialog(parent, commands, title, text, IndicatorType::Spinner);
 }
 
 /// Runs one privileged command with a progress bar dialog.
@@ -172,18 +180,7 @@ pub fn commands_pkexec_progressbar(
     title: &str,
     text: &str,
 ) {
-    let commands = with_pkexec(commands);
-    if commands.is_empty() {
-        return;
-    }
-    show_spinner_dialog(
-        parent,
-        title,
-        text,
-        commands,
-        IndicatorType::ProgressBar,
-        None,
-    );
+    pkexec_dialog(parent, commands, title, text, IndicatorType::ProgressBar);
 }
 
 #[cfg(test)]
@@ -191,15 +188,12 @@ mod tests {
     use super::with_pkexec;
 
     #[test]
-    fn every_command_gets_pkexec_and_empty_ones_are_dropped() {
+    fn every_command_gets_the_elevation_and_empty_ones_are_dropped() {
         let commands = vec![vec!["ls".to_string(), "-l".to_string()], vec![]];
-        assert_eq!(
-            with_pkexec(commands),
-            vec![vec![
-                "pkexec".to_string(),
-                "ls".to_string(),
-                "-l".to_string()
-            ]]
-        );
+        let elevated = with_pkexec(commands);
+        assert_eq!(elevated.len(), 1);
+        if cfg!(target_os = "linux") {
+            assert_eq!(elevated[0], ["pkexec", "ls", "-l"]);
+        }
     }
 }

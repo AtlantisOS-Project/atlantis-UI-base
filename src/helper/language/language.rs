@@ -52,6 +52,7 @@
 //! println!("{}", gettext!("Welcome"));
 //! ```
 
+use crate::helper::platform::dirs::{AppDirs, DataDirs};
 use gettextrs::{
     LocaleCategory, bind_textdomain_codeset, bindtextdomain, dgettext, setlocale, textdomain,
 };
@@ -164,36 +165,26 @@ fn locale_dir_candidates(default_dir: &str, var: EnvLookup) -> Vec<PathBuf> {
         }
     };
     let default_path = Path::new(default_dir);
+    let places = DataDirs::from_lookup(var);
 
     // Snap and AppImage mount the program below a root that is only known at run time;
     // an absolute default_dir such as /usr/share/locale lives below that root there
-    for root_var in ["SNAP", "APPDIR"] {
-        if let Some(root) = var(root_var).map(PathBuf::from) {
-            if !default_dir.is_empty() {
-                push(rebase(&root, default_path));
-            }
-            push(root.join("usr/share/locale"));
-            push(root.join("share/locale"));
+    for root in places.app_roots() {
+        if !default_dir.is_empty() {
+            push(rebase(root, default_path));
         }
+        push(root.join("usr/share/locale"));
+        push(root.join("share/locale"));
     }
 
     if !default_dir.is_empty() {
         push(default_path.to_path_buf());
     }
-    if var("FLATPAK_ID").is_some() {
+    if places.is_flatpak() {
         push(PathBuf::from("/app/share/locale"));
     }
     push(PathBuf::from("/usr/share/locale"));
-
-    let data_dirs = var("XDG_DATA_DIRS")
-        .map(|list| env::split_paths(&list).collect::<Vec<_>>())
-        .unwrap_or_else(|| {
-            vec![
-                PathBuf::from("/usr/local/share"),
-                PathBuf::from("/usr/share"),
-            ]
-        });
-    for data_dir in data_dirs.into_iter().filter(|dir| dir.is_absolute()) {
+    for data_dir in places.system_dirs() {
         push(data_dir.join("locale"));
     }
 
@@ -239,7 +230,7 @@ fn install_embedded_catalogs() -> Option<PathBuf> {
         return None;
     }
 
-    let cache = directories::ProjectDirs::from("", "", LIB_DOMAIN)?;
+    let cache = AppDirs::new(LIB_DOMAIN)?;
     let root = cache
         .cache_dir()
         .join(format!("locale-{}", env!("CARGO_PKG_VERSION")));

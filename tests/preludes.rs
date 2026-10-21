@@ -27,12 +27,20 @@ use atlbase::prelude::{
 // the building blocks for programs with many pages
 #[cfg(feature = "archive")]
 use atlbase::prelude::{ArchiveFormat, decompress, decompress_file, detect_format};
+// the platform layer
 use atlbase::prelude::{
-    CliOptions, CliRequest, SystemInfo, apply_debug_options, clear_directory_except, command_line,
-    command_output_timeout, cpu_model, current_environment, debug_mode, fallback_language,
-    gpu_model, language_code, move_file_into, os_release_value, package_version,
-    read_common_options, remove_dir_all_if_exists, require_dir_name, running_in_wsl,
-    set_debug_mode, shell_line, version_text,
+    APT_SOURCES_DIR, AppDirs, Arch, DataDirs, Feature, Os, PackageManager, Target, critical_paths,
+    documents_dir, elevation_command, elevation_command_for, find_program, home_dir, host_command,
+    host_command_line, in_sandbox, init_file_logging, init_logging, is_executable, is_mount_point,
+    journal_follow_command, journal_follow_command_for, package_bin_dirs, program_file_names,
+    program_path, protected_dirs, register_tool_dir, standard_home_folders, supports,
+};
+use atlbase::prelude::{
+    CliOptions, CliRequest, CommandResult as ChainResult, SystemInfo, apply_debug_options,
+    clear_directory_except, command_line, command_output_timeout, cpu_model, current_environment,
+    debug_mode, fallback_language, gpu_model, language_code, move_file_into, os_release_value,
+    package_version, read_common_options, remove_dir_all_if_exists, require_dir_name,
+    run_command_chain, running_in_wsl, set_debug_mode, shell_line, version_text,
 };
 use atlbase::ui_prelude::{
     CommandResult, GuideView, ImageSource, Step, block_widget, command_pkexec_progressbar,
@@ -51,8 +59,8 @@ use atlbase::ui_prelude::{
     StackWindow, StatusRow, TaskOutcome, create_button_grid, create_clamped_scrolling_page,
     create_combo_row, create_heading, create_page_container, create_pill_button, create_rows_box,
     create_scrolling_page, create_switch_row, create_text_label, ensure_app_icon,
-    on_selection_change, run_background, selected_index, show_confirm_dialog, show_stack_page,
-    show_work_dialog, task_error_text,
+    on_selection_change, run_background, selected_index, show_chooser, show_confirm_dialog,
+    show_files_chooser, show_stack_page, show_work_dialog, task_error_text,
 };
 
 #[test]

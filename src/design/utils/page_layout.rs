@@ -8,6 +8,7 @@
 //! The parts every page of a stack is made of: a centered container, a scrolling list with a
 //! button at the bottom, headings, text and pill buttons.
 
+use crate::design::utils::create_special_button::pill_content_button;
 use adw::prelude::*;
 use gtk4::{Align, Box as GtkBox, Button, Label, Orientation, PolicyType, ScrolledWindow, pango};
 
@@ -100,18 +101,7 @@ pub fn create_pill_button(
     suggested: bool,
     on_click: impl Fn(&Button) + 'static,
 ) -> Button {
-    let content = adw::ButtonContent::builder()
-        .icon_name(icon)
-        .label(label)
-        .build();
-    let button = Button::builder()
-        .child(&content)
-        .halign(Align::Center)
-        .css_classes(["pill"])
-        .build();
-    if suggested {
-        button.add_css_class("suggested-action");
-    }
+    let button = pill_content_button(Some(icon), label, suggested);
     button.connect_clicked(on_click);
     button
 }

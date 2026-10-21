@@ -40,11 +40,23 @@ use gtk4::Widget;
 /// });
 /// ```
 pub fn show_alert_dialog(parent: &impl IsA<Widget>, title: &str, body: &str, button_label: &str) {
-    let dialog = AlertDialog::builder().heading(title).body(body).build();
+    present_ok_dialog(parent, title, body, button_label, None);
+}
 
+/// An alert dialog with one suggested button that closes it, and optionally your own widget
+/// below the text; what [`show_alert_dialog`], `show_custom_content_dialog` and
+/// `show_image_dialog` are.
+pub(crate) fn present_ok_dialog(
+    parent: &impl IsA<Widget>,
+    title: &str,
+    body: &str,
+    button_label: &str,
+    extra: Option<&Widget>,
+) {
+    let dialog = AlertDialog::builder().heading(title).body(body).build();
+    dialog.set_extra_child(extra);
     dialog.add_response("ok", button_label);
     dialog.set_response_appearance("ok", ResponseAppearance::Suggested);
     dialog.set_close_response("ok");
-
     dialog.present(Some(parent));
 }

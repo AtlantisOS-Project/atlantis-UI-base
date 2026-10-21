@@ -1,19 +1,23 @@
-# Allrounder .gitignore
+# .gitignore of atlbase
+
 #
-# General
-# 
-# backup, tmp files
+# Backups, temporary files, logs
 #
 
 *~
 *.swp
 *.swo
 *.bak
+*.orig
+*.rej
 *.tmp
 *.log
+*.pid
+*.pid.lock
+*.seed
 
 #
-# systemfiles
+# System files
 #
 
 .DS_Store
@@ -21,12 +25,25 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# 
-# build files /object files
-# 
-# C/C++ / Java / Go / Rust 
+#
+# Rust
+#
+# Cargo.lock is not committed: atlbase is a library, so the program that uses it decides which
+# versions of the crates are used.
 #
 
+/target/
+/vendor/
+Cargo.lock
+
+#
+# Build results
+#
+
+/build/
+/dist/
+/out/
+/po/*.mo
 *.o
 *.obj
 *.so
@@ -34,32 +51,14 @@ desktop.ini
 *.dll
 *.exe
 *.out
-*.class
-*.jar
-/target
-vendor/
-/vendor
 
 #
-# build direcotries
-#
-
-/build/
-/bin/
-/dist/
-/target/
-/out/
-
-# 
-# packagemanager
-# 
 # Python
+#
 
 __pycache__/
 *.py[cod]
 *.egg-info/
-*.egg
-*.whl
 
 #
 # Node / JavaScript
@@ -71,41 +70,11 @@ yarn-error.log
 pnpm-lock.yaml
 
 #
-# Ruby
+# IDEs and editors
 #
-
-*.gem
-.bundle/
-
-#
-# Java
-#
-
-*.war
-*.ear
-
-#
-# Rust
-#
-
-Cargo.lock
-target/
-
-# 
-# IDEs / Editor
-# 
 
 .vscode/
 .idea/
 *.iml
 *.sublime-workspace
 *.sublime-project
-
-# 
-# Logs / Runtime
-# 
-
-*.log
-*.pid
-*.seed
-*.pid.lock

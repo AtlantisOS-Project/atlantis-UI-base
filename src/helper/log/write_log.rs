@@ -5,7 +5,8 @@
 //
 // License: GNU GENERAL PUBLIC LICENSE Version 3
 
-//! System-wide logging via the syslog service.
+//! System-wide logging via the syslog service (on Unix; Windows logs to a file, see
+//! [`init_logging`](crate::helper::platform::logging::init_logging)).
 //!
 //! The module implements a logger for the [`log`] crate that forwards the messages to the
 //! Unix syslog daemon. That makes centralized error handling and monitoring possible; on
@@ -18,12 +19,17 @@
 //! reachable; the messages are dropped silently and the application keeps running. Debian,
 //! rpm, Snap and AppImage packages can use it without changes.
 
+#[cfg(unix)]
 use log::{Level, LevelFilter, Metadata, Record};
+#[cfg(unix)]
 use std::process;
+#[cfg(unix)]
 use std::sync::Mutex;
+#[cfg(unix)]
 use syslog::{Facility, Formatter3164, Logger, LoggerBackend};
 
 /// Forwards `log` records to syslog.
+#[cfg(unix)]
 struct SyslogLogger {
     formatter: Formatter3164,
     /// The connection is opened with the first message and reused; it is dropped after a
@@ -32,6 +38,7 @@ struct SyslogLogger {
     writer: Mutex<Option<Logger<LoggerBackend, Formatter3164>>>,
 }
 
+#[cfg(unix)]
 impl log::Log for SyslogLogger {
     /// All levels up to and including `Debug` are logged.
     fn enabled(&self, metadata: &Metadata) -> bool {
@@ -90,6 +97,7 @@ impl log::Log for SyslogLogger {
 /// log::info!("UI successfully started");
 /// log::error!("Critical error found!");
 /// ```
+#[cfg(unix)]
 pub fn init_syslog(app_name: &str) -> Result<(), log::SetLoggerError> {
     let logger = SyslogLogger {
         formatter: Formatter3164 {
@@ -102,4 +110,13 @@ pub fn init_syslog(app_name: &str) -> Result<(), log::SetLoggerError> {
     };
 
     log::set_boxed_logger(Box::new(logger)).map(|_| log::set_max_level(LevelFilter::Debug))
+}
+
+/// On systems without syslog (Windows) the messages go to the log file of the application
+/// ([`AppDirs::log_file`](crate::helper::platform::dirs::AppDirs::log_file)); see
+/// [`init_logging`](crate::helper::platform::logging::init_logging), which picks the right
+/// destination for every system.
+#[cfg(not(unix))]
+pub fn init_syslog(app_name: &str) -> Result<(), log::SetLoggerError> {
+    crate::helper::platform::logging::init_logging(app_name)
 }

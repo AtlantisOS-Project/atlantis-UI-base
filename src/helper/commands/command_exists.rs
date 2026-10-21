@@ -7,27 +7,20 @@
 
 //! Checks whether a command is installed.
 //!
-//! This module determines whether a program is installed and reachable through the
-//! `PATH` environment variable.
+//! This module determines whether a program is installed and reachable: through the folders
+//! of the application and `PATH` (see [`find_program`]).
 
-use std::env;
-use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
-
-/// Returns `true` if `path` is a regular file with at least one execute bit set.
-fn is_executable_file(path: &Path) -> bool {
-    path.metadata()
-        .map(|meta| meta.is_file() && meta.permissions().mode() & 0o111 != 0)
-        .unwrap_or(false)
-}
+use crate::helper::platform::program::find_program;
 
 /// Checks whether a command is available on the system.
 ///
 /// The function distinguishes between two cases:
 ///
 /// 1. **Absolute path:** the file at that location must exist and be executable.
-/// 2. **Command name:** (for example `ls` or `git`) every directory listed in `PATH` is
-///    searched for an executable file with that name.
+/// 2. **Command name:** (for example `ls` or `git`) the folders registered with
+///    [`register_tool_dir`](crate::helper::platform::program::register_tool_dir) and every
+///    directory listed in `PATH` are searched for an executable file with that name (on
+///    Windows with the ending `.exe`, `.cmd`, … added).
 ///
 /// # Arguments
 ///
@@ -46,12 +39,5 @@ fn is_executable_file(path: &Path) -> bool {
 /// assert!(!command_exists_native("this-command-does-not-exist"));
 /// ```
 pub fn command_exists_native(command: &str) -> bool {
-    let path = Path::new(command);
-    if path.is_absolute() {
-        return is_executable_file(path);
-    }
-
-    env::var_os("PATH")
-        .map(|paths| env::split_paths(&paths).any(|dir| is_executable_file(&dir.join(command))))
-        .unwrap_or(false)
+    find_program(command).is_some()
 }

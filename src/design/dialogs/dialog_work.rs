@@ -7,13 +7,14 @@
 
 //! A dialog with a spinner while a closure works in the background.
 
+use crate::design::dialogs::dialogs_spinner::{IndicatorType, run_with_progress};
 use crate::design::dialogs::standard_dialogs::{show_error_dialog, show_success_dialog};
-use crate::design::utils::background::run_background;
-use adw::prelude::*;
+use crate::gettext;
 use gtk4::Widget;
+use gtk4::prelude::*;
 
-/// Shows a dialog with a spinner while `work` runs in a background thread, then closes it
-/// and tells the user the result: a success dialog with the text of `Ok`, an error dialog
+/// Shows a progress dialog with a spinner while `work` runs in a background thread, then closes
+/// it and tells the user the result: a success dialog with the text of `Ok`, an error dialog
 /// with the text of `Err`.
 ///
 /// Use it for work that is not a command line (copying files, unpacking an archive). For
@@ -38,22 +39,17 @@ pub fn show_work_dialog(
     message: &str,
     work: impl FnOnce() -> Result<String, String> + Send + 'static,
 ) {
-    let dialog = adw::AlertDialog::builder()
-        .heading(title)
-        .body(message)
-        .can_close(false)
-        .build();
-    let spinner = adw::Spinner::new();
-    spinner.set_size_request(64, 64);
-    dialog.set_extra_child(Some(&spinner));
-    dialog.present(Some(parent));
-
-    let parent: Widget = parent.upcast_ref::<Widget>().clone();
-    run_background(work, move |result| {
-        dialog.force_close();
-        match result {
-            Ok(text) => show_success_dialog(&parent, &text),
-            Err(text) => show_error_dialog(&parent, &text),
-        }
-    });
+    let target: Widget = parent.upcast_ref::<Widget>().clone();
+    run_with_progress(
+        parent,
+        title,
+        message,
+        IndicatorType::Spinner,
+        work,
+        move |result| match result {
+            Some(Ok(text)) => show_success_dialog(&target, &text),
+            Some(Err(text)) => show_error_dialog(&target, &text),
+            None => show_error_dialog(&target, &gettext!("The work ended unexpectedly.")),
+        },
+    );
 }

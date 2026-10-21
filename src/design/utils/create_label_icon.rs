@@ -61,14 +61,20 @@ pub fn create_label_icon(icon_name: &str, label_text: &str) -> GtkBox {
 /// vbox.append(&centered_info);
 /// ```
 pub fn create_label_icon_position(icon_name: &str, label_text: &str, alignment: Align) -> GtkBox {
+    icon_label_box(&[icon_name], label_text, alignment)
+}
+
+/// A horizontal box with icons and a label; what the labels and the buttons with an icon are
+/// made of.
+pub(crate) fn icon_label_box(icons: &[&str], label_text: &str, alignment: Align) -> GtkBox {
     let box_container = GtkBox::builder()
         .orientation(Orientation::Horizontal)
         .spacing(5)
         .halign(alignment)
         .build();
-
-    box_container.append(&Image::from_icon_name(icon_name));
+    for icon in icons {
+        box_container.append(&Image::from_icon_name(icon));
+    }
     box_container.append(&Label::new(Some(label_text)));
-
     box_container
 }

@@ -38,7 +38,7 @@ pub struct AboutInfo {
     pub app_icon: String,
     /// A file with the icon (SVG or PNG) for when the icon is not installed in the icon theme,
     /// for example in the source tree while developing. See
-    /// [`ensure_app_icon`](crate::design::theme::app_icon::ensure_app_icon) for the places
+    /// [`ensure_app_icon`] for the places
     /// where the icon is looked for first.
     pub icon_file: Option<PathBuf>,
     /// The display name of the application.

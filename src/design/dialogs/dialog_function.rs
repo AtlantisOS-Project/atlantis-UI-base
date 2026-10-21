@@ -10,11 +10,9 @@
 //! The module runs a time-consuming function in a background thread while a dialog that
 //! cannot be closed shows a progress indicator.
 
-use super::dialogs_spinner::{IndicatorType, build_progress_dialog, close_dialog_when_done};
+use super::dialogs_spinner::{IndicatorType, run_with_progress};
 use adw::prelude::*;
 use gtk4::Widget;
-use std::sync::mpsc;
-use std::thread;
 
 /// Shows a modal dialog while a Rust function runs in the background.
 ///
@@ -76,14 +74,5 @@ pub fn show_task_dialog<F>(
 ) where
     F: FnOnce() -> bool + Send + 'static,
 {
-    let dialog = build_progress_dialog(title, message, indicator);
-
-    let (tx, rx) = mpsc::channel::<bool>();
-    thread::spawn(move || {
-        let _ = tx.send(task());
-    });
-
-    close_dialog_when_done(&dialog, rx, |_success| {});
-
-    dialog.present(Some(parent));
+    run_with_progress(parent, title, message, indicator, task, |_success| {});
 }

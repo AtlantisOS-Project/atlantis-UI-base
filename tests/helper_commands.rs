@@ -136,3 +136,41 @@ fn output_with_a_time_limit() {
     let text = command_output_timeout(&big, Duration::from_secs(10)).unwrap();
     assert_eq!(text.len(), 300_000);
 }
+
+#[test]
+fn a_chain_of_commands_stops_at_the_first_failure() {
+    let ok = run_command_chain(&[
+        command_line("echo", ["one"]),
+        Vec::new(), // an empty command is skipped
+        command_line("sh", ["-c", "echo two; echo oops >&2"]),
+    ])
+    .unwrap();
+    assert_eq!(ok.len(), 2);
+    assert_eq!(ok[0].command, "echo one");
+    assert_eq!(ok[0].stdout, "one\n");
+    assert_eq!(ok[1].stderr, "oops\n");
+    assert!(ok.iter().all(|result| result.success));
+
+    // an exit code other than 0: everything up to the failed command, nothing after it
+    let failed = run_command_chain(&[
+        command_line("echo", ["before"]),
+        command_line("sh", ["-c", "echo bad >&2; exit 3"]),
+        command_line("echo", ["after"]),
+    ])
+    .unwrap_err();
+    assert_eq!(failed.len(), 2);
+    assert!(failed[0].success && !failed[1].success);
+    assert_eq!(failed[1].stderr, "bad\n");
+
+    // a program that does not exist
+    let missing = run_command_chain(&[command_line("no-such-program-xyz", ["-x"])]).unwrap_err();
+    assert_eq!(missing.len(), 1);
+    assert!(!missing[0].success && missing[0].stdout.is_empty());
+    assert!(
+        missing[0].stderr.starts_with("Failed to execute process"),
+        "{}",
+        missing[0].stderr
+    );
+
+    assert_eq!(run_command_chain(&[]).unwrap(), []);
+}

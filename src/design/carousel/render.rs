@@ -21,6 +21,7 @@ use super::model::{
 };
 use super::style::ensure_default_style;
 use super::view::GuideView;
+use crate::design::utils::create_special_button::pill_content_button;
 
 /// Renders a page (header and all blocks) as a vertical box.
 ///
@@ -262,15 +263,7 @@ fn code(text: &str, labels: &Labels) -> gtk4::Widget {
 /// A pill button. A click is passed on to the [`GuideView`] the button lives in (nothing
 /// happens if the block is used without a `GuideView`).
 fn action_button(button: &ActionButton) -> gtk4::Widget {
-    let content = adw::ButtonContent::builder().label(&button.label).build();
-    if let Some(icon) = &button.icon {
-        content.set_icon_name(icon);
-    }
-    let widget = gtk4::Button::builder()
-        .child(&content)
-        .halign(gtk4::Align::Center)
-        .css_classes(["pill"])
-        .build();
+    let widget = pill_content_button(button.icon.as_deref(), &button.label, false);
 
     let action = button.action.clone();
     widget.connect_clicked(move |widget| {

@@ -16,97 +16,30 @@
 //! ```text
 //!  Main (UI) thread                       Worker thread
 //! ┌──────────────────────────┐          ┌──────────────────────────┐
-//! │ show_spinner_dialog_…    │          │ run_commands_thread      │
+//! │ show_spinner_dialog_…    │          │ run_command_chain        │
 //! │ creates the dialog       │          │                          │
 //! │ starts the thread ───────┼─────────►│ for each command:        │
 //! │                          │          │   run, collect output    │
-//! │ glib timeout polls the   │◄─────────┼── send the results       │
-//! │ channel (mpsc)           │          │                          │
+//! │ the main loop gets the   │◄─────────┼── the results            │
+//! │ results (run_background) │          │                          │
 //! └──────────────────────────┘          └──────────────────────────┘
 //! ```
 //!
-//! When all commands are done — or as soon as one fails — the results are sent to the main
+//! When all commands are done — or as soon as one fails — the results arrive in the main
 //! thread, the dialog closes and the callback is called.
 
-use super::dialogs_spinner::{IndicatorType, build_progress_dialog, close_dialog_when_done};
+use super::dialogs_spinner::{IndicatorType, run_with_progress};
+use crate::helper::commands::command_chain::run_command_chain;
 use adw::prelude::*;
 use gtk4::Widget;
-use std::process::Command;
-use std::sync::mpsc;
-use std::thread;
 
-/// The outcome of one executed command.
-///
-/// The worker thread sends a list of these to the callback of
-/// [`show_spinner_dialog_return_output`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommandResult {
-    /// The command line with all arguments, joined by spaces.
-    ///
-    /// For example `"fastboot flash bootloader boot.img"`.
-    pub command: String,
-
-    /// What the command wrote to `stdout` (invalid UTF-8 is replaced).
-    pub stdout: String,
-
-    /// What the command wrote to `stderr`, or the reason why it could not be started.
-    pub stderr: String,
-
-    /// `true` if the command ended with the exit code 0.
-    pub success: bool,
-}
+pub use crate::helper::commands::command_chain::CommandResult;
 
 /// The results of a chain of commands: `Ok` if all succeeded, `Err` up to the first failure.
 type ChainResult = Result<Vec<CommandResult>, Vec<CommandResult>>;
 
 /// The callback of [`show_spinner_dialog_return_output`].
 type Callback = Box<dyn FnOnce(ChainResult) + 'static>;
-
-/// Runs the commands one after another in a background thread.
-///
-/// The chain stops at the first command that fails or cannot be started; the later commands
-/// are not run, and everything collected so far is sent as `Err`.
-fn run_commands_thread(commands: Vec<Vec<String>>, tx: mpsc::Sender<ChainResult>) {
-    thread::spawn(move || {
-        let mut results = Vec::new();
-
-        for cmd_args in commands {
-            let Some((program, args)) = cmd_args.split_first() else {
-                continue; // empty command
-            };
-            let command = cmd_args.join(" ");
-
-            match Command::new(program).args(args).output() {
-                Ok(output) => {
-                    let success = output.status.success();
-                    results.push(CommandResult {
-                        command,
-                        stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
-                        stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
-                        success,
-                    });
-
-                    if !success {
-                        let _ = tx.send(Err(results));
-                        return;
-                    }
-                }
-                Err(e) => {
-                    results.push(CommandResult {
-                        command,
-                        stdout: String::new(),
-                        stderr: format!("Failed to execute process: {}", e),
-                        success: false,
-                    });
-                    let _ = tx.send(Err(results));
-                    return;
-                }
-            }
-        }
-
-        let _ = tx.send(Ok(results));
-    });
-}
 
 /// Shows a modal dialog while a chain of commands runs, and returns the result of each one.
 ///
@@ -166,23 +99,23 @@ pub fn show_spinner_dialog_return_output(
     indicator: IndicatorType,
     on_complete: Option<Callback>,
 ) {
-    let dialog = build_progress_dialog(title, message, indicator);
-
-    let (tx, rx) = mpsc::channel();
-    run_commands_thread(commands, tx);
-
-    close_dialog_when_done(&dialog, rx, move |result| {
-        if let Some(callback) = on_complete {
-            callback(result.unwrap_or_else(|| {
-                Err(vec![CommandResult {
-                    command: "Unknown".to_string(),
-                    stdout: String::new(),
-                    stderr: "Thread disconnected unexpectedly.".to_string(),
-                    success: false,
-                }])
-            }));
-        }
-    });
-
-    dialog.present(Some(parent));
+    run_with_progress(
+        parent,
+        title,
+        message,
+        indicator,
+        move || run_command_chain(&commands),
+        move |result| {
+            if let Some(callback) = on_complete {
+                callback(result.unwrap_or_else(|| {
+                    Err(vec![CommandResult {
+                        command: "Unknown".to_string(),
+                        stdout: String::new(),
+                        stderr: "Thread disconnected unexpectedly.".to_string(),
+                        success: false,
+                    }])
+                }));
+            }
+        },
+    );
 }

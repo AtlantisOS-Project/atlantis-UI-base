@@ -5,15 +5,18 @@
 //
 // License: GNU GENERAL PUBLIC LICENSE Version 3
 
-//! Direct execution of privileged commands via `pkexec`.
+//! Direct execution of privileged commands.
 //!
-//! This module provides a lightweight interface for running a command with root
-//! privileges and reporting its output. For a variant with a progress dialog see
+//! This module provides a lightweight interface for running a command with administrator
+//! rights and reporting its output: `pkexec` on Linux, and the mechanism of the other systems
+//! ([`elevation_command`]). For a variant
+//! with a progress dialog see
 //! [`command_pkexec_spinner`](crate::design::utils::command_pkexec_ui::command_pkexec_spinner).
 
-use std::process::Command;
+use crate::helper::platform::elevate::elevation_command;
+use crate::helper::platform::program::host_command_line;
 
-/// Executes a command with elevated privileges via `pkexec` and waits for it to finish.
+/// Executes a command with elevated privileges (`pkexec` on Linux) and waits for it to finish.
 ///
 /// The function blocks the current thread until the command (and the Polkit authentication)
 /// is complete. It suits command line tools and background threads; in a GTK application use
@@ -40,7 +43,12 @@ use std::process::Command;
 /// command_pkexec(&["ls", "/root"]);
 /// ```
 pub fn command_pkexec(args: &[&str]) {
-    let output = Command::new("pkexec").args(args).output();
+    let command: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
+    let Some(elevated) = elevation_command(&command) else {
+        eprintln!("[ERROR] No command to run with elevated privileges.");
+        return;
+    };
+    let output = host_command_line(&elevated).output();
 
     match output {
         Ok(res) if res.status.success() => {
@@ -50,12 +58,12 @@ pub fn command_pkexec(args: &[&str]) {
         Ok(res) => {
             let stderr = String::from_utf8_lossy(&res.stderr);
             eprintln!(
-                "[ERROR] pkexec failed with status {}: {}",
-                res.status, stderr
+                "[ERROR] {} failed with status {}: {}",
+                elevated[0], res.status, stderr
             );
         }
         Err(e) => {
-            eprintln!("[ERROR] Could not start pkexec: {}", e);
+            eprintln!("[ERROR] Could not start {}: {}", elevated[0], e);
         }
     }
 }

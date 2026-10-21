@@ -7,14 +7,17 @@
 
 //! # AtlBase
 //!
-//! `atlbase` is a collection of building blocks for GTK4 + Libadwaita applications on Linux:
+//! `atlbase` is a collection of building blocks for GTK4 + Libadwaita applications on Linux (with
+//! a [platform layer](helper::platform) that prepares the way to other systems):
 //! dialogs, widget factories, theming, multi-page guides, translations (gettext), logging
 //! and a set of small file system and command helpers.
 //!
 //! The crate has two halves:
 //!
 //! * [`helper`] — everything without a user interface: commands, configuration,
-//!   files, file system, language and logging. Import it with [`prelude`].
+//!   files, file system, language and logging, and the
+//!   [`platform`](helper::platform) layer that maps folders, programs, administrator rights and
+//!   logging to the operating system. Import it with [`prelude`].
 //! * [`design`] — everything with a user interface: dialogs, choosers, theme, widget
 //!   factories and the [`carousel`](design::carousel) guide widget. Import it with
 //!   [`ui_prelude`].
@@ -118,6 +121,7 @@ pub mod prelude {
             fallback_language, read_common_options, set_debug_mode, version_text,
         },
         commands::{
+            command_chain::{CommandResult, run_command_chain},
             command_exists::command_exists_native,
             command_line::{command_line, command_output_timeout, shell_line},
             command_pkexec::command_pkexec,
@@ -159,6 +163,24 @@ pub mod prelude {
             LIB_DOMAIN, get_current_domain, get_language_dir, init_language, set_language_dir,
         },
         log::write_log::init_syslog,
+        platform::{
+            dirs::{
+                AppDirs, DataDirs, critical_paths, documents_dir, home_dir, is_mount_point,
+                protected_dirs, standard_home_folders,
+            },
+            elevate::{elevation_command, elevation_command_for},
+            feature::{Feature, in_sandbox, supports},
+            logging::{
+                init_file_logging, init_logging, journal_follow_command,
+                journal_follow_command_for,
+            },
+            package::{APT_SOURCES_DIR, PackageManager},
+            program::{
+                find_program, host_command, host_command_line, is_executable, package_bin_dirs,
+                program_file_names, program_path, register_tool_dir,
+            },
+            target::{Arch, Os, Target},
+        },
         sysinfo::system_info::{
             SystemInfo, cpu_model, gpu_model, language_code, os_release_value, package_version,
         },
@@ -188,7 +210,11 @@ pub mod ui_prelude {
             ActionButton, Block, Callout, CalloutKind, Guide, GuideView, Image, ImageSource,
             Labels, Page, Step, block_widget, page_widget,
         },
-        chooser::{file_chooser::show_file_chooser, folder_chooser::show_folder_chooser},
+        chooser::{
+            choose::{Pick, show_chooser},
+            file_chooser::{show_file_chooser, show_files_chooser},
+            folder_chooser::show_folder_chooser,
+        },
         dialogs::{
             about_dialog::{AboutInfo, show_about_dialog},
             command_task::{CommandTask, ErrorHint, TaskOutcome, task_error_text},
@@ -208,12 +234,13 @@ pub mod ui_prelude {
             },
         },
         form::{
-            FormDialog, Pick, PickRow, create_combo_row, create_switch_row, on_selection_change,
+            FormDialog, PickRow, create_combo_row, create_switch_row, on_selection_change,
             selected_index,
         },
         theme::{
             app_icon::ensure_app_icon,
             load_adw_provider::{use_adw_provider, use_adw_provider_with_priority},
+            renderer::{Renderer, set_renderer},
         },
         utils::{
             background::run_background,

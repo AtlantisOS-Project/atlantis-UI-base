@@ -11,8 +11,9 @@
 //! shape, accent color) and support icons and alignment. All buttons get the CSS classes
 //! `pill` and `suggested-action`.
 
+use super::create_label_icon::icon_label_box;
 use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Button, Image, Label, Orientation};
+use gtk4::{Align, Button, Widget};
 
 /// Creates a pill button with a text and a click handler.
 ///
@@ -34,8 +35,7 @@ where
     F: Fn(&Button) + 'static,
 {
     let button = Button::with_label(label);
-    button.add_css_class("pill");
-    button.add_css_class("suggested-action");
+    style_pill(&button, true);
     button.connect_clicked(callback);
     button
 }
@@ -85,19 +85,7 @@ where
 /// button.connect_clicked(|_| println!("next"));
 /// ```
 pub fn create_button_icon_no_callback(icon_name: &str, label_text: &str) -> Button {
-    let button = Button::new();
-    button.add_css_class("pill");
-    button.add_css_class("suggested-action");
-
-    let content_box = GtkBox::builder()
-        .orientation(Orientation::Horizontal)
-        .spacing(5)
-        .build();
-    content_box.append(&Image::from_icon_name(icon_name));
-    content_box.append(&Label::new(Some(label_text)));
-
-    button.set_child(Some(&content_box));
-    button
+    pill_button(&icon_label_box(&[icon_name], label_text, Align::Fill), true)
 }
 
 /// Creates a pill button with up to two icons, a text and a click handler.
@@ -133,22 +121,8 @@ pub fn create_button_two_icon<F>(
 where
     F: Fn(&Button) + 'static,
 {
-    let button = Button::new();
-    button.add_css_class("pill");
-    button.add_css_class("suggested-action");
-
-    let content_box = GtkBox::builder()
-        .orientation(Orientation::Horizontal)
-        .spacing(5)
-        .build();
-
-    if let Some(icon) = first_icon {
-        content_box.append(&Image::from_icon_name(icon));
-    }
-    content_box.append(&Image::from_icon_name(second_icon));
-    content_box.append(&Label::new(Some(label_text)));
-
-    button.set_child(Some(&content_box));
+    let icons: Vec<&str> = first_icon.into_iter().chain([second_icon]).collect();
+    let button = pill_button(&icon_label_box(&icons, label_text, Align::Fill), true);
     button.connect_clicked(callback);
     button
 }
@@ -195,5 +169,32 @@ where
     }
 
     button.connect_clicked(callback);
+    button
+}
+
+/// Gives a button the `pill` shape; `suggested` also gives it the accent color.
+pub(crate) fn style_pill(button: &Button, suggested: bool) {
+    button.add_css_class("pill");
+    if suggested {
+        button.add_css_class("suggested-action");
+    }
+}
+
+/// A pill button around `child`.
+pub(crate) fn pill_button(child: &impl IsA<Widget>, suggested: bool) -> Button {
+    let button = Button::new();
+    style_pill(&button, suggested);
+    button.set_child(Some(child));
+    button
+}
+
+/// A centered pill button of Libadwaita ([`adw::ButtonContent`]) with an optional icon.
+pub(crate) fn pill_content_button(icon: Option<&str>, label: &str, suggested: bool) -> Button {
+    let content = adw::ButtonContent::builder().label(label).build();
+    if let Some(icon) = icon {
+        content.set_icon_name(icon);
+    }
+    let button = pill_button(&content, suggested);
+    button.set_halign(Align::Center);
     button
 }

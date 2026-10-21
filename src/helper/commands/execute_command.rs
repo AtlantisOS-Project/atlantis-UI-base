@@ -7,8 +7,9 @@
 
 //! Functions to run a command and to capture its output.
 
+use crate::helper::platform::program::host_command;
 use std::io;
-use std::process::{Command, ExitStatus, Stdio};
+use std::process::{ExitStatus, Stdio};
 
 /// Splits `args` into the program and its arguments.
 fn split_command<'a>(args: &'a [&'a str]) -> io::Result<(&'a str, &'a [&'a str])> {
@@ -41,7 +42,7 @@ fn split_command<'a>(args: &'a [&'a str]) -> io::Result<(&'a str, &'a [&'a str])
 /// ```
 pub fn run_command(args: &[&str]) -> io::Result<ExitStatus> {
     let (program, rest) = split_command(args)?;
-    Command::new(program).args(rest).spawn()?.wait()
+    host_command(program).args(rest).spawn()?.wait()
 }
 
 /// Runs a command and captures what it writes to `stdout`.
@@ -67,7 +68,7 @@ pub fn run_command(args: &[&str]) -> io::Result<ExitStatus> {
 /// ```
 pub fn capture_command_output(args: &[&str]) -> io::Result<String> {
     let (program, rest) = split_command(args)?;
-    let output = Command::new(program)
+    let output = host_command(program)
         .args(rest)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

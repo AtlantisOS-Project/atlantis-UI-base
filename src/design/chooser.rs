@@ -17,10 +17,13 @@
 //! Note that inside a Flatpak the returned path may point to the document portal
 //! (`/run/user/<uid>/doc/…`), which is valid for the lifetime of the application.
 
+pub mod choose;
+
 pub mod file_chooser;
 
 pub mod folder_chooser;
 
 // Re-exports
+pub use choose::*;
 pub use file_chooser::*;
 pub use folder_chooser::*;

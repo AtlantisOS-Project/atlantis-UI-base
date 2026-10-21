@@ -1,8 +1,6 @@
 // open_terminal_desktop.rs
-//
 // (C) Copyright 2026 AtlantisOS Project
 // by @NachtsternBuild
-//
 // License: GNU GENERAL PUBLIC LICENSE Version 3
 
 //! Opens a terminal emulator that fits the current desktop environment.
@@ -10,8 +8,9 @@
 //! The module detects the operating system and desktop (for example GNOME, KDE or WSL),
 //! selects an installed terminal emulator and runs a command in it.
 
-use crate::helper::commands::command_exists::command_exists_native;
-use std::path::Path;
+use crate::helper::configuration::application_environment::running_in_wsl;
+use crate::helper::platform::program::{find_program, program_path};
+use crate::helper::platform::target::Os;
 use std::process::Command;
 
 /// Opens a new terminal window and executes a command in it.
@@ -20,7 +19,10 @@ use std::process::Command;
 /// command has finished, the terminal stays open (`exec bash`).
 ///
 /// An empty `function_command` does nothing. Errors (no terminal installed, program cannot
-/// be started) are printed to `stderr`; the function never panics.
+/// be started) are printed to `stderr`; the function never panics. Ask
+/// [`supports`](crate::helper::platform::feature::supports) with
+/// [`Feature::HostTerminal`](crate::helper::platform::feature::Feature::HostTerminal) before
+/// offering a button for it.
 ///
 /// # Supported environments
 ///
@@ -53,36 +55,46 @@ pub fn open_terminal_by_desktop(function_command: &str) {
         return;
     }
 
-    // WSL: the Windows drives are mounted below /mnt
-    if Path::new("/mnt/c/Users").exists() {
-        let wsl_cmd = format!(
-            "cmd.exe /C start cmd.exe /K \"wsl.exe {}\"",
-            function_command
+    let line = if running_in_wsl() {
+        Some(vec![
+            "sh".to_string(),
+            "-c".to_string(),
+            format!(
+                "cmd.exe /C start cmd.exe /K \"wsl.exe {}\"",
+                function_command
+            ),
+        ])
+    } else {
+        let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+        let line = terminal_command(
+            Os::current(),
+            &desktop,
+            &|program| find_program(program).is_some(),
+            function_command,
         );
-        let _ = Command::new("sh").arg("-c").arg(wsl_cmd).spawn();
+        if line.is_none() {
+            eprintln!(
+                "[ERROR] No supported terminal found for desktop: {}",
+                desktop
+            );
+        }
+        line
+    };
+
+    let Some(line) = line else {
         return;
+    };
+    // a terminal is meant to show a window, so this is not `host_command`
+    if let Err(error) = Command::new(program_path(&line[0]))
+        .args(&line[1..])
+        .spawn()
+    {
+        eprintln!("[ERROR] Could not start {}: {}", line[0], error);
     }
-
-    spawn_terminal(function_command);
-}
-
-#[cfg(target_os = "windows")]
-fn spawn_terminal(func_cmd: &str) {
-    let cmd = format!("start cmd.exe /K \"{}\"", func_cmd);
-    let _ = Command::new("cmd").arg("/C").arg(cmd).spawn();
-}
-
-#[cfg(target_os = "macos")]
-fn spawn_terminal(func_cmd: &str) {
-    // escape the characters that have a meaning inside an AppleScript string
-    let escaped = func_cmd.replace('\\', "\\\\").replace('"', "\\\"");
-    let script = format!("tell application \"Terminal\" to do script \"{}\"", escaped);
-    let _ = Command::new("osascript").arg("-e").arg(script).spawn();
 }
 
 /// Terminal emulators with the option that introduces the command to run.
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
-const TERMINALS: &[(&str, &str)] = &[
+pub(crate) const TERMINALS: &[(&str, &str)] = &[
     ("gnome-terminal", "--"),
     ("konsole", "-e"),
     ("lxterminal", "-e"),
@@ -93,7 +105,6 @@ const TERMINALS: &[(&str, &str)] = &[
 ];
 
 /// Returns the terminal that belongs to the desktop named in `XDG_CURRENT_DESKTOP`.
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
 fn preferred_terminal(desktop: &str) -> Option<&'static str> {
     let desktop = desktop.to_uppercase();
     if desktop.contains("MATE") {
@@ -111,45 +122,57 @@ fn preferred_terminal(desktop: &str) -> Option<&'static str> {
     }
 }
 
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
-fn spawn_terminal(func_cmd: &str) {
-    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-    let preferred = preferred_terminal(&desktop);
-
-    // the terminal of the desktop first, then every other known terminal
-    let mut candidates = TERMINALS
-        .iter()
-        .filter(|(name, _)| Some(*name) == preferred)
-        .chain(
-            TERMINALS
+/// The command line that opens a terminal on `os` and runs `function_command` in it, or `None`
+/// if there is no terminal (`has` tells which programs are installed; `desktop` is
+/// `XDG_CURRENT_DESKTOP`).
+fn terminal_command(
+    os: Os,
+    desktop: &str,
+    has: &dyn Fn(&str) -> bool,
+    function_command: &str,
+) -> Option<Vec<String>> {
+    let words = |line: &[&str]| line.iter().map(|word| word.to_string()).collect::<Vec<_>>();
+    match os {
+        Os::Windows => Some(words(&[
+            "cmd",
+            "/C",
+            &format!("start cmd.exe /K \"{function_command}\""),
+        ])),
+        Os::MacOs => {
+            // escape the characters that have a meaning inside an AppleScript string
+            let escaped = function_command.replace('\\', "\\\\").replace('"', "\\\"");
+            Some(words(&[
+                "osascript",
+                "-e",
+                &format!("tell application \"Terminal\" to do script \"{escaped}\""),
+            ]))
+        }
+        Os::Linux | Os::Other => {
+            // the terminal of the desktop first, then every other known terminal
+            let preferred = preferred_terminal(desktop);
+            let (term, option) = TERMINALS
                 .iter()
-                .filter(|(name, _)| Some(*name) != preferred),
-        );
-
-    let Some((term, option)) = candidates.find(|(name, _)| command_exists_native(name)) else {
-        eprintln!(
-            "[ERROR] No supported terminal found for desktop: {}",
-            desktop
-        );
-        return;
-    };
-
-    let full_cmd = format!("{}; exec bash", func_cmd);
-    let result = Command::new(term)
-        .arg(option)
-        .arg("bash")
-        .arg("-c")
-        .arg(full_cmd)
-        .spawn();
-
-    if let Err(e) = result {
-        eprintln!("[ERROR] Could not start {}: {}", term, e);
+                .filter(|(name, _)| Some(*name) == preferred)
+                .chain(
+                    TERMINALS
+                        .iter()
+                        .filter(|(name, _)| Some(*name) != preferred),
+                )
+                .find(|(name, _)| has(name))?;
+            Some(words(&[
+                term,
+                option,
+                "bash",
+                "-c",
+                &format!("{function_command}; exec bash"),
+            ]))
+        }
     }
 }
 
-#[cfg(all(test, not(any(target_os = "windows", target_os = "macos"))))]
+#[cfg(test)]
 mod tests {
-    use super::preferred_terminal;
+    use super::*;
 
     #[test]
     fn terminal_follows_the_desktop() {
@@ -160,5 +183,36 @@ mod tests {
         assert_eq!(preferred_terminal("KDE"), Some("konsole"));
         assert_eq!(preferred_terminal("LXQt"), Some("lxterminal"));
         assert_eq!(preferred_terminal(""), None);
+    }
+
+    #[test]
+    fn linux_uses_the_terminal_of_the_desktop_or_the_first_installed() {
+        let both = |name: &str| name == "konsole" || name == "xterm";
+        assert_eq!(
+            terminal_command(Os::Linux, "KDE", &both, "ls").unwrap(),
+            ["konsole", "-e", "bash", "-c", "ls; exec bash"]
+        );
+        assert_eq!(
+            terminal_command(Os::Linux, "GNOME", &both, "ls").unwrap()[0],
+            "konsole"
+        );
+        assert_eq!(
+            terminal_command(Os::Linux, "", &|name: &str| name == "xterm", "ls").unwrap()[0],
+            "xterm"
+        );
+        assert!(terminal_command(Os::Linux, "KDE", &|_: &str| false, "ls").is_none());
+    }
+
+    #[test]
+    fn windows_and_macos_have_their_own_terminal() {
+        assert_eq!(
+            terminal_command(Os::Windows, "", &|_: &str| false, "dir").unwrap(),
+            ["cmd", "/C", "start cmd.exe /K \"dir\""]
+        );
+        let mac = terminal_command(Os::MacOs, "", &|_: &str| false, "echo \"a\"").unwrap();
+        assert_eq!(
+            mac[2],
+            "tell application \"Terminal\" to do script \"echo \\\"a\\\"\""
+        );
     }
 }

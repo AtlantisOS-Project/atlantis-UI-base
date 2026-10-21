@@ -17,8 +17,9 @@
 //! [`show_spinner_dialog`]: crate::design::dialogs::dialogs_spinner::show_spinner_dialog
 //! [`CommandTask`]: crate::design::dialogs::command_task::CommandTask
 
+use crate::helper::platform::program::host_command_line;
 use std::io::Read;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -103,8 +104,8 @@ fn drain(mut pipe: impl Read + Send + 'static) -> thread::JoinHandle<String> {
 /// assert_eq!(command_output_timeout(&slow, Duration::from_millis(100)), None);
 /// ```
 pub fn command_output_timeout(command: &[String], limit: Duration) -> Option<String> {
-    let mut child = Command::new(command.first()?)
-        .args(&command[1..])
+    command.first()?;
+    let mut child = host_command_line(command)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

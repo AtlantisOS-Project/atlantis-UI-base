@@ -10,8 +10,8 @@
 //! The module shows pictures in a Libadwaita dialog, for example a preview before a
 //! wallpaper is set.
 
-use adw::prelude::*;
-use adw::{AlertDialog, ResponseAppearance};
+use super::dialog::present_ok_dialog;
+use gtk4::prelude::*;
 use gtk4::{Align, Box as GtkBox, Image, Orientation, ScrolledWindow, Widget};
 use std::path::Path;
 
@@ -94,11 +94,11 @@ pub fn show_image_dialog(
         .build();
     content.append(&scroll);
 
-    let dialog = AlertDialog::builder().heading(title).body(body).build();
-    dialog.set_extra_child(Some(&content));
-    dialog.add_response("ok", button_label);
-    dialog.set_response_appearance("ok", ResponseAppearance::Suggested);
-    dialog.set_close_response("ok");
-
-    dialog.present(Some(parent));
+    present_ok_dialog(
+        parent,
+        title,
+        body,
+        button_label,
+        Some(content.upcast_ref()),
+    );
 }

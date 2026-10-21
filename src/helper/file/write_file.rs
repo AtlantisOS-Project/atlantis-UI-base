@@ -10,7 +10,7 @@
 //! The path is assembled from a base directory (home directory or any other directory) and
 //! a list of subdirectories.
 
-use directories::UserDirs;
+use crate::helper::filesystem::home_dir::home_directory;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -69,12 +69,8 @@ pub fn write_file(
 ) -> io::Result<()> {
     let mut full_path = match base_path {
         Some(path) => path,
-        None => {
-            let user_dirs = UserDirs::new().ok_or_else(|| {
-                io::Error::new(io::ErrorKind::NotFound, "Home directory not found")
-            })?;
-            user_dirs.home_dir().to_path_buf()
-        }
+        None => home_directory()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Home directory not found"))?,
     };
 
     full_path.extend(path_list);

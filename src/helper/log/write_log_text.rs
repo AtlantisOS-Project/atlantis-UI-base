@@ -20,12 +20,14 @@
 //! Flatpak sandbox neither is the case, so the window stays empty; hide the log button
 //! there (see [`get_execution_environment`](crate::helper::configuration::application_environment::get_execution_environment)).
 
+use crate::design::utils::create_label_icon::icon_label_box;
+use crate::design::utils::create_special_button::pill_button;
 use crate::gettext;
+use crate::helper::platform::logging::journal_follow_command;
 use adw::prelude::*;
 use adw::{ApplicationWindow, HeaderBar, ToolbarView};
 use gtk4::{
-    Align, Box as GtkBox, Button, Image, Label, ListBox, ListBoxRow, MenuButton, Orientation,
-    Popover,
+    Align, Box as GtkBox, Button, Label, ListBox, ListBoxRow, MenuButton, Orientation, Popover,
 };
 use vte4::{Terminal, TerminalExt, TerminalExtManual};
 
@@ -70,15 +72,14 @@ pub fn show_log_viewer(app: &adw::Application, domain: &str) {
     terminal.feed(b"Starting logging...\r\n");
 
     // The identifier is an argument of journalctl, not part of a shell command line.
-    let argv = [
-        "journalctl",
-        "-f",
-        "-n",
-        "0",
-        "-t",
-        domain,
-        "--output=short",
-    ];
+    let Some(command) = journal_follow_command(domain) else {
+        terminal.feed(b"This system has no log to follow.\r\n");
+        toolbar_view.set_content(Some(&terminal));
+        log_window.set_content(Some(&toolbar_view));
+        log_window.present();
+        return;
+    };
+    let argv: Vec<&str> = command.iter().map(String::as_str).collect();
 
     terminal.spawn_async(
         vte4::PtyFlags::DEFAULT,
@@ -153,14 +154,8 @@ pub fn create_custom_headerbar(app: &adw::Application, domain: &str) -> GtkBox {
 
 /// A pill button with an icon and a text for the popover menu.
 fn menu_entry(icon_name: &str, label: &str) -> Button {
-    let content = GtkBox::new(Orientation::Horizontal, 6);
-    content.append(&Image::from_icon_name(icon_name));
-    content.append(&Label::new(Some(label)));
-
-    let button = Button::new();
-    button.set_child(Some(&content));
+    let button = pill_button(&icon_label_box(&[icon_name], label, Align::Fill), false);
     button.set_tooltip_text(Some(label));
     button.set_halign(Align::Start);
-    button.add_css_class("pill");
     button
 }

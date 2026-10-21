@@ -138,7 +138,7 @@ atlbase
 ├── ui_prelude       Everything with a window       use atlbase::ui_prelude::*;
 ├── macros           gettext!
 ├── helper           archive, cli, commands, configuration, file, filesystem, language, log,
-│                    sysinfo
+│                    platform, sysinfo
 ├── design           carousel, chooser, dialogs, form, theme, utils
 └── system           (feature experimental-api) unfinished
 examples/            complete programs
@@ -151,6 +151,7 @@ docs/                guides and the changelog page
 |---|---|
 | `helper::commands` | `run_command`, `capture_command_output`, `command_output_timeout`, `command_line`, `shell_line`, `command_pkexec`, `open_terminal_by_desktop`, `open_url`, `command_exists_native` |
 | `helper::cli` | `read_common_options`, `apply_debug_options`, `version_text` |
+| `helper::platform` | The layer between a program and the operating system: `Target`, `AppDirs`, `find_program`, `host_command`, `elevation_command`, `supports`, `PackageManager`, `init_logging` |
 | `helper::sysinfo` | `SystemInfo`, `package_version` |
 | `helper::archive` | `detect_format`, `decompress`, `decompress_file` (feature `archive`) |
 | `helper::configuration` | `get_config`, `set_config`, `get_execution_environment`, `check_application_environment` |

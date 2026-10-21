@@ -9,7 +9,7 @@
 //!
 //! The module replaces a leading `~` by the home directory (`$HOME`).
 
-use std::env;
+use crate::helper::filesystem::home_dir::home_directory;
 use std::path::{Path, PathBuf};
 
 /// Replaces a leading `~` with the content of the `$HOME` environment variable.
@@ -38,8 +38,8 @@ use std::path::{Path, PathBuf};
 pub fn expand_path<P: AsRef<Path>>(path: P) -> PathBuf {
     let path = path.as_ref();
 
-    match (path.strip_prefix("~"), env::var_os("HOME")) {
-        (Ok(suffix), Some(home)) => PathBuf::from(home).join(suffix),
+    match (path.strip_prefix("~"), home_directory()) {
+        (Ok(suffix), Some(home)) => home.join(suffix),
         _ => path.to_path_buf(),
     }
 }

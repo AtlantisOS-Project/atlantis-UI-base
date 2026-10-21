@@ -50,6 +50,10 @@ fn main() {
         ("work dialog", work_dialog),
         ("command task", command_task),
         ("app icon", app_icon),
+        ("progress dialog results", progress_dialog_results),
+        ("choosers", choosers),
+        ("buttons", buttons),
+        ("dialogs are freed", dialogs_are_freed),
     ];
 
     for (name, check) in checks {
@@ -587,4 +591,297 @@ fn app_icon() {
     );
     assert!(window.visible_dialog().is_some());
     assert!(has_icon("org.atlantis.InAbout"));
+}
+
+/// Runs `show` with a callback and waits until the callback was called; returns what it got.
+fn wait_for_callback<T: 'static>(show: impl FnOnce(Box<dyn FnOnce(T)>)) -> T {
+    let slot = Rc::new(RefCell::new(None));
+    let writer = slot.clone();
+    show(Box::new(move |value| *writer.borrow_mut() = Some(value)));
+    wait_until("the callback", || slot.borrow().is_some());
+    slot.borrow_mut().take().unwrap()
+}
+
+fn progress_dialog_results() {
+    let window = adw::Window::new();
+
+    // the text of show_spinner_dialog: stdout and stderr of every command
+    let ok = wait_for_callback(|done| {
+        show_spinner_dialog(
+            &window,
+            "Run",
+            "...",
+            vec![
+                command_line("echo", ["one"]),
+                command_line("sh", ["-c", "echo err >&2"]),
+            ],
+            IndicatorType::Spinner,
+            Some(Box::new(done)),
+        )
+    });
+    assert_eq!(ok.unwrap(), "one\n\n[Stderr]: err\n");
+    assert!(window.visible_dialog().is_none() || dialog_title(&window).as_deref() != Some("Run"));
+
+    // a command that fails: the command and what it printed
+    let failed = wait_for_callback(|done| {
+        show_spinner_dialog(
+            &window,
+            "Run",
+            "...",
+            vec![command_line("sh", ["-c", "echo out; exit 1"])],
+            IndicatorType::ProgressBar,
+            Some(Box::new(done)),
+        )
+    });
+    assert_eq!(
+        failed.unwrap_err(),
+        "Command failed: sh -c echo out; exit 1\nOutput:\nout\n"
+    );
+
+    // a program that does not exist
+    let missing = wait_for_callback(|done| {
+        show_spinner_dialog(
+            &window,
+            "Run",
+            "...",
+            vec![command_line("no-such-program-xyz", Vec::<String>::new())],
+            IndicatorType::Spinner,
+            Some(Box::new(done)),
+        )
+    });
+    let error = missing.unwrap_err();
+    assert!(
+        error.starts_with("Failed to execute command 'no-such-program-xyz': "),
+        "{error}"
+    );
+
+    // the variant with the result of every command
+    let results = wait_for_callback(|done| {
+        show_spinner_dialog_return_output(
+            &window,
+            "Run",
+            "...",
+            vec![
+                command_line("echo", ["a"]),
+                command_line("false", Vec::<String>::new()),
+            ],
+            IndicatorType::Spinner,
+            Some(Box::new(done)),
+        )
+    });
+    let results = results.unwrap_err();
+    assert_eq!(results.len(), 2);
+    assert!(results[0].success && !results[1].success);
+
+    // a task: the dialog closes when it is done
+    let done = Rc::new(Cell::new(false));
+    let flag = done.clone();
+    show_task_dialog(&window, "Task", "...", IndicatorType::Spinner, move || true);
+    assert_eq!(dialog_title(&window).as_deref(), Some("Task"));
+    wait_until("the task dialog closes", || {
+        window.visible_dialog().is_none()
+    });
+    flag.set(true);
+    assert!(done.get());
+}
+
+fn choosers() {
+    // the dialogs open (they need a window; nothing is chosen, nothing happens)
+    let button = gtk4::Button::new();
+    let window = gtk4::Window::new();
+    window.set_child(Some(&button));
+    show_file_chooser(&button, |_| panic!("nothing was chosen"));
+    show_files_chooser(&button, |_| panic!("nothing was chosen"));
+    show_folder_chooser(&button, |_| panic!("nothing was chosen"));
+    show_chooser(
+        &button,
+        Pick::Folder,
+        Some(std::path::Path::new("/tmp")),
+        |_| {},
+    );
+}
+
+fn buttons() {
+    // all the icon buttons are built the same way
+    let plain = create_button_icon_no_callback("go-next-symbolic", "Next");
+    assert!(plain.has_css_class("pill") && plain.has_css_class("suggested-action"));
+    let two = create_button_two_icon(
+        Some("go-previous-symbolic"),
+        "go-next-symbolic",
+        "Both",
+        |_| {},
+    );
+    assert!(two.has_css_class("pill") && two.has_css_class("suggested-action"));
+    let without_first = create_button_two_icon(None, "go-next-symbolic", "One", |_| {});
+    assert!(without_first.child().is_some());
+
+    // the standard pill button of Libadwaita: not suggested unless asked
+    let pill = create_pill_button("go-next-symbolic", "Next", false, |_| {});
+    assert!(pill.has_css_class("pill") && !pill.has_css_class("suggested-action"));
+    assert!(
+        create_pill_button("go-next-symbolic", "Next", true, |_| {})
+            .has_css_class("suggested-action")
+    );
+
+    // the icon and the label next to each other
+    let label = create_label_icon("go-next-symbolic", "Text");
+    assert_eq!(label.observe_children().n_items(), 2);
+}
+
+// ───────────────────────── Memory ─────────────────────────
+
+/// Lets GTK free what is waiting to be freed.
+fn settle() {
+    let context = glib::MainContext::default();
+    for _ in 0..500 {
+        if !context.iteration(false) {
+            break;
+        }
+    }
+}
+
+/// Every widget in the dialogs of `window`, and the dialogs themselves.
+fn weak_widgets_of_dialogs(window: &adw::Window) -> Vec<(String, glib::WeakRef<gtk4::Widget>)> {
+    fn walk(widget: &gtk4::Widget, out: &mut Vec<(String, glib::WeakRef<gtk4::Widget>)>) {
+        out.push((widget.type_().name().to_string(), widget.downgrade()));
+        let mut child = widget.first_child();
+        while let Some(current) = child {
+            child = current.next_sibling();
+            walk(&current, out);
+        }
+    }
+    let mut out = Vec::new();
+    let dialogs = window.dialogs();
+    for index in 0..dialogs.n_items() {
+        if let Some(dialog) = dialogs.item(index).and_downcast::<gtk4::Widget>() {
+            walk(&dialog, &mut out);
+        }
+    }
+    out
+}
+
+/// Closes the dialogs of `window` and returns the kinds of widgets that are still alive.
+fn alive_after_closing(
+    window: &adw::Window,
+    weak: Vec<(String, glib::WeakRef<gtk4::Widget>)>,
+) -> Vec<String> {
+    while let Some(dialog) = window.visible_dialog() {
+        dialog.force_close();
+    }
+    settle();
+    weak.into_iter()
+        .filter(|(_, widget)| widget.upgrade().is_some())
+        .map(|(name, _)| name)
+        .collect()
+}
+
+/// A dialog that is closed must be freed with everything in it. A closure that keeps the widget it
+/// is connected to alive (`row.connect_changed(move |_| row.…)`) would leak the whole dialog each
+/// time it is opened.
+fn dialogs_are_freed() {
+    type Show = Box<dyn Fn(&adw::Window)>;
+    let cases: Vec<(&str, Show)> = vec![
+        ("info", Box::new(|w| show_info_dialog(w, "Saved"))),
+        ("error", Box::new(|w| show_error_dialog(w, "Disk full"))),
+        ("success", Box::new(|w| show_success_dialog(w, "Installed"))),
+        (
+            "warning",
+            Box::new(|w| show_warning_dialog(w, "Battery low")),
+        ),
+        (
+            "confirm",
+            Box::new(|w| show_confirm_dialog(w, "Delete?", "Gone.", "Delete", || {})),
+        ),
+        (
+            "entry",
+            Box::new(|w| {
+                show_entry_dialog(w, "Name", "Enter:", "OK", "Cancel", "Name:", "x", |_| {});
+            }),
+        ),
+        (
+            "custom content",
+            Box::new(|w| {
+                let content = gtk4::Box::new(gtk4::Orientation::Vertical, 6);
+                content.append(&gtk4::Label::new(Some("content")));
+                show_custom_content_dialog(w, "Custom", "Body", "OK", &content);
+            }),
+        ),
+        (
+            "about",
+            Box::new(|w| {
+                show_about_dialog(
+                    w,
+                    AboutInfo {
+                        app_name: "Demo".into(),
+                        ..AboutInfo::default()
+                    },
+                )
+            }),
+        ),
+        (
+            "form with rows",
+            Box::new(|w| {
+                let form = FormDialog::new("Form", "Start");
+                let group = form.group(Some("Group"));
+                let combo = create_combo_row("Choice", &["a".to_string(), "b".to_string()]);
+                let switch = create_switch_row("Switch", "Subtitle");
+                let pick = PickRow::new("File", Pick::File, None, |_| {});
+                // the pattern the documentation asks for: the closure that is connected to a
+                // row holds the row weakly
+                let ok = form.ok_button();
+                let update = Rc::new(glib::clone!(
+                    #[weak]
+                    combo,
+                    #[weak]
+                    ok,
+                    move || ok.set_sensitive(selected_index(&combo) == 0)
+                ));
+                on_selection_change(&combo, {
+                    let update = update.clone();
+                    move || update()
+                });
+                group.add(&combo);
+                group.add(&switch);
+                group.add(&pick.row);
+                form.on_ok(move || {});
+                form.present(w);
+            }),
+        ),
+    ];
+
+    for (name, show) in &cases {
+        let window = adw::Window::new();
+        show(&window);
+        let weak = weak_widgets_of_dialogs(&window);
+        assert!(!weak.is_empty(), "{name}: no dialog was shown");
+        let alive = alive_after_closing(&window, weak);
+        assert!(alive.is_empty(), "{name}: not freed: {alive:?}");
+    }
+
+    // the dialogs with a thread behind them show their result when the work is done
+    let window = adw::Window::new();
+    show_work_dialog(&window, "Copying", "Please wait...", || {
+        Ok("It worked.".into())
+    });
+    wait_until("the success dialog", || {
+        dialog_title(&window).as_deref() == Some("Success")
+    });
+    let weak = weak_widgets_of_dialogs(&window);
+    let alive = alive_after_closing(&window, weak);
+    assert!(alive.is_empty(), "work dialog: not freed: {alive:?}");
+
+    let window = adw::Window::new();
+    CommandTask::new(
+        "Check",
+        "Please wait...",
+        vec![command_line("true", ["-x"])],
+    )
+    .success_message("Done.")
+    .run(&window);
+    wait_until("the success dialog", || {
+        dialog_title(&window).as_deref() == Some("Success")
+    });
+    let weak = weak_widgets_of_dialogs(&window);
+    let alive = alive_after_closing(&window, weak);
+    assert!(alive.is_empty(), "command task: not freed: {alive:?}");
 }

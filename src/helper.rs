@@ -19,6 +19,7 @@
 //! | [`filesystem`] | Create, search and delete files and directories |
 //! | [`language`] | gettext initialization and locale lookup |
 //! | [`log`] | Syslog logger and journal viewer |
+//! | [`platform`] | The layer between a program and the operating system: folders, programs, rights, logging |
 //! | [`sysinfo`] | Distribution, kernel, processor and package versions |
 //! | `archive` | Recognize and unpack archives (feature `archive`) |
 
@@ -36,6 +37,8 @@ pub mod language;
 
 pub mod log;
 
+pub mod platform;
+
 pub mod sysinfo;
 
 #[cfg(feature = "archive")]
@@ -50,6 +53,7 @@ pub use file::*;
 pub use filesystem::*;
 pub use language::*;
 pub use log::*;
+pub use platform::*;
 pub use sysinfo::*;
 
 #[cfg(feature = "archive")]

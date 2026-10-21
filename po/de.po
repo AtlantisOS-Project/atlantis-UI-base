@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atlbase 0.1.9\n"
 "Report-Msgid-Bugs-To: https://github.com/AtlantisOS-Project/atlantis-UI-base/issues\n"
-"POT-Creation-Date: 2026-10-20 08:22+0200\n"
+"POT-Creation-Date: 2026-10-20 10:44+0200\n"
 "PO-Revision-Date: 2026-10-16 09:00+0200\n"
 "Last-Translator: AtlantisOS Project\n"
 "Language-Team: German\n"
@@ -24,7 +24,7 @@ msgstr "(keine Ausgabe)"
 msgid "Back"
 msgstr "Zurück"
 
-#: src/design/dialogs/dialog_confirm.rs:48 src/design/form.rs:54
+#: src/design/dialogs/dialog_confirm.rs:48 src/design/form.rs:55
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -32,16 +32,15 @@ msgstr "Abbrechen"
 msgid "Checking..."
 msgstr "Prüfe..."
 
-#: src/design/chooser/file_chooser.rs:52 src/design/form.rs:270
-#: src/design/form.rs:278
+#: src/design/chooser/choose.rs:75 src/design/chooser/choose.rs:81
 msgid "Choose File"
 msgstr "Datei auswählen"
 
-#: src/design/chooser/folder_chooser.rs:52 src/design/form.rs:286
+#: src/design/chooser/choose.rs:90
 msgid "Choose folder"
 msgstr "Ordner auswählen"
 
-#: src/design/form.rs:209
+#: src/design/form.rs:201
 msgid "Choose…"
 msgstr "Auswählen…"
 
@@ -49,7 +48,7 @@ msgstr "Auswählen…"
 msgid "Copy"
 msgstr "Kopieren"
 
-#: src/design/dialogs/about_dialog.rs:131
+#: src/design/dialogs/about_dialog.rs:142
 msgid "Documentation"
 msgstr "Dokumentation"
 
@@ -63,15 +62,15 @@ msgstr "Fertig"
 msgid "Error"
 msgstr "Fehler"
 
-#: src/design/carousel/model.rs:68 src/helper/log/write_log_text.rs:141
+#: src/design/carousel/model.rs:68 src/helper/log/write_log_text.rs:142
 msgid "Exit"
 msgstr "Beenden"
 
-#: src/helper/log/write_log_text.rs:142
+#: src/helper/log/write_log_text.rs:143
 msgid "Exit the application"
 msgstr "Anwendung beenden"
 
-#: src/design/dialogs/about_dialog.rs:136
+#: src/design/dialogs/about_dialog.rs:147
 msgid "Fonts"
 msgstr "Schriftarten"
 
@@ -84,7 +83,7 @@ msgstr "Bild nicht gefunden"
 msgid "Information"
 msgstr "Information"
 
-#: src/helper/log/write_log_text.rs:58 src/helper/log/write_log_text.rs:63
+#: src/helper/log/write_log_text.rs:59 src/helper/log/write_log_text.rs:64
 msgid "Log Viewer"
 msgstr "Protokollanzeige"
 
@@ -92,7 +91,7 @@ msgstr "Protokollanzeige"
 msgid "Next"
 msgstr "Weiter"
 
-#: src/design/form.rs:205 src/design/form.rs:249
+#: src/design/form.rs:197 src/design/form.rs:241
 msgid "Nothing chosen"
 msgstr "Nichts ausgewählt"
 
@@ -105,17 +104,21 @@ msgstr "Nichts ausgewählt"
 msgid "OK"
 msgstr "OK"
 
-#: src/helper/log/write_log_text.rs:135
+#: src/helper/log/write_log_text.rs:136
 msgid "Show Log"
 msgstr "Protokoll anzeigen"
 
-#: src/design/dialogs/about_dialog.rs:145
+#: src/design/dialogs/about_dialog.rs:156
 msgid "Special thanks to"
 msgstr "Besonderer Dank an"
 
 #: src/design/dialogs/standard_dialogs.rs:313
 msgid "Success"
 msgstr "Erfolg"
+
+#: src/design/dialogs/dialog_work.rs:52
+msgid "The work ended unexpectedly."
+msgstr "Die Arbeit wurde unerwartet beendet."
 
 #: src/design/dialogs/standard_dialogs.rs:342
 msgid "Warning"

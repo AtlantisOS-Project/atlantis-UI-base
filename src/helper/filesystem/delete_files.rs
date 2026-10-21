@@ -16,7 +16,8 @@
 //! The functions refuse to touch:
 //!
 //! * system-critical paths (`/`, `/bin`, `/etc`, `/usr`, `/var`, … and everything below
-//!   them),
+//!   them; `C:\Windows` and `C:\Program Files` on Windows, see
+//!   [`critical_paths`]),
 //! * important top-level directories (`/home`, `/tmp`, `/opt`, `/mnt`, `/media`, `/run`,
 //!   `/srv`, `/app`, `/snap`) — the directories themselves, not their contents,
 //! * the home directory and its standard folders (`Documents`, `Pictures`, `.config`, …),
@@ -24,65 +25,40 @@
 //!
 //! Even so, use them only for data that belongs to your application.
 
+use crate::helper::filesystem::home_dir::home_directory;
+use crate::helper::platform::dirs::{
+    critical_paths, is_mount_point, protected_dirs, standard_home_folders,
+};
+use crate::helper::platform::target::Os;
 use std::fs;
-use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
-/// Paths that must never be deleted, nor anything below them.
-const CRITICAL_PATHS: &[&str] = &[
-    "/", "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", "/sys", "/dev", "/lib", "/lib32",
-    "/lib64", "/boot", "/root",
-];
-
-/// Directories that must never be removed themselves; their contents are not protected.
-const PROTECTED_DIRS: &[&str] = &[
-    "/home", "/tmp", "/opt", "/mnt", "/media", "/run", "/srv", "/app", "/snap",
-];
-
-/// Standard folders in the home directory that are protected.
-const STANDARD_HOME_FOLDERS: &[&str] = &[
-    "Desktop",
-    "Documents",
-    "Downloads",
-    "Music",
-    "Pictures",
-    "Videos",
-    "Public",
-    "Templates",
-    ".config",
-    ".local",
-];
-
 /// Checks whether a path is a mount point by comparing its device ID with the parent's.
-fn is_mount_point(path: &Path) -> bool {
-    let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) else {
-        return false;
-    };
-
-    if let (Ok(meta_path), Ok(meta_parent)) = (fs::metadata(path), fs::metadata(parent))
-        && meta_path.dev() != meta_parent.dev()
-    {
+fn is_mount_point_blocked(path: &Path) -> bool {
+    let blocked = is_mount_point(path);
+    if blocked {
         println!("[WARN] Blocked: Mount Point detected: {:?}", path);
-        return true;
     }
-    false
+    blocked
+}
+
+/// Checks whether `path` belongs to a protected system directory of `os`.
+fn is_critical_for(os: Os, path: &Path) -> bool {
+    // a root ("/", "C:\") is protected, but not everything is "below" it
+    (path.parent().is_none() && !path.as_os_str().is_empty())
+        || critical_paths(os)
+            .iter()
+            .any(|critical| path.starts_with(critical))
+        || protected_dirs(os).iter().any(|dir| path == Path::new(dir))
 }
 
 /// Checks whether the path belongs to a protected system directory.
 fn is_critical_system_path(path: &Path) -> bool {
-    let Some(path_str) = path.to_str() else {
-        return false;
-    };
-
-    let critical = CRITICAL_PATHS
-        .iter()
-        .any(|prefix| path_str == *prefix || path_str.starts_with(&format!("{}/", prefix)))
-        || PROTECTED_DIRS.contains(&path_str);
-
+    let critical = is_critical_for(Os::current(), path);
     if critical {
         println!(
             "[ERROR] Blocked: Critical System Path detected: {}",
-            path_str
+            path.display()
         );
     }
     critical
@@ -99,18 +75,13 @@ fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
         return true;
     }
 
-    let standard = STANDARD_HOME_FOLDERS
+    let standard = standard_home_folders(Os::current())
         .iter()
         .any(|folder| path == home.join(folder));
     if standard {
         println!("[ERROR] Blocked: Standard Home Folder detected: {:?}", path);
     }
     standard
-}
-
-/// The home directory according to `$HOME`.
-fn home_from_env() -> Option<PathBuf> {
-    std::env::var_os("HOME").map(PathBuf::from)
 }
 
 /// Deletes all regular files in a directory.
@@ -139,7 +110,7 @@ fn home_from_env() -> Option<PathBuf> {
 /// assert!(dir.path().join("sub").is_dir());
 /// ```
 pub fn delete_files_in_dir(path: &Path) {
-    if is_critical_system_path(path) || is_standard_home_directory(path, &home_from_env()) {
+    if is_critical_system_path(path) || is_standard_home_directory(path, &home_directory()) {
         return;
     }
 
@@ -217,7 +188,7 @@ pub fn delete_files_and_parents(path: &Path, stop_dir: &Option<PathBuf>) {
             return;
         }
 
-        if is_mount_point(&current)
+        if is_mount_point_blocked(&current)
             || is_critical_system_path(&current)
             || is_standard_home_directory(&current, stop_dir)
         {
@@ -298,5 +269,5 @@ pub fn delete_files_with_parent(path_str: &str) {
         return;
     }
 
-    delete_files_and_parents(&clean_path, &home_from_env());
+    delete_files_and_parents(&clean_path, &home_directory());
 }

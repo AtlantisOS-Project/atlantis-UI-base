@@ -10,8 +10,8 @@
 //! The module provides a flexible wrapper around [`adw::AlertDialog`] that can show your
 //! own widgets in a [`gtk4::Box`].
 
-use adw::prelude::*;
-use adw::{AlertDialog, ResponseAppearance};
+use super::dialog::present_ok_dialog;
+use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Widget};
 
 /// Shows an alert dialog with an area for custom widgets.
@@ -51,13 +51,11 @@ pub fn show_custom_content_dialog(
     button_label: &str,
     content: &GtkBox,
 ) {
-    let dialog = AlertDialog::builder().heading(title).body(body).build();
-
-    dialog.set_extra_child(Some(content));
-
-    dialog.add_response("ok", button_label);
-    dialog.set_response_appearance("ok", ResponseAppearance::Suggested);
-    dialog.set_close_response("ok");
-
-    dialog.present(Some(parent));
+    present_ok_dialog(
+        parent,
+        title,
+        body,
+        button_label,
+        Some(content.upcast_ref()),
+    );
 }

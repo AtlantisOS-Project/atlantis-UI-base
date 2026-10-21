@@ -10,14 +10,14 @@
 //! The module is mainly used to find out whether a repository entry (for example a PPA) is
 //! stored on the system.
 
-use std::fs;
-use std::path::Path;
+use crate::helper::filesystem::search_file_directory::search_file_directory;
+use std::io::ErrorKind;
 
 /// Searches a directory for a file whose name contains a string.
 ///
 /// Within AtlantisOS this validates the installation source of an application, for example
 /// by searching for `"fastboot-assistant"` in the APT sources. In contrast to
-/// [`search_file_directory`](crate::helper::filesystem::search_file_directory::search_file_directory)
+/// [`search_file_directory`]
 /// a directory that does not exist is not an error.
 ///
 /// # Arguments
@@ -48,18 +48,8 @@ use std::path::Path;
 /// assert!(!search_string_file("/this/path/does/not/exist", "x").unwrap());
 /// ```
 pub fn search_string_file(directory: &str, search: &str) -> Result<bool, std::io::Error> {
-    let path = Path::new(directory);
-    if !path.exists() {
-        return Ok(false);
+    match search_file_directory(directory, search) {
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(false),
+        other => other,
     }
-
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        if let Some(name) = entry.file_name().to_str()
-            && name.contains(search)
-        {
-            return Ok(true);
-        }
-    }
-    Ok(false)
 }

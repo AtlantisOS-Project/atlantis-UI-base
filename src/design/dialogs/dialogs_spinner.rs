@@ -12,12 +12,11 @@
 //! [`show_task_dialog`](super::dialog_function::show_task_dialog) and
 //! [`show_spinner_dialog_return_output`](super::dialog_spinner_return::show_spinner_dialog_return_output).
 
+use crate::design::utils::background::spawn_background;
+use crate::helper::commands::command_chain::{Chain, Failure, run_chain};
 use adw::prelude::*;
 use adw::{Dialog, Spinner};
 use gtk4::{Align, Box as GtkBox, Label, Orientation, ProgressBar, Widget, glib};
-use std::process::Command;
-use std::sync::mpsc;
-use std::thread;
 use std::time::Duration;
 
 /// The kind of progress indicator in a dialog.
@@ -109,77 +108,55 @@ pub(crate) fn build_progress_dialog(
     dialog
 }
 
-/// Waits for the result of a background thread, then closes the dialog.
-///
-/// `on_done` is called on the main thread with `Some(result)`, or with `None` if the
-/// thread ended without sending a result (for example because it panicked).
-pub(crate) fn close_dialog_when_done<T: 'static>(
-    dialog: &Dialog,
-    rx: mpsc::Receiver<T>,
-    on_done: impl FnOnce(Option<T>) + 'static,
+/// Shows a progress dialog over `parent` and runs `work` in a background thread; when it is
+/// done the dialog closes and `done` is called on the main thread with the result, or with
+/// `None` if the work panicked. Every dialog of this module is built on this function.
+pub(crate) fn run_with_progress<T: Send + 'static>(
+    parent: &impl IsA<Widget>,
+    title: &str,
+    message: &str,
+    indicator: IndicatorType,
+    work: impl FnOnce() -> T + Send + 'static,
+    done: impl FnOnce(Option<T>) + 'static,
 ) {
-    let dialog = dialog.clone();
-    let mut on_done = Some(on_done);
-
-    glib::timeout_add_local(Duration::from_millis(25), move || {
-        let result = match rx.try_recv() {
-            Ok(result) => Some(result),
-            Err(mpsc::TryRecvError::Empty) => return glib::ControlFlow::Continue,
-            Err(mpsc::TryRecvError::Disconnected) => None,
-        };
-
+    let dialog = build_progress_dialog(title, message, indicator);
+    dialog.present(Some(parent));
+    spawn_background(work, move |result| {
         dialog.force_close();
-        if let Some(on_done) = on_done.take() {
-            on_done(result);
-        }
-        glib::ControlFlow::Break
+        done(result);
     });
 }
 
-/// Runs the commands one after another in a background thread.
-///
-/// The output of all commands is collected. As soon as a command fails, the chain stops
-/// and the error is sent to the main thread.
-fn run_commands_thread(commands: Vec<Vec<String>>, tx: mpsc::Sender<Result<String, String>>) {
-    thread::spawn(move || {
-        let mut combined_output = String::new();
+/// The output of a chain as one text, or the reason why it failed: what
+/// [`show_spinner_dialog`] reports.
+fn chain_text(chain: Chain) -> Result<String, String> {
+    let Chain { results, failure } = chain;
 
-        for cmd_args in commands {
-            let Some((program, args)) = cmd_args.split_first() else {
-                continue; // empty command
-            };
-            let cmd_display = cmd_args.join(" ");
+    if let Some(Failure::Spawn(reason)) = &failure {
+        let command = results
+            .last()
+            .map(|r| r.command.as_str())
+            .unwrap_or_default();
+        return Err(format!("Failed to execute command '{command}': {reason}"));
+    }
 
-            match Command::new(program).args(args).output() {
-                Ok(output) => {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-
-                    combined_output.push_str(&stdout);
-                    if !stderr.is_empty() {
-                        combined_output.push_str(&format!("\n[Stderr]: {}", stderr));
-                    }
-
-                    if !output.status.success() {
-                        let _ = tx.send(Err(format!(
-                            "Command failed: {}\nOutput:\n{}",
-                            cmd_display, combined_output
-                        )));
-                        return;
-                    }
-                }
-                Err(e) => {
-                    let _ = tx.send(Err(format!(
-                        "Failed to execute command '{}': {}",
-                        cmd_display, e
-                    )));
-                    return;
-                }
-            }
+    let mut output = String::new();
+    for result in &results {
+        output.push_str(&result.stdout);
+        if !result.stderr.is_empty() {
+            output.push_str(&format!("\n[Stderr]: {}", result.stderr));
         }
-
-        let _ = tx.send(Ok(combined_output));
-    });
+    }
+    match failure {
+        None => Ok(output),
+        Some(_) => {
+            let command = results
+                .last()
+                .map(|r| r.command.as_str())
+                .unwrap_or_default();
+            Err(format!("Command failed: {command}\nOutput:\n{output}"))
+        }
+    }
 }
 
 /// Shows a dialog while a list of commands runs in the background.
@@ -233,18 +210,19 @@ pub fn show_spinner_dialog(
     indicator: IndicatorType,
     on_complete: Option<Callback>,
 ) {
-    let dialog = build_progress_dialog(title, message, indicator);
-
-    let (tx, rx) = mpsc::channel();
-    run_commands_thread(commands, tx);
-
-    close_dialog_when_done(&dialog, rx, move |result| {
-        if let Some(callback) = on_complete {
-            callback(
-                result.unwrap_or_else(|| Err("Thread disconnected unexpectedly.".to_string())),
-            );
-        }
-    });
-
-    dialog.present(Some(parent));
+    run_with_progress(
+        parent,
+        title,
+        message,
+        indicator,
+        move || run_chain(&commands),
+        move |chain| {
+            if let Some(callback) = on_complete {
+                callback(match chain {
+                    Some(chain) => chain_text(chain),
+                    None => Err("Thread disconnected unexpectedly.".to_string()),
+                });
+            }
+        },
+    );
 }

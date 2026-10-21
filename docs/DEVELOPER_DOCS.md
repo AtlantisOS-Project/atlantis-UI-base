@@ -47,6 +47,7 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 | `open_url(url: &str)` | Open a URL or file with the default application |
 | `command_line(program, args) -> Vec<String>` | Build a command line for the progress dialogs (`&str` and `String` arguments) |
 | `shell_line(command: &[String]) -> String` | Quote a command line for a shell (a terminal) |
+| `run_command_chain(commands) -> Result<Vec<CommandResult>, Vec<CommandResult>>` | Run commands one after another (no shell); stops at the first failure. The worker of every progress dialog |
 | `command_output_timeout(command: &[String], limit) -> Option<String>` | Output of a command (stdout, then stderr); `None` if it cannot be started or is too slow (it is killed) |
 
 ## `helper::configuration`
@@ -88,11 +89,49 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 | `require_dir_name(dir, name) -> io::Result<()>` | Refuse (`PermissionDenied`) unless the folder has this name: the check before a cleanup |
 | `remove_dir_all_if_exists(dir)` / `clear_directory_except(dir, keep)` | Delete a folder / its content except some entries; a missing folder is fine |
 
+## `helper::platform`
+
+The layer between a program and the operating system. A program asks it where things are and what
+the system can do; it does not contain `/usr/share`, `$HOME`, `pkexec` or `adb.exe`. Linux is
+the platform that is run; the mappings for Windows and macOS are covered by tests that run
+everywhere (`scripts/check-platform.sh` also compiles the layer for Windows).
+
+| Item | Purpose |
+|---|---|
+| `Os`, `Arch`, `Target` | Which system and processor the program was built for; `Arch::name()` (`x86_64`, `aarch64`), `Arch::debian_name()` (`amd64`, `arm64`), `Os::exe_suffix()` |
+| `AppDirs::new(app)` | `config_dir()`, `config_file()`, `data_dir()`, `cache_dir()`, `state_dir()`, `log_file()` of an application |
+| `home_dir()`, `documents_dir()` | The home directory and the folder for documents |
+| `DataDirs::current().data_dirs()` | Folders with read-only resources (translations, icons, guides) in search order, also for Flatpak, Snap, AppImage |
+| `find_program(name)`, `program_path(name)`, `register_tool_dir(dir)` | Where an external program is: bundled folders, then `PATH`; `.exe` on Windows |
+| `host_command(program)`, `host_command_line(&[String])` | `Command::new` for programs of the host; use these instead (no console window on Windows) |
+| `elevation_command(command)` | The command with `pkexec` (Linux), `osascript` (macOS) or a UAC prompt (Windows) in front |
+| `supports(Feature::…)` | `Elevation`, `HostTerminal`, `SystemLog`, `PackageInstall`, `PosixShell`: show a button only where the host offers it |
+| `PackageManager::detect()`, `.install_command(packages)` | `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
+| `init_logging(app)` | syslog on Linux and macOS, `AppDirs::log_file` on Windows |
+
+```rust
+use atlbase::prelude::*;
+
+// the program of the host, found in the folders of the application or in PATH
+let output = host_command("adb").arg("devices").output();
+
+// a button that installs programs only where it can work
+if supports(Feature::PackageInstall) {
+    let manager = PackageManager::detect().unwrap();
+    let install = manager.install_command(&["adb"]);
+    let _command = elevation_command(&install);
+}
+```
+
+`run_command`, `capture_command_output`, `command_pkexec`, the command chains of the dialogs,
+`get_config`, `init_language`, `GuideLoader`, `ensure_app_icon`, `delete_files_*` and
+`SystemInfo::collect` use the layer, so a program that only calls them is portable already.
+
 ## `helper::sysinfo`
 
 | Item | Purpose |
 |---|---|
-| `SystemInfo::collect()` | Distribution, version, kernel, processor, graphics card, desktop, language and session (runs `lspci`: call it in the background) |
+| `SystemInfo::collect()` | Distribution, version, kernel, processor, architecture, graphics card, desktop, language and session (runs `lspci` on Linux: call it in the background; on Windows and macOS the name, architecture, language and desktop) |
 | `os_release_value(text, key)`, `cpu_model(cpuinfo)`, `gpu_model(lspci)`, `language_code(lang)` | The parsers behind it, usable on their own |
 | `package_version(package) -> Option<String>` | The installed version of a Debian package (`dpkg-query`) |
 
@@ -133,7 +172,7 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 
 ## `design::chooser`
 
-`show_file_chooser(widget, callback)`, `show_folder_chooser(widget, callback)`
+`show_file_chooser(widget, callback)`, `show_files_chooser(widget, callback)` (several files), `show_folder_chooser(widget, callback)`, `show_chooser(widget, Pick, start_in, callback)` (the function behind all of them; `Pick::{File, Files, Folder}`)
 
 ## `design::dialogs`
 
@@ -165,12 +204,23 @@ Dialogs with a form: a header bar with "Cancel" and an action button, rows in be
 | `create_switch_row(title, subtitle)` | A switch |
 | `PickRow::new(title, Pick, start_in, changed)` | A row that shows the chosen file(s) or folder and has a "Choose…" button; `.path()`, `.paths()`, `.set_paths()`, `.set_pick()` |
 | `Pick::{File, Files, Folder}` | What a `PickRow` lets the user choose |
+| `FormDialog::ok_button()` | The main button, for a closure that enables or hides it |
+
+**Closures and memory.** A closure that is connected to a widget and keeps that widget alive
+(`row.connect_changed(move |_| row.…)`, or an `Rc` closure that holds the row and is stored in a
+handler of the row) frees neither the widget nor the dialog around it: every time a dialog is
+opened it stays in memory (about 1 MB for a form). Capture the widgets that the closure is
+connected to weakly with `glib::clone!(#[weak] row, move || …)`; `FormDialog` and `PickRow` do
+that for their own buttons. The tests of the library (`dialogs are freed`) and of the
+Fastboot-Assistant (`tests/ui_memory.rs`) open dialogs and pages, close them, and check with weak
+references that nothing is left.
 
 ## `design::theme`
 
 | Function | Purpose |
 |---|---|
 | `use_adw_provider(css) -> CssProvider`, `use_adw_provider_with_priority(css, priority) -> CssProvider` | CSS that follows light/dark |
+| `set_renderer(Renderer::Software)` | Draw the windows on the processor instead of the graphics card: a small program saves 60 to 160 MB (the driver of the graphics card); call it first in `main`; a `GSK_RENDERER` of the user wins |
 | `ensure_app_icon(icon_name, icon_file) -> bool` | Make the icon theme find the icon of the program: installed, in an AppDir (`$APPDIR`), in a Snap (`$SNAP`), next to the program, or from a file (source tree); also sets the icon of all windows |
 
 ## `design::utils`

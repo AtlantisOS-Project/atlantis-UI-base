@@ -10,9 +10,9 @@
 //! The module wraps [`gtk4::FileDialog`] for choosing folders. The selection runs
 //! asynchronously, so the user interface does not block.
 
-use crate::gettext;
+use super::choose::{Pick, show_chooser};
+use gtk4::Widget;
 use gtk4::prelude::*;
-use gtk4::{FileDialog, Widget, Window};
 use std::path::PathBuf;
 
 /// Opens a dialog to choose a directory.
@@ -20,7 +20,7 @@ use std::path::PathBuf;
 /// Unlike the file chooser, only folders can be chosen. The window that contains `button`
 /// becomes the parent. The call returns immediately; `process_func` is called later with
 /// the path if the user chooses a folder. If the user cancels the dialog, nothing is
-/// called. Other errors are printed to `stderr`.
+/// called. Other errors are logged.
 ///
 /// # Arguments
 ///
@@ -44,24 +44,9 @@ pub fn show_folder_chooser<F>(button: &impl IsA<Widget>, process_func: F)
 where
     F: Fn(PathBuf) + 'static,
 {
-    let parent_window = button
-        .root()
-        .and_then(|root| root.downcast::<Window>().ok());
-
-    let dialog = FileDialog::new();
-    dialog.set_title(&gettext!("Choose folder"));
-
-    dialog.select_folder(
-        parent_window.as_ref(),
-        gio::Cancellable::NONE,
-        move |res| match res {
-            Ok(folder) => {
-                if let Some(path) = folder.path() {
-                    process_func(path);
-                }
-            }
-            Err(err) if err.matches(gtk4::DialogError::Dismissed) => {}
-            Err(err) => eprintln!("Error opening the folder: {}", err),
-        },
-    );
+    show_chooser(button, Pick::Folder, None, move |paths| {
+        if let Some(path) = paths.into_iter().next() {
+            process_func(path);
+        }
+    });
 }

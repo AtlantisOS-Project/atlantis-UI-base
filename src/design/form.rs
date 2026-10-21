@@ -15,10 +15,11 @@
 //! The titles you pass in are shown as they are: translate them yourself. The fixed texts
 //! ("Cancel", "Choose…", "Nothing chosen") are translated by the library.
 
+use crate::design::chooser::choose::show_chooser;
 use crate::gettext;
 use adw::prelude::*;
 use gtk4::{
-    Align, Box as GtkBox, Button, Orientation, PolicyType, ScrolledWindow, StringList, Widget, gio,
+    Align, Box as GtkBox, Button, Orientation, PolicyType, ScrolledWindow, StringList, Widget,
 };
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
@@ -89,10 +90,13 @@ impl FormDialog {
             .follows_content_size(true)
             .child(&toolbar)
             .build();
+        // weak: the button is part of the dialog, a strong reference would keep both alive
         cancel.connect_clicked({
-            let dialog = dialog.clone();
+            let dialog = dialog.downgrade();
             move |_| {
-                dialog.close();
+                if let Some(dialog) = dialog.upgrade() {
+                    dialog.close();
+                }
             }
         });
 
@@ -109,6 +113,13 @@ impl FormDialog {
         group
     }
 
+    /// The main button, for a closure that enables or hides it. A closure that is connected to
+    /// a row of the form must not keep the row (or the `FormDialog`) alive: capture the button
+    /// from here, and the rows with `glib::clone!(#[weak] row, …)`.
+    pub fn ok_button(&self) -> Button {
+        self.ok.clone()
+    }
+
     /// Whether the main button can be pressed.
     pub fn set_ok_enabled(&self, enabled: bool) {
         self.ok.set_sensitive(enabled);
@@ -121,9 +132,12 @@ impl FormDialog {
 
     /// Runs `action` when the main button is pressed. The dialog closes first.
     pub fn on_ok(&self, action: impl Fn() + 'static) {
-        let dialog = self.dialog.clone();
+        // weak: the button is part of the dialog, a strong reference would keep both alive
+        let dialog = self.dialog.downgrade();
         self.ok.connect_clicked(move |_| {
-            dialog.close();
+            if let Some(dialog) = dialog.upgrade() {
+                dialog.close();
+            }
             action();
         });
     }
@@ -166,29 +180,38 @@ pub fn on_selection_change(row: &adw::ComboRow, update: impl Fn() + 'static) {
     row.connect_selected_notify(move |_| update());
 }
 
-/// What a [`PickRow`] lets the user choose.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Pick {
-    /// One file.
-    File,
-    /// Several files.
-    Files,
-    /// A folder.
-    Folder,
-}
+pub use crate::design::chooser::choose::Pick;
 
 /// What a [`PickRow`] calls when the choice changes.
 type Changed = Rc<dyn Fn(&[PathBuf])>;
+
+/// What a [`PickRow`] remembers. Shared by the row and the handler of its button.
+struct PickState {
+    pick: Cell<Pick>,
+    paths: RefCell<Vec<PathBuf>>,
+    start_in: Option<PathBuf>,
+    changed: Changed,
+}
+
+impl PickState {
+    /// Shows `paths` in `row`, remembers them and tells `changed`.
+    fn apply(&self, row: &adw::ActionRow, paths: Vec<PathBuf>) {
+        row.set_subtitle(&match paths.as_slice() {
+            [] => gettext!("Nothing chosen"),
+            [one] => one.display().to_string(),
+            [first, ..] => format!("{} (+{})", first.display(), paths.len() - 1),
+        });
+        *self.paths.borrow_mut() = paths.clone();
+        (self.changed)(&paths);
+    }
+}
 
 /// A row that shows what was chosen and has a button to choose files or a folder.
 #[derive(Clone)]
 pub struct PickRow {
     /// The row; add it to a group.
     pub row: adw::ActionRow,
-    pick: Rc<Cell<Pick>>,
-    paths: Rc<RefCell<Vec<PathBuf>>>,
-    start_in: Option<PathBuf>,
-    changed: Changed,
+    state: Rc<PickState>,
 }
 
 impl PickRow {
@@ -212,84 +235,51 @@ impl PickRow {
         row.add_suffix(&button);
         row.set_activatable_widget(Some(&button));
 
-        let this = Self {
-            row,
-            pick: Rc::new(Cell::new(pick)),
-            paths: Rc::default(),
+        let state = Rc::new(PickState {
+            pick: Cell::new(pick),
+            paths: RefCell::default(),
             start_in,
             changed: Rc::new(changed),
-        };
-        button.connect_clicked({
-            let this = this.clone();
-            move |button| this.choose(button)
         });
-        this
+        // The button is part of the row: a strong reference to the row in its handler would
+        // keep the row (and the dialog it is in) alive for ever.
+        button.connect_clicked({
+            let (row, state) = (row.downgrade(), state.clone());
+            move |button| {
+                let Some(row) = row.upgrade() else {
+                    return;
+                };
+                let state = state.clone();
+                show_chooser(
+                    button,
+                    state.pick.get(),
+                    state.start_in.clone().as_deref(),
+                    move |paths| state.apply(&row, paths),
+                );
+            }
+        });
+        Self { row, state }
     }
 
     /// What can be chosen now.
     pub fn set_pick(&self, pick: Pick, title: &str) {
-        self.pick.set(pick);
+        self.state.pick.set(pick);
         self.row.set_title(title);
         self.set_paths(Vec::new());
     }
 
     /// What was chosen.
     pub fn paths(&self) -> Vec<PathBuf> {
-        self.paths.borrow().clone()
+        self.state.paths.borrow().clone()
     }
 
     /// The first thing that was chosen.
     pub fn path(&self) -> Option<PathBuf> {
-        self.paths.borrow().first().cloned()
+        self.state.paths.borrow().first().cloned()
     }
 
     /// Sets the choice (and tells `changed`).
     pub fn set_paths(&self, paths: Vec<PathBuf>) {
-        self.row.set_subtitle(&match paths.as_slice() {
-            [] => gettext!("Nothing chosen"),
-            [one] => one.display().to_string(),
-            [first, ..] => format!("{} (+{})", first.display(), paths.len() - 1),
-        });
-        *self.paths.borrow_mut() = paths.clone();
-        (self.changed)(&paths);
-    }
-
-    fn choose(&self, button: &Button) {
-        let window = button.root().and_downcast::<gtk4::Window>();
-        let dialog = gtk4::FileDialog::new();
-        if let Some(dir) = self.start_in.as_ref().filter(|dir| dir.is_dir()) {
-            dialog.set_initial_folder(Some(&gio::File::for_path(dir)));
-        }
-
-        let this = self.clone();
-        let files = move |files: Vec<gio::File>| {
-            this.set_paths(files.iter().filter_map(gio::File::path).collect());
-        };
-        match self.pick.get() {
-            Pick::File => {
-                dialog.set_title(&gettext!("Choose File"));
-                dialog.open(window.as_ref(), gio::Cancellable::NONE, move |result| {
-                    if let Ok(file) = result {
-                        files(vec![file]);
-                    }
-                });
-            }
-            Pick::Files => {
-                dialog.set_title(&gettext!("Choose File"));
-                dialog.open_multiple(window.as_ref(), gio::Cancellable::NONE, move |result| {
-                    if let Ok(list) = result {
-                        files(list.iter::<gio::File>().flatten().collect());
-                    }
-                });
-            }
-            Pick::Folder => {
-                dialog.set_title(&gettext!("Choose folder"));
-                dialog.select_folder(window.as_ref(), gio::Cancellable::NONE, move |result| {
-                    if let Ok(folder) = result {
-                        files(vec![folder]);
-                    }
-                });
-            }
-        }
+        self.state.apply(&self.row, paths);
     }
 }

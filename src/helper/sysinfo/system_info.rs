@@ -21,13 +21,16 @@
 //! println!("{} {} (kernel {})", info.distribution, info.version, info.kernel);
 //! ```
 
+use crate::helper::commands::execute_command::capture_command_output;
+use crate::helper::file::get_config_value::config_line_value;
+use crate::helper::platform::target::{Os, Target};
 use std::fs;
-use std::process::Command;
 
 /// What is known about the computer. A value that cannot be found is an empty string.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SystemInfo {
-    /// The name of the distribution (`NAME` in `/etc/os-release`).
+    /// The name of the distribution (`NAME` in `/etc/os-release`); `Windows` or `macOS` on
+    /// those systems.
     pub distribution: String,
     /// The version of the distribution, without the name (`24.04.1`).
     pub version: String,
@@ -43,19 +46,44 @@ pub struct SystemInfo {
     pub language: String,
     /// `wayland` or `x11` (`$XDG_SESSION_TYPE`).
     pub session: String,
+    /// The processor architecture this program was built for (`x86_64`, `aarch64`).
+    pub architecture: String,
 }
 
 impl SystemInfo {
-    /// Asks the computer. Runs `lspci`; call it in the background.
+    /// Asks the computer. Runs `lspci` on Linux; call it in the background.
+    ///
+    /// Linux is described completely. On the other systems the distribution is the name of the
+    /// system, the architecture, the language and the desktop come from the program and its
+    /// environment, and the rest stays empty.
     pub fn collect() -> Self {
+        let target = Target::current();
+        let env = |name: &str| std::env::var(name).unwrap_or_default();
+        let mut info = match target.os {
+            Os::Linux => Self::collect_linux(),
+            Os::Windows => Self::named("Windows"),
+            Os::MacOs => Self::named("macOS"),
+            Os::Other => Self::named(target.os.name()),
+        };
+        info.architecture = target.arch.name().to_string();
+        info.desktop = env("XDG_CURRENT_DESKTOP");
+        info.language = language_code(&env("LANG"));
+        info.session = env("XDG_SESSION_TYPE");
+        info
+    }
+
+    fn named(distribution: &str) -> Self {
+        SystemInfo {
+            distribution: distribution.to_string(),
+            ..SystemInfo::default()
+        }
+    }
+
+    fn collect_linux() -> Self {
         let os_release = fs::read_to_string("/etc/os-release").unwrap_or_default();
         let cpuinfo = fs::read_to_string("/proc/cpuinfo").unwrap_or_default();
         let kernel = fs::read_to_string("/proc/sys/kernel/osrelease").unwrap_or_default();
-        let lspci = Command::new("lspci")
-            .output()
-            .map(|out| String::from_utf8_lossy(&out.stdout).into_owned())
-            .unwrap_or_default();
-        let env = |name: &str| std::env::var(name).unwrap_or_default();
+        let lspci = capture_command_output(&["lspci"]).unwrap_or_default();
 
         Self {
             distribution: os_release_value(&os_release, "NAME").unwrap_or_default(),
@@ -63,9 +91,7 @@ impl SystemInfo {
             kernel: kernel.trim().to_string(),
             processor: cpu_model(&cpuinfo).unwrap_or_default(),
             graphics_card: gpu_model(&lspci).unwrap_or_default(),
-            desktop: env("XDG_CURRENT_DESKTOP"),
-            language: language_code(&env("LANG")),
-            session: env("XDG_SESSION_TYPE"),
+            ..SystemInfo::default()
         }
     }
 }
@@ -82,10 +108,7 @@ impl SystemInfo {
 /// assert_eq!(os_release_value(text, "ID"), None);
 /// ```
 pub fn os_release_value(text: &str, key: &str) -> Option<String> {
-    text.lines().find_map(|line| {
-        let (name, value) = line.split_once('=')?;
-        (name == key).then(|| value.trim().trim_matches('"').to_string())
-    })
+    text.lines().find_map(|line| config_line_value(line, key))
 }
 
 /// The first word of the version (`24.04.1 LTS (Noble Numbat)` becomes `24.04.1`).
@@ -162,12 +185,9 @@ pub fn language_code(lang: &str) -> String {
 /// assert_eq!(package_version("this-package-does-not-exist-1234"), None);
 /// ```
 pub fn package_version(package: &str) -> Option<String> {
-    let out = Command::new("dpkg-query")
-        .args(["-W", "-f=${Version}", package])
-        .output()
-        .ok()?;
-    let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    (out.status.success() && !version.is_empty()).then_some(version)
+    let version = capture_command_output(&["dpkg-query", "-W", "-f=${Version}", package]).ok()?;
+    let version = version.trim();
+    (!version.is_empty()).then(|| version.to_string())
 }
 
 #[cfg(test)]

@@ -34,10 +34,17 @@ pub fn run_background<T: Send + 'static>(
     work: impl FnOnce() -> T + Send + 'static,
     done: impl FnOnce(T) + 'static,
 ) {
-    glib::spawn_future_local(async move {
-        match gio::spawn_blocking(work).await {
-            Ok(result) => done(result),
-            Err(_) => log::error!("a background job panicked"),
-        }
+    spawn_background(work, |result| match result {
+        Some(result) => done(result),
+        None => log::error!("a background job panicked"),
     });
+}
+
+/// Like [`run_background`], but `done` is always called: with `None` if `work` panicked. The
+/// progress dialogs need that to close themselves in every case.
+pub(crate) fn spawn_background<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+    done: impl FnOnce(Option<T>) + 'static,
+) {
+    glib::spawn_future_local(async move { done(gio::spawn_blocking(work).await.ok()) });
 }

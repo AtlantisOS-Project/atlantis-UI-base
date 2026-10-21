@@ -17,6 +17,9 @@ What you have to look at when you update. Everything not listed here keeps worki
 | `delete_files_in_dir`           | no protection at all                                                                                        | refuses system paths, the home directory and its standard folders | Nothing                                                                             |
 | Cargo features                  | `vte4` always compiled                                                                                      | feature `log-viewer` (default on)                                 | Use `default-features = false` to drop VTE                                          |
 | Dependencies                    | `tokio`, `networkmanager` and `thiserror` always compiled                                                   | only with `experimental-api`                                      | Nothing; `libdbus` is no longer needed to build                                     |
+| `SystemInfo`                    | had no architecture                                                                                         | new field `architecture`: a struct literal needs `..Default::default()` |
+| `syslog`, `log`                 | `syslog` always compiled                                                                                    | `syslog` only on Unix; `log` with `std`; Windows logs to a file   |
+| `get_home_directory`            | only `$HOME`                                                                                                | `$HOME`, then the system (`USERPROFILE` on Windows)               |
 | Rust version                    | not declared                                                                                                | `rust-version = "1.92"`                                           | Use Rust 1.92 or newer (gtk4 0.11 needs it anyway)                                  |
 | Version                         | 0.1.9                                                                                                       | 0.2.0                                                             | Change `atlbase = "0.1"` to `"0.2"` (Cargo does not update across `0.x` on its own) |
 
@@ -76,7 +79,41 @@ that uses AtlBase gets them. `cargo run --example pages` shows the UI blocks tog
 | `show_confirm_dialog(parent, heading, body, confirm_label, on_confirm)` | `design::dialogs` | "Cancel" (the default) and a red button before something cannot be undone |
 | `show_work_dialog(parent, title, message, work)` | `design::dialogs` | A spinner while a closure runs in the background, then a success or error dialog |
 | `CommandTask`, `TaskOutcome`, `ErrorHint`, `task_error_text(error, hint)` | `design::dialogs` | A chain of commands with a progress dialog, a result dialog and optional explanations for known errors |
-| `FormDialog`, `PickRow`, `Pick`, `create_combo_row`, `selected_index`, `on_selection_change`, `create_switch_row` | `design::form` | Dialogs with a form: drop-down menus, switches, and rows to choose files or a folder |
+| `run_command_chain(commands)`, `CommandResult` | `helper::commands` | The chain of commands that every progress dialog runs, usable without a window |
+| `show_chooser(widget, pick, start_in, on_chosen)`, `show_files_chooser(widget, on_chosen)`, `Pick` | `design::chooser` | One function behind all selection dialogs; several files at once; a start folder |
+| `FormDialog`, `PickRow`, `create_combo_row`, `selected_index`, `on_selection_change`, `create_switch_row` | `design::form` | Dialogs with a form: drop-down menus, switches, and rows to choose files or a folder |
+
+#### New module `helper::platform`: the layer between a program and the operating system
+
+Everything that differs between Linux, Windows and macOS (and between x86_64 and arm64) is asked
+here, so a program does not contain `/usr/share`, `$HOME`, `pkexec` or `adb.exe`. The library uses
+the layer itself: the commands, the settings, the translations, the guides, the icons, the
+protection of `delete_files_*`, the system log and `SystemInfo` all go through it. Linux is run and
+tested; the mappings for Windows and macOS are covered by tests that run everywhere (every mapping
+takes the `Os` as a parameter), and the Windows build of these modules is checked with `cargo check
+--target x86_64-pc-windows-gnu` (`scripts/check-platform.sh`).
+
+| Item | What it does |
+|---|---|
+| `Os`, `Arch`, `Target` (`Os::current()`, `.exe_suffix()`, `.has_posix_shell()`, `Arch::name()`, `.debian_name()`) | Which operating system and which processor the program was built for, with the names other systems use |
+| `AppDirs::new(app)` (`.config_dir()`, `.config_file()`, `.data_dir()`, `.cache_dir()`, `.state_dir()`, `.log_file()`) | The folders of an application for settings, data, cache and logs (the mapping of XDG on Linux, `%APPDATA%` on Windows, `~/Library` on macOS) |
+| `home_dir()`, `documents_dir()` | The home directory (`$HOME`, then the system) and the folder for documents |
+| `DataDirs::current()`, `.data_dirs()` | The folders with read-only resources (translations, icons, guides), in search order, for deb/rpm, Flatpak, Snap, AppImage and relocated installs; one implementation instead of three |
+| `critical_paths(os)`, `protected_dirs(os)`, `standard_home_folders(os)`, `is_mount_point(path)` | What `delete_files_*` refuses, per operating system |
+| `find_program(name)`, `program_path(name)`, `register_tool_dir(dir)`, `package_bin_dirs(places)`, `is_executable(path)`, `program_file_names(os, name, pathext)` | Where a program is: bundled tool folders first, then the folders of the package format (`/app/bin`, `$SNAP/usr/bin`, `$APPDIR/usr/bin`), then `PATH`; `.exe` and `PATHEXT` on Windows |
+| `host_command(program)`, `host_command_line(&[String])` | `Command::new` for programs of the host: resolved like `find_program`, no console window flashing on Windows |
+| `elevation_command(command)`, `elevation_command_for(os, command)` | `pkexec` on Linux, `osascript` on macOS, `powershell … -Verb RunAs` on Windows |
+| `Feature` (`Elevation`, `HostTerminal`, `SystemLog`, `PackageInstall`, `PosixShell`), `supports(feature)`, `in_sandbox()` | What the host offers to this program; hide a button instead of failing |
+| `PackageManager` (`detect()`, `install_command(packages)`, `needs_elevation()`), `APT_SOURCES_DIR` | `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
+| `init_logging(app)`, `init_file_logging(path)`, `journal_follow_command(app)` | syslog on Linux and macOS, a log file on Windows; the command the log viewer follows |
+| `SystemInfo::architecture` | `x86_64` or `aarch64`; `SystemInfo::collect()` also works on Windows and macOS (name, architecture, language, desktop) |
+
+#### Less memory
+
+| Item | What it does |
+|---|---|
+| `set_renderer(Renderer::Software \| Gpu \| Vulkan \| Auto)` | Chooses how GTK draws the windows (`GSK_RENDERER`; the choice of the user wins, and Broadway keeps its own). A small window takes about 60 MB drawn on the processor, 115 MB with the default and 160 to 220 MB with `vulkan` or `ngl`: the driver of the graphics card is what costs. A program that wants to save the memory calls it; by default GTK decides |
+| tests `dialogs are freed` (`tests/design_gtk.rs`) | Every dialog of the library is opened and closed, and weak references show that nothing is left |
 
 #### New functions and types in existing modules
 
@@ -103,7 +140,7 @@ that uses AtlBase gets them. `cargo run --example pages` shows the UI blocks tog
 |---|---|---|
 | `carousel-toml` | on | `GuideLoader` and `GuideError` (adds the `toml` crate) |
 | `log-viewer` | on | `show_log_viewer`, `create_custom_headerbar` (adds VTE) |
-| `archive` | off | `helper::archive` (adds `tar`, `xz2`, `flate2`, `bzip2`, `zip`, `sevenz-rust`) |
+| `archive` | off | `helper::archive` (adds `tar`, `xz2`, `flate2`, `bzip2`, `zip`, `sevenz-rust`; the C code of bzip2 is compiled in, because the name of the system library differs between Debian and Fedora) |
 
 #### New files and directories
 
@@ -116,7 +153,7 @@ that uses AtlBase gets them. `cargo run --example pages` shows the UI blocks tog
 | `tests/` | Integration tests (see the README) |
 | `po/atlbase.pot`, `po/de.po` | Translations of the library (`po/` had no translation before) |
 | `po/update-pot.sh` | Collects the texts into `po/atlbase.pot` and merges them into the catalogs |
-| `docs/PACKAGING.md` | deb, rpm, Flatpak, Snap and AppImage |
+| `docs/PACKAGING.md` | deb, rpm, Flatpak, Snap and AppImage; packages for another architecture; builds that work on any system (containers, fixed tool versions, one file per format, Launchpad) |
 | `CHANGELOG/`, `docs/index.html` | This changelog as text (one file per version series) and as a web page |
 
 ### Changed
@@ -194,12 +231,15 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 
 | Function | Before | Now |
 |---|---|---|
-| `show_file_chooser`, `show_folder_chooser` | printed an error when the user cancelled | cancelling is silent; other errors are printed |
+| `show_file_chooser`, `show_folder_chooser` | printed an error when the user cancelled | cancelling is silent; other errors are logged |
 | `show_info_dialog`, `show_info_button_dialog`, `show_dialog_title` | an alert dialog with a heading, a text and a highlighted button; looked the same as an error dialog | a blue circle with an "i", the heading, the text, a neutral button |
 | `show_error_dialog`, `show_error_button_dialog`, `show_error_title_dialog`, `show_error_title_button_dialog` | the same plain alert dialog, only the heading said "Error" | a red circle with an "!", a red heading and a solid red button; the text can be selected and copied, a long text scrolls |
 | `show_about_dialog` | headings "Documentation", "Fonts", "Special thanks to" were English only; empty sections were shown | headings are translated; sections without content are left out |
 | `show_entry_dialog` | the buttons held strong references to the dialog (memory leak) | weak references |
 | `show_spinner_dialog`, `show_spinner_dialog_return_output`, `show_task_dialog` | three copies of the same code with three slightly different looks; the progress bar timer ran forever; `show_task_dialog` put the title into Pango markup (a `&` or `<` broke it) | one implementation: same look (`title-3` heading, spinner 96 px, bar 250 px wide), the timer stops with the dialog, titles are plain text |
+| the progress dialogs (`show_spinner_dialog`, `show_spinner_dialog_return_output`, `show_task_dialog`) | polled a channel every 25 ms, had two copies of the loop that runs the commands, and stayed open if the work panicked | one worker (`run_command_chain`) and one background helper; no polling; the dialog closes when the work panicked, too |
+| `show_alert_dialog`, `show_custom_content_dialog`, `show_image_dialog`, `create_button_icon*`, `create_label_icon*`, the buttons of the log viewer menu | each built the same alert dialog or the same icon-and-label box itself | share the code; the box of the log viewer entries has 5 instead of 6 pixels between icon and text |
+| `search_string_file`, `create_directory`, `expand_path`, `get_home_directory`, `delete_files_*`, `write_file`, `os_release_value`, `package_version` | each had its own copy of reading `$HOME`, listing a directory, creating a directory or parsing `KEY=VALUE` | use one implementation; the results are the same |
 | `commands_pkexec_*` | an empty list showed a dialog that closed at once | does nothing (as `command_pkexec_*` did already) |
 | `use_adw_provider` | one global provider; a second call made the first stylesheet overwrite the second on every theme change | one provider per call, reloaded independently |
 
@@ -234,6 +274,9 @@ breaking release (not decided).
 
 ### Fixed
 
+* `FormDialog` and `PickRow` were never freed: the handlers of their buttons held the dialog (the
+  row) strongly, so each opened form stayed in memory (about 1 MB). They hold it weakly now, and
+  `FormDialog::ok_button()` gives the main button to closures that must not keep the form alive.
 * Deleting the files of parent directories in `delete_files_and_parents` (data loss).
 * Lines glued together by `add_line_file`.
 * NUL bytes in the temporary file after `clear_temp_file`.

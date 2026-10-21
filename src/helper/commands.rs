@@ -19,6 +19,8 @@
 //! [`get_execution_environment`](crate::helper::configuration::application_environment::get_execution_environment)
 //! to hide the corresponding buttons.
 
+pub mod command_chain;
+
 pub mod command_exists;
 
 pub mod command_line;
@@ -32,6 +34,7 @@ pub mod open_terminal_desktop;
 pub mod open_url;
 
 // Re-exports
+pub use command_chain::*;
 pub use command_exists::*;
 pub use command_line::*;
 pub use command_pkexec::*;

@@ -12,7 +12,7 @@
 //! `..`.
 
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, ErrorKind};
 use std::path::Path;
 
 /// Searches a configuration file for a key and returns its value.
@@ -60,25 +60,30 @@ pub fn get_config_value<P: AsRef<Path>>(filename: P, key: &str) -> Option<String
         .map_err(|e| eprintln!("Could not open {:?}: {}", path, e))
         .ok()?;
 
-    for line in BufReader::new(file).lines() {
-        let Ok(line) = line else { continue };
-        let Some(rest) = line.trim().strip_prefix(key) else {
-            continue;
-        };
-        // the key must be followed by `=` (optionally after spaces), not by more letters
-        let Some(value) = rest.trim_start().strip_prefix('=') else {
-            continue;
-        };
+    // a line that is not valid UTF-8 is skipped; any other read error ends the search
+    BufReader::new(file)
+        .lines()
+        .map_while(|line| match line {
+            Ok(line) => Some(Some(line)),
+            Err(error) if error.kind() == ErrorKind::InvalidData => Some(None),
+            Err(_) => None,
+        })
+        .flatten()
+        .find_map(|line| config_line_value(&line, key))
+}
 
-        let mut value = value.trim();
-        if let Some(unquoted) = value.strip_prefix('"') {
-            value = unquoted;
-        }
-        if let Some(end) = value.find('"') {
-            value = &value[..end];
-        }
-        return Some(value.to_string());
+/// The value of `key` in one line `KEY=VALUE` or `KEY="VALUE"`; the parser behind
+/// [`get_config_value`], also used for text that is already in memory (`/etc/os-release`).
+pub(crate) fn config_line_value(line: &str, key: &str) -> Option<String> {
+    let rest = line.trim().strip_prefix(key)?;
+
+    // the key must be followed by `=` (optionally after spaces), not by more letters
+    let mut value = rest.trim_start().strip_prefix('=')?.trim();
+    if let Some(unquoted) = value.strip_prefix('"') {
+        value = unquoted;
     }
-
-    None
+    if let Some(end) = value.find('"') {
+        value = &value[..end];
+    }
+    Some(value.to_string())
 }

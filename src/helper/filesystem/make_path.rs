@@ -36,7 +36,7 @@ use std::path::Path;
 /// ```
 pub fn create_directory<P: AsRef<Path>>(path: P) {
     let path = path.as_ref();
-    match fs::create_dir_all(path) {
+    match make_path(path) {
         Ok(_) => println!("[DEBUG] Directory created or already exists: {:?}", path),
         Err(e) => eprintln!(
             "[ERROR] Error when creating the directory {:?}: {}",

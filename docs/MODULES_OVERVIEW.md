@@ -21,6 +21,8 @@ atlbase
 │   │                    search_file_directory, search_string_name
 │   ├── language         language (gettext, locale directory lookup)
 │   ├── log              write_log (syslog), write_log_text (journal viewer, feature log-viewer)
+│   ├── platform         target, dirs, program, elevate, feature, package, logging
+│   │                    (the layer between a program and the operating system)
 │   └── sysinfo          system_info (distribution, kernel, processor, packages)
 ├── design           everything with a user interface
 │   ├── carousel         multi-page guides: model, render, view, load (TOML), style
@@ -57,6 +59,13 @@ atlbase
 | `helper::language::language` | gettext initialization, `LIB_DOMAIN`, `translate` |
 | `helper::log::write_log` | `log` crate backend for syslog |
 | `helper::log::write_log_text` | Journal viewer window and header bar menu |
+| `helper::platform::target` | `Os`, `Arch`, `Target`: the system and processor the program was built for |
+| `helper::platform::dirs` | `AppDirs` (settings, data, cache, logs), `home_dir`, `DataDirs` (resources), protected paths |
+| `helper::platform::program` | Find and start programs of the host: `find_program`, `host_command`, `register_tool_dir` |
+| `helper::platform::elevate` | Run a command as administrator: `pkexec`, `osascript` or UAC |
+| `helper::platform::feature` | `supports(Feature::…)`: what the host offers |
+| `helper::platform::package` | `PackageManager`: `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
+| `helper::platform::logging` | `init_logging`: syslog or a log file; the command that follows the journal |
 | `helper::sysinfo::system_info` | Distribution, kernel, processor, graphics card, package versions |
 | `design::carousel` | Swipeable multi-page guides (builder or TOML) |
 | `design::chooser::*` | File and folder dialogs |
