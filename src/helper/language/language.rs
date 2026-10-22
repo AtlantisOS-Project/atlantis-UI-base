@@ -307,8 +307,9 @@ fn bind_library_domain(default_dir: &str, var: EnvLookup) {
 ///
 /// # Safety notes
 ///
-/// With `debug_lang` the function changes the environment variables `LC_ALL` and `LANG`.
-/// Changing the environment is not thread-safe, so call it before other threads start.
+/// The function calls `setlocale`, which reads the environment without a lock, and with
+/// `debug_lang` it changes the environment variables `LC_ALL` and `LANG`. Neither is
+/// thread-safe, so call it first thing in `main`, before other threads start.
 ///
 /// # Examples
 ///
@@ -321,15 +322,16 @@ fn bind_library_domain(default_dir: &str, var: EnvLookup) {
 pub fn init_language(domain: &str, default_dir: &str, debug_lang: bool) {
     *lock(&CURRENT_DOMAIN) = domain.to_string();
 
-    if debug_lang {
-        // SAFETY: documented above; the caller must not have other threads running yet.
-        unsafe {
+    // SAFETY: documented above; the caller must not have other threads running yet. That covers
+    // both the environment and `setlocale`, which reads the environment without a lock.
+    unsafe {
+        if debug_lang {
             env::set_var("LC_ALL", "en_US.UTF-8");
             env::set_var("LANG", "en_US.UTF-8");
+            setlocale(LocaleCategory::LcAll, "en_US.UTF-8");
+        } else {
+            setlocale(LocaleCategory::LcAll, "");
         }
-        setlocale(LocaleCategory::LcAll, "en_US.UTF-8");
-    } else {
-        setlocale(LocaleCategory::LcAll, "");
     }
 
     let var = |key: &str| env::var_os(key).filter(|value| !value.is_empty());

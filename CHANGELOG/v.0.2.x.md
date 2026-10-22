@@ -22,7 +22,7 @@ What you have to look at when you update. Everything not listed here keeps worki
 | `SystemInfo`                    | had no architecture                                                                                         | new field `architecture`: a struct literal needs `..Default::default()` |
 | `syslog`, `log`                 | `syslog` always compiled                                                                                    | `syslog` only on Unix; `log` with `std`; Windows logs to a file   |
 | `get_home_directory`            | only `$HOME`                                                                                                | `$HOME`, then the system (`USERPROFILE` on Windows)               |
-| Rust version                    | not declared                                                                                                | `rust-version = "1.92"`                                           | Use Rust 1.92 or newer (gtk4 0.11 needs it anyway)                                  |
+| Rust version                    | not declared                                                                                                | `rust-version = "1.93"`                                           | Use Rust 1.93 or newer (gtk4 0.11 needs 1.92, sevenz-rust2 of the feature `archive` 1.93) |
 | Version                         | 0.1.9                                                                                                       | 0.2.0                                                             | Change `atlbase = "0.1"` to `"0.2"` (Cargo does not update across `0.x` on its own) |
 
 ### Added
@@ -168,7 +168,7 @@ Windows build is checked with `cargo check --target x86_64-pc-windows-gnu`
 |---|---|---|
 | `carousel-toml` | on | `GuideLoader` and `GuideError` (adds the `toml` crate) |
 | `log-viewer` | on | `show_log_viewer`, `create_custom_headerbar` (adds VTE) |
-| `archive` | off | `helper::archive` (adds `tar`, `xz2`, `flate2`, `bzip2`, `zip`, `sevenz-rust`; the C code of bzip2 is compiled in, because the name of the system library differs between Debian and Fedora) |
+| `archive` | off | `helper::archive` (adds `tar`, `xz2`, `flate2`, `bzip2`, `zip`, `sevenz-rust2`; the C code of bzip2 is compiled in, because the name of the system library differs between Debian and Fedora) |
 | `download` | off | `helper::download`: `download_file(url, destination, progress)` over HTTP(S) without `curl` (adds `ureq` with rustls and the bundled root certificates; no system library) |
 | `format-flatpak`, `format-snap`, `format-appimage`, `format-native` | all on | The package formats that are compiled in (see `helper::platform`): enable only the one you build for to leave the code of the others out; at least one is needed |
 
@@ -231,6 +231,7 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 | `write_to_temp` | wrote at the position the cursor happened to have (after `clear_temp_file` this produced NUL bytes) | always appends |
 | `clear_temp_file` | truncated, but left the cursor behind | truncates and resets the cursor (as documented) |
 | temporary file | a panic in another thread poisoned the file for good | a poisoned lock is ignored |
+| temporary file | a file with a name that stayed in `$TMPDIR` after the program had ended, with everything that was written to it | a file without a name: the system deletes it when the program ends or is killed |
 
 ##### `helper::filesystem`
 
@@ -332,6 +333,19 @@ breaking release (not decided).
 * The `./po` lookup relative to the working directory is gone.
 * `open_terminal_by_desktop`: documented that the command is run by a shell; the AppleScript string
   is escaped on macOS.
+* Unpacking an archive (`decompress`, `decompress_file`) is safe against crafted archives now:
+  * A 7z entry with `..` or an absolute path is refused and nothing is written outside the output
+    folder (RUSTSEC-2026-0245 of `sevenz-rust`). The unmaintained `sevenz-rust` is replaced by
+    `sevenz-rust2`.
+  * `zip` is updated from 1.x to 9 (RUSTSEC-2025-0168, RUSTSEC-2026-0367, RUSTSEC-2026-0368,
+    RUSTSEC-2026-0369): setuid and setgid bits of a zip are no longer set on the unpacked files,
+    and symbolic links of an archive cannot lead out of the output folder.
+  * The list of unpacked files does not follow a symbolic link of the archive any more, so a link
+    to `/` can no longer make the library walk through the whole file system.
+* The temporary file (`write_to_temp`) no longer stays in `$TMPDIR` after the program has ended.
+* `gettext-rs` is updated to 0.8 (RUSTSEC-2026-0244): `setlocale` is `unsafe` there, because it reads
+  the environment without a lock. `init_language` documents that it must run before other threads
+  start.
 
 ### Build and packaging
 

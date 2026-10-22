@@ -9,16 +9,18 @@
 //!
 //! The module offers a thread-safe, globally accessible interface for one temporary file
 //! that exists only while the application runs. It is handy to pass small amounts of text
-//! between parts of an application, or to a helper process, without inventing a file name.
+//! between the parts of an application without inventing a file name.
 //!
 //! # How it works
 //!
 //! * The file is created on first access in the temporary directory of the system
-//!   (`$TMPDIR`, usually `/tmp`; Flatpak and Snap give each application a private one).
+//!   (`$TMPDIR`, usually `/tmp`; Flatpak and Snap give each application a private one) and
+//!   only the current user can read it.
 //! * A [`OnceLock`] guarantees the thread-safe lazy creation and a [`Mutex`] serializes
 //!   the access.
-//! * The file is a [`NamedTempFile`] and is removed when the application ends normally. It
-//!   cannot be removed if the process is killed.
+//! * The file has no name: the system deletes it when the last handle is closed, which also
+//!   happens when the process is killed. Nothing of the text stays on the disk. (A file with a
+//!   name in a `static` would stay, because Rust does not drop statics when a program ends.)
 //!
 //! # Examples
 //!
@@ -37,22 +39,23 @@
 //! assert_eq!(read_from_temp().unwrap(), "");
 //! ```
 
+use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::sync::{Mutex, MutexGuard, OnceLock};
-use tempfile::NamedTempFile;
 
-/// Global storage of the temporary file. The file is deleted when the object is dropped.
-static TEMP_FILE: OnceLock<Mutex<NamedTempFile>> = OnceLock::new();
+/// Global storage of the temporary file. It is a file without a name, so the system deletes it
+/// by itself, whatever happens to the process.
+static TEMP_FILE: OnceLock<Mutex<File>> = OnceLock::new();
 
 /// Locks the temporary file; creates it on first use.
 ///
 /// # Panics
 ///
 /// Panics if the file cannot be created in the temporary directory of the system.
-fn lock_temp_file() -> MutexGuard<'static, NamedTempFile> {
+fn lock_temp_file() -> MutexGuard<'static, File> {
     TEMP_FILE
         .get_or_init(|| {
-            let file = NamedTempFile::new().expect("temporary file could not be created");
+            let file = tempfile::tempfile().expect("temporary file could not be created");
             Mutex::new(file)
         })
         .lock()
@@ -87,9 +90,9 @@ pub fn write_to_temp(data: &str) -> io::Result<()> {
     let mut file = lock_temp_file();
 
     // a previous read or clear may have left the cursor somewhere else
-    file.as_file_mut().seek(SeekFrom::End(0))?;
-    file.as_file_mut().write_all(data.as_bytes())?;
-    file.as_file_mut().flush()
+    file.seek(SeekFrom::End(0))?;
+    file.write_all(data.as_bytes())?;
+    file.flush()
 }
 
 /// Reads the entire content of the temporary file.
@@ -115,9 +118,9 @@ pub fn write_to_temp(data: &str) -> io::Result<()> {
 pub fn read_from_temp() -> io::Result<String> {
     let mut file = lock_temp_file();
 
-    file.as_file_mut().seek(SeekFrom::Start(0))?;
+    file.seek(SeekFrom::Start(0))?;
     let mut content = String::new();
-    file.as_file_mut().read_to_string(&mut content)?;
+    file.read_to_string(&mut content)?;
     Ok(content)
 }
 
@@ -143,8 +146,8 @@ pub fn read_from_temp() -> io::Result<String> {
 pub fn clear_temp_file() -> io::Result<()> {
     let mut file = lock_temp_file();
 
-    file.as_file().set_len(0)?;
-    file.as_file_mut().seek(SeekFrom::Start(0))?;
+    file.set_len(0)?;
+    file.seek(SeekFrom::Start(0))?;
     Ok(())
 }
 
@@ -179,9 +182,9 @@ pub fn clear_temp_file() -> io::Result<()> {
 pub fn remove_line_from_temp(line_number: usize) -> io::Result<()> {
     let mut file = lock_temp_file();
 
-    file.as_file_mut().seek(SeekFrom::Start(0))?;
+    file.seek(SeekFrom::Start(0))?;
     let mut content = String::new();
-    file.as_file_mut().read_to_string(&mut content)?;
+    file.read_to_string(&mut content)?;
 
     let lines: Vec<&str> = content.lines().collect();
     if line_number >= lines.len() {
@@ -199,8 +202,8 @@ pub fn remove_line_from_temp(line_number: usize) -> io::Result<()> {
         }
     }
 
-    file.as_file().set_len(0)?;
-    file.as_file_mut().seek(SeekFrom::Start(0))?;
-    file.as_file_mut().write_all(new_content.as_bytes())?;
-    file.as_file_mut().flush()
+    file.set_len(0)?;
+    file.seek(SeekFrom::Start(0))?;
+    file.write_all(new_content.as_bytes())?;
+    file.flush()
 }

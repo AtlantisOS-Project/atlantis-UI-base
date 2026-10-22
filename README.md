@@ -116,7 +116,7 @@ is in.
 
 ### System requirements
 
-Rust 1.92 or newer, GTK 4.20 or newer and Libadwaita 1.8 or newer (development packages).
+Rust 1.93 or newer, GTK 4.20 or newer and Libadwaita 1.8 or newer (development packages).
 `gettext` provides `msgfmt`, which compiles the translations of the library (optional, but without
 it the texts of the library stay English).
 

@@ -8,7 +8,7 @@ This page lists what the library needs in each format and how it behaves at run 
 
 | Component | Needed | Where you get it |
 |---|---|---|
-| Rust | 1.92 or newer | rustup, Fedora 43+, Arch, the Flatpak Rust SDK extension |
+| Rust | 1.93 or newer | rustup, Fedora 43+, Arch, the Flatpak Rust SDK extension |
 | GTK | 4.20 or newer | GNOME runtime 49, Fedora 43, Ubuntu 25.10, Arch |
 | Libadwaita | 1.8 or newer | the same |
 | VTE (GTK 4) | only with the feature `log-viewer` | `libvte-2.91-gtk4` |
@@ -89,7 +89,7 @@ else in the library changes.
 ## Debian / Ubuntu (deb)
 
 ```text
-Build-Depends: debhelper-compat (= 13), cargo, rustc (>= 1.92), pkg-config, gettext,
+Build-Depends: debhelper-compat (= 13), cargo, rustc (>= 1.93), pkg-config, gettext,
  libgtk-4-dev (>= 4.20), libadwaita-1-dev (>= 1.8), libvte-2.91-gtk4-dev
 Depends: ${shlibs:Depends}, ${misc:Depends}
 ```
@@ -101,7 +101,7 @@ to `.cargo/config.toml`, or use `dh-cargo`. Install the catalogs of your applica
 ## Fedora / openSUSE (rpm)
 
 ```text
-BuildRequires: cargo rust >= 1.92 pkgconfig gettext
+BuildRequires: cargo rust >= 1.93 pkgconfig gettext
 BuildRequires: pkgconfig(gtk4) >= 4.20 pkgconfig(libadwaita-1) >= 1.8 pkgconfig(vte-2.91-gtk4)
 ```
 

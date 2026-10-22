@@ -52,7 +52,10 @@ fn the_application_domain_overrides_the_library_domain() {
     init_language("test-app", locale_dir.to_str().unwrap(), false);
     assert_eq!(get_language_dir(), locale_dir);
 
-    if gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "de_DE.UTF-8").is_none() {
+    // SAFETY: the only test of this binary, so no other thread uses the environment
+    let installed =
+        unsafe { gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "de_DE.UTF-8") };
+    if installed.is_none() {
         eprintln!("skipped: the locale de_DE.UTF-8 is not installed");
         return;
     }

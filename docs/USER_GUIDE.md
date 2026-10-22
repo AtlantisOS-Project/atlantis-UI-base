@@ -16,7 +16,7 @@ adw = { version = "0.9", package = "libadwaita", features = ["v1_8"] }
 
 **Requirements** (build and run time):
 
-- Rust 1.92 or newer
+- Rust 1.93 or newer
 - GTK 4.20 or newer, Libadwaita 1.8 or newer
 - VTE for GTK 4 (`libvte-2.91-gtk4`), only with the feature `log-viewer` (default)
 - `gettext` (`msgfmt`) at build time, for the translations of the library

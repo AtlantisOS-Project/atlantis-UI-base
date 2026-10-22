@@ -37,3 +37,30 @@ fn the_temporary_file_behaves_like_a_log() {
     write_to_temp("five").unwrap();
     assert_eq!(read_from_temp().unwrap(), "five");
 }
+
+/// A program that ends normally, or is killed, leaves nothing of the text in the temporary
+/// directory. The test starts itself again as the program (`ATL_TEMP_CHILD`) with a temporary
+/// directory of its own.
+#[cfg(unix)]
+#[test]
+fn nothing_stays_behind_when_the_program_ends() {
+    const TEST: &str = "nothing_stays_behind_when_the_program_ends";
+
+    if std::env::var_os("ATL_TEMP_CHILD").is_some() {
+        write_to_temp("SECRET").unwrap();
+        assert_eq!(read_from_temp().unwrap(), "SECRET");
+        return;
+    }
+
+    let tmp = tempfile::tempdir().unwrap();
+    let status = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", TEST])
+        .env("ATL_TEMP_CHILD", "1")
+        .env("TMPDIR", tmp.path())
+        .status()
+        .unwrap();
+    assert!(status.success());
+
+    let left: Vec<_> = std::fs::read_dir(tmp.path()).unwrap().flatten().collect();
+    assert!(left.is_empty(), "left behind: {left:?}");
+}

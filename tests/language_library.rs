@@ -35,7 +35,8 @@ fn library_texts_are_translated_from_the_embedded_catalog() {
     assert_eq!(get_current_domain(), "some-app-without-catalog");
 
     // the glibc locale of the machine decides whether translations can be used at all
-    if setlocale(LocaleCategory::LcAll, "de_DE.UTF-8").is_none() {
+    // SAFETY: the only test of this binary, so no other thread uses the environment
+    if unsafe { setlocale(LocaleCategory::LcAll, "de_DE.UTF-8") }.is_none() {
         eprintln!("skipped: the locale de_DE.UTF-8 is not installed");
         return;
     }

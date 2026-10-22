@@ -175,14 +175,15 @@ fn decompressed_name(path: &Path, format: ArchiveFormat) -> String {
     }
 }
 
-/// All regular files below `dir`.
+/// All entries below `dir` that are not folders. A symbolic link is listed as itself and never
+/// followed: an archive can contain a link to any place on the computer.
 fn files_below(dir: &Path, found: &mut Vec<PathBuf>) -> io::Result<()> {
     for entry in fs::read_dir(dir)? {
-        let path = entry?.path();
-        if path.is_dir() {
-            files_below(&path, found)?;
+        let entry = entry?;
+        if entry.file_type()?.is_dir() {
+            files_below(&entry.path(), found)?;
         } else {
-            found.push(path);
+            found.push(entry.path());
         }
     }
     Ok(())
@@ -240,7 +241,7 @@ pub fn decompress(
             single(&mut bzip2::read::BzDecoder::new(reader()?))?;
         }
         ArchiveFormat::Zip => zip::ZipArchive::new(reader()?)?.extract(out)?,
-        ArchiveFormat::SevenZ => sevenz_rust::decompress_file(path, out)?,
+        ArchiveFormat::SevenZ => sevenz_rust2::decompress_file(path, out)?,
     }
 
     // move the result up: the top-level entries replace what has the same name
@@ -254,7 +255,7 @@ pub fn decompress(
             fs::remove_file(&to)?;
         }
         fs::rename(&from, &to)?;
-        if to.is_dir() {
+        if to.symlink_metadata()?.is_dir() {
             files_below(&to, &mut created)?;
         } else {
             created.push(to);
@@ -397,7 +398,7 @@ mod tests {
         fs::create_dir(&source).unwrap();
         fs::write(source.join("boot.img"), b"boot data").unwrap();
         let archive = root.path().join("a.7z");
-        sevenz_rust::compress_to_path(&source, &archive).unwrap();
+        sevenz_rust2::compress_to_path(&source, &archive).unwrap();
         assert_eq!(
             detect_format(&archive).unwrap(),
             Some(ArchiveFormat::SevenZ)
@@ -406,6 +407,122 @@ mod tests {
         let out = root.path().join("out");
         let files = decompress_file(&archive, &out).unwrap();
         assert_eq!(fs::read(&files[0]).unwrap(), b"boot data");
+    }
+
+    /// A 7z archive with one file under the name `name`, written without any check of the name.
+    fn seven_z_with_entry(path: &Path, name: &str) {
+        let mut writer = sevenz_rust2::ArchiveWriter::create(path).unwrap();
+        writer
+            .push_archive_entry(
+                sevenz_rust2::ArchiveEntry::new_file(name),
+                Some(&b"written outside"[..]),
+            )
+            .unwrap();
+        writer.finish().unwrap();
+    }
+
+    #[test]
+    fn a_7z_entry_cannot_leave_the_output_folder() {
+        let root = tempfile::tempdir().unwrap();
+        let out = root.path().join("work/out");
+        fs::create_dir_all(&out).unwrap();
+        let outside = root.path().join("outside.txt");
+        let beside = root.path().join("work/beside.txt");
+
+        // `..` (also written as a Windows path) and an absolute path
+        for (index, name) in [
+            "../../outside.txt".to_string(),
+            "..\\..\\outside.txt".to_string(),
+            "../beside.txt".to_string(),
+            outside.to_string_lossy().into_owned(),
+        ]
+        .iter()
+        .enumerate()
+        {
+            let archive = root.path().join(format!("evil{index}.7z"));
+            seven_z_with_entry(&archive, name);
+            assert!(decompress_file(&archive, &out).is_err(), "{name}");
+        }
+
+        assert!(!outside.exists() && !beside.exists());
+        assert_eq!(
+            fs::read_dir(&out).unwrap().count(),
+            0,
+            "nothing is left behind"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_zip_does_not_keep_setuid_bits() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = tempfile::tempdir().unwrap();
+        let mut zip = zip_bytes();
+        // the writer masks the mode: set `-rwsr-xr-x` in the central directory by hand (the
+        // 4 bytes of the external attributes start 38 bytes after the signature `PK\x01\x02`)
+        let header = zip.windows(4).position(|w| w == b"PK\x01\x02").unwrap();
+        zip[header + 38..header + 42].copy_from_slice(&(0o104755u32 << 16).to_le_bytes());
+        let archive = root.path().join("suid.zip");
+        write_with(&archive, &zip);
+
+        let files = decompress_file(&archive, &root.path().join("out")).unwrap();
+        let mode = fs::metadata(&files[0]).unwrap().permissions().mode();
+        assert_eq!(mode & 0o7000, 0, "mode is {mode:o}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_zip_cannot_write_through_a_symbolic_link_to_another_folder() {
+        let root = tempfile::tempdir().unwrap();
+        let outside = root.path().join("outside");
+        fs::create_dir(&outside).unwrap();
+
+        let options = zip::write::SimpleFileOptions::default();
+        let mut writer = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+        writer
+            .add_symlink("link", outside.to_str().unwrap(), options)
+            .unwrap();
+        writer.start_file("link/pwned.txt", options).unwrap();
+        writer.write_all(b"written outside").unwrap();
+        let archive = root.path().join("link.zip");
+        write_with(&archive, &writer.finish().unwrap().into_inner());
+
+        // whether the archive is refused or only the link is skipped does not matter
+        let _ = decompress_file(&archive, &root.path().join("out"));
+        assert_eq!(fs::read_dir(&outside).unwrap().count(), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symbolic_link_in_an_archive_is_listed_but_never_followed() {
+        let root = tempfile::tempdir().unwrap();
+        let secret = root.path().join("secret");
+        fs::create_dir_all(secret.join("deeper")).unwrap();
+        fs::write(secret.join("private.txt"), b"x").unwrap();
+        fs::write(secret.join("deeper/more.txt"), b"x").unwrap();
+
+        let link = |builder: &mut tar::Builder<Vec<u8>>, name: &str| {
+            let mut header = tar::Header::new_gnu();
+            header.set_entry_type(tar::EntryType::Symlink);
+            header.set_size(0);
+            builder.append_link(&mut header, name, &secret).unwrap();
+        };
+        let mut builder = tar::Builder::new(Vec::new());
+        let mut dir = tar::Header::new_gnu();
+        dir.set_entry_type(tar::EntryType::Directory);
+        dir.set_mode(0o755);
+        dir.set_size(0);
+        builder.append_data(&mut dir, "d/", &b""[..]).unwrap();
+        link(&mut builder, "d/link");
+        link(&mut builder, "top");
+        let archive = root.path().join("links.tar");
+        write_with(&archive, &builder.into_inner().unwrap());
+
+        let out = root.path().join("out");
+        let files = decompress_file(&archive, &out).unwrap();
+        assert_eq!(files, [out.join("d/link"), out.join("top")]);
+        assert!(files.iter().all(|file| file.starts_with(&out)));
     }
 
     #[test]
