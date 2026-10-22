@@ -21,6 +21,8 @@
 //! The settings file of [`get_config`](crate::helper::configuration::toml_config::get_config)
 //! is [`AppDirs::config_file`].
 
+use super::os::{os_profile, os_profile_for};
+use super::package_format::{Lookup, PackageFormat, package_roots};
 use super::target::Os;
 use directories::{BaseDirs, ProjectDirs, UserDirs};
 use std::env;
@@ -130,12 +132,8 @@ pub struct DataDirs {
     pub(crate) home: Option<PathBuf>,
     pub(crate) xdg_data_home: Option<PathBuf>,
     pub(crate) xdg_data_dirs: Option<OsString>,
-    /// `$SNAP`, set in Snap packages
-    pub(crate) snap: Option<PathBuf>,
-    /// `$APPDIR`, set by the AppImage runtime
-    pub(crate) appdir: Option<PathBuf>,
-    /// `$FLATPAK_ID` is set, so we run in a Flatpak sandbox
-    pub(crate) flatpak: bool,
+    /// The roots of the package formats the program may run in (`$SNAP`, `$APPDIR`, `/app`).
+    pub(crate) roots: Vec<(&'static PackageFormat, PathBuf)>,
     /// `<prefix>` of `<prefix>/bin/<program>`: how a relocatable install (a Windows bundle, a
     /// folder in a home directory) lays out its `share`
     pub(crate) exe_prefix: Option<PathBuf>,
@@ -144,13 +142,11 @@ pub struct DataDirs {
 impl Default for DataDirs {
     fn default() -> Self {
         DataDirs {
-            os: Os::Linux,
+            os: Os::current(),
             home: None,
             xdg_data_home: None,
             xdg_data_dirs: None,
-            snap: None,
-            appdir: None,
-            flatpak: false,
+            roots: Vec::new(),
             exe_prefix: None,
         }
     }
@@ -173,35 +169,33 @@ impl DataDirs {
 
     /// Like [`current`](DataDirs::current), but the variables come from `var`. Empty values
     /// count as unset.
-    pub(crate) fn from_lookup(var: &dyn Fn(&str) -> Option<OsString>) -> DataDirs {
+    pub(crate) fn from_lookup(var: Lookup) -> DataDirs {
         let var = |key: &str| var(key).filter(|value| !value.is_empty());
         DataDirs {
             os: Os::current(),
             home: var("HOME").map(PathBuf::from),
             xdg_data_home: var("XDG_DATA_HOME").map(PathBuf::from),
             xdg_data_dirs: var("XDG_DATA_DIRS"),
-            snap: var("SNAP").map(PathBuf::from),
-            appdir: var("APPDIR").map(PathBuf::from),
-            flatpak: var("FLATPAK_ID").is_some(),
+            roots: package_roots(&var),
             exe_prefix: env::current_exe()
                 .ok()
                 .and_then(|exe| exe.parent()?.parent().map(Path::to_path_buf)),
         }
     }
 
-    /// The roots of relocatable installs: `$SNAP`, then `$APPDIR`. A path like
-    /// `/usr/share/locale` lives below such a root.
-    pub(crate) fn app_roots(&self) -> Vec<&Path> {
-        [&self.snap, &self.appdir]
-            .into_iter()
-            .flatten()
-            .map(PathBuf::as_path)
-            .collect()
+    /// The package formats that report a root, with the root.
+    pub(crate) fn roots(&self) -> &[(&'static PackageFormat, PathBuf)] {
+        &self.roots
     }
 
-    /// Whether the program runs in a Flatpak sandbox.
-    pub(crate) fn is_flatpak(&self) -> bool {
-        self.flatpak
+    /// The roots of the packages that are mounted below a folder that is only known at run time
+    /// (`$SNAP`, `$APPDIR`): a path that was compiled in (`/usr/share/app`) lives below them.
+    pub(crate) fn relocated_roots(&self) -> Vec<PathBuf> {
+        self.roots
+            .iter()
+            .filter(|(format, _)| format.relocated)
+            .map(|(_, root)| root.clone())
+            .collect()
     }
 
     /// The data folders of the system: `$XDG_DATA_DIRS`, or the usual ones of the operating
@@ -211,23 +205,25 @@ impl DataDirs {
             Some(list) => env::split_paths(list)
                 .filter(|dir| dir.is_absolute())
                 .collect(),
-            None => default_system_dirs(self.os)
-                .iter()
-                .map(PathBuf::from)
-                .collect(),
+            None => self.default_system_dirs(),
         }
     }
 
+    /// The data folders of the operating system when `$XDG_DATA_DIRS` is not set.
+    pub(crate) fn default_system_dirs(&self) -> Vec<PathBuf> {
+        os_profile_for(self.os)
+            .unwrap_or_else(os_profile)
+            .default_share_dirs
+            .iter()
+            .map(PathBuf::from)
+            .collect()
+    }
+
     /// All folders that may hold read-only resources, in search order, without duplicates:
-    /// the data folder of the user, the data folders of the system, and the folders that
-    /// Flatpak, Snap, AppImage and a relocated install add.
-    ///
-    /// * deb/rpm package: `/usr/share` (or `/usr/local/share`)
-    /// * Flatpak: `/app/share`; Flatpak usually sets `XDG_DATA_DIRS` accordingly
-    /// * Snap: `$SNAP/usr/share` and `$SNAP/share`; depending on the Snap extension they are
-    ///   not part of `XDG_DATA_DIRS`
-    /// * AppImage: `$APPDIR/usr/share`
-    /// * a relocated install (Windows bundle): `<prefix>/share` next to `<prefix>/bin`
+    /// the data folder of the user, the data folders of the system, the shared folders of the
+    /// package format the program runs in ([`PackageFormat::share_dirs`]: `/app/share` of a Flatpak,
+    /// `$SNAP/usr/share` and `$SNAP/share` of a Snap, `$APPDIR/usr/share` of an AppImage), and
+    /// `<prefix>/share` next to `<prefix>/bin` of a relocated install (a Windows bundle).
     pub fn data_dirs(&self) -> Vec<PathBuf> {
         let mut dirs: Vec<PathBuf> = Vec::new();
         let mut push = |dir: PathBuf| {
@@ -242,116 +238,13 @@ impl DataDirs {
             (None, None) => {}
         }
         self.system_dirs().into_iter().for_each(&mut push);
-        if self.flatpak {
-            push(PathBuf::from("/app/share"));
-        }
-        if let Some(snap) = &self.snap {
-            push(snap.join("usr/share"));
-            push(snap.join("share"));
-        }
-        if let Some(appdir) = &self.appdir {
-            push(appdir.join("usr/share"));
+        for (format, root) in &self.roots {
+            format.share_paths(root).into_iter().for_each(&mut push);
         }
         if let Some(prefix) = &self.exe_prefix {
             push(prefix.join("share"));
         }
         dirs
-    }
-}
-
-/// The data folders of an operating system when `$XDG_DATA_DIRS` is not set.
-fn default_system_dirs(os: Os) -> &'static [&'static str] {
-    match os {
-        Os::Windows => &[],
-        Os::MacOs => &["/usr/local/share", "/opt/homebrew/share", "/usr/share"],
-        Os::Linux | Os::Other => &["/usr/local/share", "/usr/share"],
-    }
-}
-
-/// Folders that must never be deleted, nor anything below them (system folders).
-///
-/// # Examples
-///
-/// ```
-/// use atlbase::prelude::{Os, critical_paths};
-///
-/// assert!(critical_paths(Os::Linux).contains(&"/usr"));
-/// assert!(critical_paths(Os::Windows).contains(&"C:\\Windows"));
-/// ```
-pub fn critical_paths(os: Os) -> &'static [&'static str] {
-    match os {
-        Os::Windows => &[
-            "C:\\Windows",
-            "C:\\Program Files",
-            "C:\\Program Files (x86)",
-            "C:\\ProgramData",
-        ],
-        Os::MacOs => &[
-            "/System",
-            "/Library",
-            "/Applications",
-            "/bin",
-            "/sbin",
-            "/usr",
-            "/etc",
-            "/var",
-            "/private",
-            "/dev",
-            "/cores",
-        ],
-        Os::Linux | Os::Other => &[
-            "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", "/sys", "/dev", "/lib", "/lib32",
-            "/lib64", "/boot", "/root",
-        ],
-    }
-}
-
-/// Folders that must not be deleted themselves; what is inside is not protected.
-pub fn protected_dirs(os: Os) -> &'static [&'static str] {
-    match os {
-        Os::Windows => &["C:\\Users"],
-        Os::MacOs => &["/Users", "/Volumes", "/tmp", "/opt"],
-        Os::Linux | Os::Other => &[
-            "/home", "/tmp", "/opt", "/mnt", "/media", "/run", "/srv", "/app", "/snap",
-        ],
-    }
-}
-
-/// Folders in the home directory that must not be deleted.
-pub fn standard_home_folders(os: Os) -> &'static [&'static str] {
-    match os {
-        Os::Windows => &[
-            "Desktop",
-            "Documents",
-            "Downloads",
-            "Music",
-            "Pictures",
-            "Videos",
-            "AppData",
-        ],
-        Os::MacOs => &[
-            "Desktop",
-            "Documents",
-            "Downloads",
-            "Music",
-            "Pictures",
-            "Movies",
-            "Library",
-            "Applications",
-            ".config",
-        ],
-        Os::Linux | Os::Other => &[
-            "Desktop",
-            "Documents",
-            "Downloads",
-            "Music",
-            "Pictures",
-            "Videos",
-            "Public",
-            "Templates",
-            ".config",
-            ".local",
-        ],
     }
 }
 
@@ -466,28 +359,12 @@ mod tests {
     }
 
     #[test]
-    fn app_roots_come_in_a_fixed_order() {
-        let dirs = dirs_of(&[("APPDIR", "/b"), ("SNAP", "/a")]);
-        assert_eq!(dirs.app_roots(), [Path::new("/a"), Path::new("/b")]);
-        assert!(!dirs.is_flatpak());
-    }
-
-    #[test]
     fn app_dirs_and_the_settings_file_agree() {
         let dirs = AppDirs::new("atlbase-dirs-test").unwrap();
         let file = dirs.config_file();
         assert_eq!(file.parent(), Some(dirs.config_dir()));
         assert!(dirs.log_file().ends_with("atlbase-dirs-test.log"));
         assert!(AppDirs::new("x").unwrap().state_dir().is_absolute());
-    }
-
-    #[test]
-    fn every_system_has_protected_folders() {
-        for os in [Os::Linux, Os::Windows, Os::MacOs, Os::Other] {
-            assert!(!critical_paths(os).is_empty());
-            assert!(!protected_dirs(os).is_empty());
-            assert!(standard_home_folders(os).contains(&"Documents"));
-        }
     }
 
     #[test]

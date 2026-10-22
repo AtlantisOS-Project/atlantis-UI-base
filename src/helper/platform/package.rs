@@ -12,8 +12,8 @@
 //! Debian, `p7zip` on Fedora), so the application keeps its own list per manager; this module
 //! finds out which manager is there and how it is called.
 
+use super::os::os_profile;
 use super::program::find_program;
-use super::target::Os;
 
 /// The directory with the APT sources. A file in it that names the program means the program
 /// was installed from a PPA (see [`check_application_environment`](crate::helper::configuration::application_environment::check_application_environment)).
@@ -59,15 +59,6 @@ impl PackageManager {
         }
     }
 
-    /// The operating system the manager belongs to.
-    pub const fn os(self) -> Os {
-        match self {
-            PackageManager::Winget => Os::Windows,
-            PackageManager::Homebrew => Os::MacOs,
-            _ => Os::Linux,
-        }
-    }
-
     /// Whether installing a package needs administrator rights (Homebrew and winget ask by
     /// themselves).
     pub const fn needs_elevation(self) -> bool {
@@ -87,10 +78,10 @@ impl PackageManager {
     /// }
     /// ```
     pub fn detect() -> Option<PackageManager> {
-        let os = Os::current();
-        PackageManager::ALL
-            .into_iter()
-            .filter(|manager| manager.os() == os)
+        os_profile()
+            .package_managers
+            .iter()
+            .copied()
             .find(|manager| find_program(manager.program()).is_some())
     }
 
@@ -145,7 +136,7 @@ mod tests {
     #[test]
     fn only_the_managers_of_this_system_are_detected() {
         if let Some(manager) = PackageManager::detect() {
-            assert_eq!(manager.os(), Os::current());
+            assert!(os_profile().package_managers.contains(&manager));
         }
         assert!(PackageManager::Apt.needs_elevation());
         assert!(!PackageManager::Winget.needs_elevation());

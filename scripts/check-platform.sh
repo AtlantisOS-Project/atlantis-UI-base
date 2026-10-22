@@ -42,6 +42,13 @@ tempfile = "3"
 
 [target.'cfg(unix)'.dependencies]
 syslog = "7.0"
+
+[features]
+default = ["format-flatpak", "format-snap", "format-appimage", "format-native"]
+format-flatpak = []
+format-snap = []
+format-appimage = []
+format-native = []
 CARGO
 cat > "$work/src/lib.rs" <<'RUST'
 pub mod helper {

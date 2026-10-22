@@ -15,6 +15,8 @@
 //! | Module | What it answers |
 //! |---|---|
 //! | [`target`] | Which operating system and which processor is this? ([`Os`], [`Arch`], [`Target`]) |
+//! | [`os`] | Everything that belongs to one operating system, one file per system ([`OsProfile`]) |
+//! | [`package_format`] | Everything that belongs to a package format: Flatpak, Snap, AppImage, native ([`PackageFormat`]) |
 //! | [`dirs`] | Where do configuration, data, logs and the user's files live? ([`AppDirs`], [`DataDirs`], [`home_dir`]) |
 //! | [`program`] | Where is an external program, and how is it started? ([`find_program`], [`host_command`]) |
 //! | [`elevate`] | How does a command run with administrator rights? ([`elevation_command`]) |
@@ -30,11 +32,20 @@
 //!
 //! # What is implemented
 //!
-//! Linux is the platform that is run and tested. For Windows and macOS the mappings are
-//! written down and covered by unit tests that run on any system (every function that maps
-//! takes the [`Os`] as a parameter), but they have not been run on those systems. A mapping
-//! that does not exist (for example `pkexec` on Windows) is reported as `None` or `false`, so
-//! the program can hide the button instead of failing.
+//! Linux is the platform that is run and tested. For Windows and macOS the profiles are written
+//! down and covered by unit tests that run on any system (the tests compile every
+//! [`OsProfile`] and ask [`os_profile_for`]), but they have not been run on those systems; the
+//! Windows build is checked with `cargo check --target x86_64-pc-windows-gnu`. A mapping that
+//! does not exist (for example `pkexec` on Windows) is reported as `None` or `false`, so the
+//! program can hide the button instead of failing.
+//!
+//! # Only what the program needs is compiled
+//!
+//! The profile of the operating system the program is built for is the only one that is compiled
+//! (a Windows program has no Linux code in it), and of the package formats only those whose Cargo
+//! feature (`format-flatpak`, `format-snap`, `format-appimage`, `format-native`) is on. A Snap is
+//! built with `--no-default-features --features format-snap`. Adding a system or a format is one
+//! file and one line in a list: see [`os`] and [`package_format`].
 //!
 //! # Examples
 //!
@@ -61,7 +72,11 @@ pub mod elevate;
 
 pub mod feature;
 
+pub mod package_format;
+
 pub mod logging;
+
+pub mod os;
 
 pub mod package;
 
@@ -74,6 +89,8 @@ pub use dirs::*;
 pub use elevate::*;
 pub use feature::*;
 pub use logging::*;
+pub use os::*;
 pub use package::*;
+pub use package_format::*;
 pub use program::*;
 pub use target::*;

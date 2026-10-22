@@ -96,16 +96,45 @@ the system can do; it does not contain `/usr/share`, `$HOME`, `pkexec` or `adb.e
 the platform that is run; the mappings for Windows and macOS are covered by tests that run
 everywhere (`scripts/check-platform.sh` also compiles the layer for Windows).
 
+It is built on two descriptions, each in **one small file per case**:
+
+| Description | Files | Chosen by | What it knows |
+|---|---|---|---|
+| `OsProfile` | `platform/os/{linux,windows,macos,other}.rs` | `cfg(target_os)`: only the profile of the target is compiled | protected folders, how a command gets administrator rights, how a terminal opens, package managers, journal, program file names |
+| `PackageFormat` | `platform/package_format/{flatpak,snap,appimage,native}.rs` | Cargo features `format-flatpak`, `format-snap`, `format-appimage`, `format-native`: only the formats that are enabled are compiled | how the format is recognized, where the program is mounted (`/app`, `$SNAP`, `$APPDIR`), where its programs (`bin_dirs`) and shared files (`share_dirs`) are, whether it is `sandboxed` or `relocated` |
+
+Snap, Flatpak and AppImage have no code of their own in the library: they are three values of
+`PackageFormat`, and the folders, the locale and icon lookup, the search for programs, `supports()`
+and `in_sandbox()` all read the same fields. A program that is built for one format compiles
+nothing of the others:
+
+```sh
+cargo build --release --no-default-features --features format-snap            # a Snap
+cargo build --release --no-default-features --features format-native,log-viewer  # a deb or an RPM
+```
+
+Windows needs no feature to leave the Linux code out: no Linux profile is compiled for it.
+
+During development nothing needs a flag: `cargo run` compiles the profile of your own system and **all** package formats (the default features), so `-debug -snp` and `-debug -flp` can pretend to be a Snap or a Flatpak. The format is found out from the environment, and `$SNAP` or `$APPDIR` count only if the program lives below them (a `cargo run` with the `cargo` of the rustup Snap inherits `$SNAP` and is still native). `ATL_PACKAGE_FORMAT=snap|flatpak|appimage|native` chooses the format by hand. Only a package build leaves the other formats out (`--no-default-features --features format-snap`); the saving is small (about 2.4 kB in the Fastboot-Assistant, whose size comes from GTK and the crates), it is about not carrying code that can never run.
+
+**Adding an operating system:** copy the closest `os/*.rs`, fill in its `PROFILE`, add a variant to
+`Os` (and its `cfg` to `Os::current`), add the `mod` line and the system to `os_profile`. **Adding a
+package format:** copy the closest `package_format/*.rs`, fill in its `FORMAT`, add the Cargo feature
+`format-<name>` (and to `default`), add the `mod` line and one line to `PACKAGE_FORMATS`. Nothing else
+in the library changes.
+
 | Item | Purpose |
 |---|---|
 | `Os`, `Arch`, `Target` | Which system and processor the program was built for; `Arch::name()` (`x86_64`, `aarch64`), `Arch::debian_name()` (`amd64`, `arm64`), `Os::exe_suffix()` |
+| `OsProfile`, `os_profile()`, `os_profile_for(os)` | The description of the operating system (fields: `critical_paths`, `protected_dirs`, `standard_home_folders`, `elevate`, `terminal`, `package_managers`, `journal_follow`, `syslog`, `program_names`, …) |
+| `PackageFormat`, `PACKAGE_FORMATS`, `current_package_format()`, `detect_package_format(var)`, `package_roots(var)` | The package format the program runs in, and the list of the formats that are compiled in |
 | `AppDirs::new(app)` | `config_dir()`, `config_file()`, `data_dir()`, `cache_dir()`, `state_dir()`, `log_file()` of an application |
 | `home_dir()`, `documents_dir()` | The home directory and the folder for documents |
-| `DataDirs::current().data_dirs()` | Folders with read-only resources (translations, icons, guides) in search order, also for Flatpak, Snap, AppImage |
-| `find_program(name)`, `program_path(name)`, `register_tool_dir(dir)` | Where an external program is: bundled folders, then `PATH`; `.exe` on Windows |
+| `DataDirs::current().data_dirs()` | Folders with read-only resources (translations, icons, guides) in search order, for every package format |
+| `find_program(name)`, `program_path(name)`, `register_tool_dir(dir)`, `package_bin_dirs(&DataDirs)` | Where an external program is: bundled folders, the programs of the package format (`/app/bin`, `$SNAP/usr/bin`, `$APPDIR/usr/bin`), then `PATH`; `.exe` on Windows |
 | `host_command(program)`, `host_command_line(&[String])` | `Command::new` for programs of the host; use these instead (no console window on Windows) |
 | `elevation_command(command)` | The command with `pkexec` (Linux), `osascript` (macOS) or a UAC prompt (Windows) in front |
-| `supports(Feature::…)` | `Elevation`, `HostTerminal`, `SystemLog`, `PackageInstall`, `PosixShell`: show a button only where the host offers it |
+| `supports(Feature::…)`, `in_sandbox()` | `Elevation`, `HostTerminal`, `SystemLog`, `PackageInstall`, `PosixShell`: show a button only where the host offers it |
 | `PackageManager::detect()`, `.install_command(packages)` | `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
 | `init_logging(app)` | syslog on Linux and macOS, `AppDirs::log_file` on Windows |
 
@@ -131,9 +160,9 @@ if supports(Feature::PackageInstall) {
 
 | Item | Purpose |
 |---|---|
-| `SystemInfo::collect()` | Distribution, version, kernel, processor, architecture, graphics card, desktop, language and session (runs `lspci` on Linux: call it in the background; on Windows and macOS the name, architecture, language and desktop) |
-| `os_release_value(text, key)`, `cpu_model(cpuinfo)`, `gpu_model(lspci)`, `language_code(lang)` | The parsers behind it, usable on their own |
-| `package_version(package) -> Option<String>` | The installed version of a Debian package (`dpkg-query`) |
+| `SystemInfo::collect()` | Distribution, version, kernel, processor, architecture, graphics card, desktop, language and session (reads a few files on Linux, no program is started: call it in the background; on Windows and macOS the name, architecture, language and desktop) |
+| `os_release_value(text, key)`, `cpu_model(cpuinfo)`, `language_code(lang)` | The parsers behind it, usable on their own |
+| `package_version(package) -> Option<String>` | The installed version of a Debian package (read from `/var/lib/dpkg/status`; no program is started) |
 
 ## `helper::archive` (feature `archive`)
 
@@ -142,6 +171,13 @@ if supports(Feature::PackageInstall) {
 | `detect_format(path) -> io::Result<Option<ArchiveFormat>>` | Recognize `tar`, `tar.xz`, `tar.gz`, `tar.bz2`, `xz`, `gz`, `bz2`, `zip`, `7z` by the first bytes, not by the name |
 | `decompress(path, output_dir, format)` / `decompress_file(path, output_dir)` | Unpack; a damaged archive leaves `output_dir` as it was. Returns the files that were created |
 | `ArchiveFormat::ALL`, `.label()` | For a menu when the format is unknown |
+
+
+## `helper::download` (feature `download`)
+
+| Item | Purpose |
+|---|---|
+| `download_file(url, destination, progress) -> io::Result<u64>` | Download a file over HTTP(S) without `curl`: written as `<destination>.part` and renamed when complete, redirects are followed, an `https` address stays `https`, `progress(done, total)` after every block. Needs a thread of its own (`run_background`, `show_work_dialog`) |
 
 ## `helper::language`
 

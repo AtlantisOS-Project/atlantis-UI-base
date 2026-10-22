@@ -16,6 +16,8 @@ What you have to look at when you update. Everything not listed here keeps worki
 | `delete_files_and_parents`      | deleted the files of **every** parent directory on the way up                                               | deletes files only in the given directory                         | Nothing; this was a data-loss bug                                                   |
 | `delete_files_in_dir`           | no protection at all                                                                                        | refuses system paths, the home directory and its standard folders | Nothing                                                                             |
 | Cargo features                  | `vte4` always compiled                                                                                      | feature `log-viewer` (default on)                                 | Use `default-features = false` to drop VTE                                          |
+| Cargo features (package formats) | no such features | `format-flatpak`, `format-snap`, `format-appimage`, `format-native`; the default has all four | With `default-features = false` enable at least one (`compile_error!` otherwise); a program that is built for one package enables only that one |
+| `open_url`                      | started `xdg-open` (the `open` crate)                                                                       | GIO opens the link (the portal in a Flatpak and a Snap)           | Nothing; `xdg-open` is no longer needed, and the `open` crate is gone |
 | Dependencies                    | `tokio`, `networkmanager` and `thiserror` always compiled                                                   | only with `experimental-api`                                      | Nothing; `libdbus` is no longer needed to build                                     |
 | `SystemInfo`                    | had no architecture                                                                                         | new field `architecture`: a struct literal needs `..Default::default()` |
 | `syslog`, `log`                 | `syslog` always compiled                                                                                    | `syslog` only on Unix; `log` with `std`; Windows logs to a file   |
@@ -68,8 +70,9 @@ that uses AtlBase gets them. `cargo run --example pages` shows the UI blocks tog
 | `read_common_options(args)`, `CliOptions`, `CliRequest`, `apply_debug_options(options, flatpak_id)`, `version_text(name, version, env)`, `COMMON_OPTIONS_HELP`, `debug_mode()`, `set_debug_mode()`, `fallback_language()` | `helper::cli` | `-debug` (`-snp`, `-flp`, `-lang`), `--version` and `--help` for every AtlantisOS program |
 | `current_environment(search_string, source_dir)` | `helper::configuration` | `check_application_environment`, determined once and remembered |
 | `AppEnvironment::label()`, `AppEnvironment::is_sandboxed()`, `running_in_wsl()` | `helper::configuration` | A readable package name; Flatpak or Snap; Windows Subsystem for Linux |
-| `SystemInfo::collect()`, `package_version(package)`, `os_release_value`, `cpu_model`, `gpu_model`, `language_code` | `helper::sysinfo` | Distribution, kernel, processor, graphics card, desktop, session and installed Debian package versions |
+| `SystemInfo::collect()`, `package_version(package)`, `os_release_value`, `cpu_model`, `language_code` | `helper::sysinfo` | Distribution, kernel, processor, graphics card (from `/sys`, no `lspci`), desktop, session and installed Debian package versions (from `/var/lib/dpkg/status`, no `dpkg-query`); no program is started. `os_release_value` and `cpu_model` exist on Linux only |
 | `ArchiveFormat`, `detect_format(path)`, `decompress(path, dir, format)`, `decompress_file(path, dir)` | `helper::archive` (feature `archive`) | Recognizes tar, tar.xz, tar.gz, tar.bz2, xz, gz, bz2, zip and 7z by the first bytes and unpacks them; a damaged archive leaves the folder unchanged |
+| `download_file(url, destination, progress)` | `helper::download` (feature `download`) | Downloads a file over HTTP(S) without `curl` or `wget`: written under a temporary name and renamed when complete (a failed download leaves nothing under the real name), redirects are followed, an `https` address stays `https` (a redirect to plain `http` is refused), 30 s timeouts, `progress(done, total)` after every block |
 | `run_background(work, done)` | `design::utils` | Slow work in a thread, its result in the main loop |
 | `create_page_container()`, `create_rows_box()`, `create_scrolling_page(rows, bottom)`, `create_clamped_scrolling_page(content, bottom, max_width)`, `create_heading(text)`, `create_text_label(text)`, `create_pill_button(icon, label, suggested, on_click)` | `design::utils` | The parts a page is made of |
 | `MenuEntry`, `MenuGridStyle`, `create_button_grid(entries, columns, style)` | `design::utils` | A grid of big buttons; a long text is cut to the column in the font that is used, so the window never gets wider |
@@ -88,18 +91,43 @@ that uses AtlBase gets them. `cargo run --example pages` shows the UI blocks tog
 Everything that differs between Linux, Windows and macOS (and between x86_64 and arm64) is asked
 here, so a program does not contain `/usr/share`, `$HOME`, `pkexec` or `adb.exe`. The library uses
 the layer itself: the commands, the settings, the translations, the guides, the icons, the
-protection of `delete_files_*`, the system log and `SystemInfo` all go through it. Linux is run and
-tested; the mappings for Windows and macOS are covered by tests that run everywhere (every mapping
-takes the `Os` as a parameter), and the Windows build of these modules is checked with `cargo check
---target x86_64-pc-windows-gnu` (`scripts/check-platform.sh`).
+protection of `delete_files_*`, the system log and `SystemInfo` all go through it.
+
+The layer has two descriptions, each one **small file per case**:
+
+* an **`OsProfile`** per operating system (`platform/os/linux.rs`, `windows.rs`, `macos.rs`,
+  `other.rs`): the folders that are never deleted, how a command gets administrator rights, how a
+  terminal is opened, the package managers, where the log goes, the names of a program file;
+* a **`PackageFormat`** per package format (`platform/package_format/flatpak.rs`, `snap.rs`,
+  `appimage.rs`, `native.rs`): how the format is recognized, where the program is mounted, where
+  its programs and shared files are, whether it keeps the program away from the host.
+
+Snap, Flatpak and AppImage no longer have their own way of handling things in the library: they are
+three values of the same description, and everything that used to test `$SNAP` or `/.flatpak-info`
+reads the fields of the format instead. **Adding a system or a format is one file, one line in a
+list and a Cargo feature** (the steps are in the documentation of `platform::os` and
+`platform::package_format`).
+
+**Only the code of the target is compiled.** The profile of the operating system the program is
+built for is the only one that is compiled (`cfg(target_os)`): a Windows build contains no line of
+Linux code, and `vte4`, `syslog` and the Linux parsers are Linux-only dependencies. Of the package
+formats only those whose Cargo feature is on are compiled: a Snap that is built with
+`--no-default-features --features format-snap` has no code for Flatpak, AppImage, Windows or macOS
+and does not ask at run time what it is (checked with `strings` on the release binaries). The unit
+tests compile every profile and format, so the mapping of all systems is tested everywhere; the
+Windows build is checked with `cargo check --target x86_64-pc-windows-gnu`
+(`scripts/check-platform.sh`, with the features of a format).
+
+**Which format a program is in** is found out from the environment, and a Snap or an AppImage counts only if the program itself lives below `$SNAP` or `$APPDIR`: a program that was started by a program of a Snap (`cargo run` with the `cargo` of the rustup Snap, which exports `$SNAP`) is not in that Snap. `ATL_PACKAGE_FORMAT=snap|flatpak|appimage|native` chooses the format by hand and wins over everything (`-debug -snp` and `-debug -flp` set it, so they work wherever the program is). A plain `cargo run` has all formats compiled in (the default features), so the flags work during development; a package is built with one format only.
 
 | Item | What it does |
 |---|---|
 | `Os`, `Arch`, `Target` (`Os::current()`, `.exe_suffix()`, `.has_posix_shell()`, `Arch::name()`, `.debian_name()`) | Which operating system and which processor the program was built for, with the names other systems use |
 | `AppDirs::new(app)` (`.config_dir()`, `.config_file()`, `.data_dir()`, `.cache_dir()`, `.state_dir()`, `.log_file()`) | The folders of an application for settings, data, cache and logs (the mapping of XDG on Linux, `%APPDATA%` on Windows, `~/Library` on macOS) |
 | `home_dir()`, `documents_dir()` | The home directory (`$HOME`, then the system) and the folder for documents |
-| `DataDirs::current()`, `.data_dirs()` | The folders with read-only resources (translations, icons, guides), in search order, for deb/rpm, Flatpak, Snap, AppImage and relocated installs; one implementation instead of three |
-| `critical_paths(os)`, `protected_dirs(os)`, `standard_home_folders(os)`, `is_mount_point(path)` | What `delete_files_*` refuses, per operating system |
+| `DataDirs::current()`, `.data_dirs()`, `.roots()` | The folders with read-only resources (translations, icons, guides), in search order, for every package format and relocated installs; the roots come from the formats, one implementation instead of three |
+| `PackageFormat`, `PACKAGE_FORMATS`, `detect_package_format(var)`, `detect_package_format_at(var, exe)`, `FORMAT_OVERRIDE` (`ATL_PACKAGE_FORMAT`), `current_package_format()`, `package_roots(var)`, `Lookup` | The description of a package format (`id`, `label`, `sandboxed`, `relocated`, `detect`, `root`, `bin_dirs`, `share_dirs`); only the formats of the enabled `format-*` features exist |
+| `OsProfile`, `os_profile()`, `os_profile_for(os)`, `Has` | The description of an operating system: protected folders (`critical_paths`, `protected_dirs`, `standard_home_folders`), elevation, terminal, package managers, journal, program names; `os_profile_for` of another system is available in tests only, `is_mount_point(path)` stays a function |
 | `find_program(name)`, `program_path(name)`, `register_tool_dir(dir)`, `package_bin_dirs(places)`, `is_executable(path)`, `program_file_names(os, name, pathext)` | Where a program is: bundled tool folders first, then the folders of the package format (`/app/bin`, `$SNAP/usr/bin`, `$APPDIR/usr/bin`), then `PATH`; `.exe` and `PATHEXT` on Windows |
 | `host_command(program)`, `host_command_line(&[String])` | `Command::new` for programs of the host: resolved like `find_program`, no console window flashing on Windows |
 | `elevation_command(command)`, `elevation_command_for(os, command)` | `pkexec` on Linux, `osascript` on macOS, `powershell … -Verb RunAs` on Windows |
@@ -141,6 +169,8 @@ takes the `Os` as a parameter), and the Windows build of these modules is checke
 | `carousel-toml` | on | `GuideLoader` and `GuideError` (adds the `toml` crate) |
 | `log-viewer` | on | `show_log_viewer`, `create_custom_headerbar` (adds VTE) |
 | `archive` | off | `helper::archive` (adds `tar`, `xz2`, `flate2`, `bzip2`, `zip`, `sevenz-rust`; the C code of bzip2 is compiled in, because the name of the system library differs between Debian and Fedora) |
+| `download` | off | `helper::download`: `download_file(url, destination, progress)` over HTTP(S) without `curl` (adds `ureq` with rustls and the bundled root certificates; no system library) |
+| `format-flatpak`, `format-snap`, `format-appimage`, `format-native` | all on | The package formats that are compiled in (see `helper::platform`): enable only the one you build for to leave the code of the others out; at least one is needed |
 
 #### New files and directories
 
@@ -182,7 +212,7 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 | `command_exists_native` | an absolute path counted if it existed; a name counted if a *file* of that name was in `PATH` | the file must be executable (execute bit); directories and plain files give `false` |
 | `run_command`, `capture_command_output` | panicked on an empty slice | return an error of kind `InvalidInput` |
 | `open_terminal_by_desktop` | used only the terminal of the desktop and did nothing (silently) if it was not installed; MATE used `--`, Xfce used `-e` | tries the terminal of the desktop first, then every known terminal, and uses the first one that is installed; MATE and Xfce use `-x`; errors are printed; macOS quoting is escaped |
-| `open_url` | printed a garbled error text ("nicht öffnen") | prints `Could not open '<url>': <reason>` |
+| `open_url` | started `xdg-open` and printed a garbled error text ("nicht öffnen") | opens the link through GIO (the *OpenURI* portal in a Flatpak and a Snap; no tool of the system); prints `Could not open '<url>': <reason>` |
 
 ##### `helper::configuration`
 

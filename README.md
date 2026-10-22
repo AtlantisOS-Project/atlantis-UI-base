@@ -102,11 +102,17 @@ atlbase = "0.2"
 | `archive` | no | Recognize and unpack tar, xz, gz, bz2, zip and 7z (`helper::archive`) |
 | `experimental-api` | no | Unfinished `system` module (does not compile yet) |
 
-Without VTE (for example for a Flatpak that uses the GNOME runtime):
+Without VTE (for example for a Flatpak that uses the GNOME runtime), and compiled for one package
+format only (the code of the others is left out; at least one `format-*` feature is needed):
 
 ```toml
-atlbase = { version = "0.2", default-features = false, features = ["carousel-toml"] }
+# a Flatpak: no VTE, nothing of Snap, AppImage or another operating system
+atlbase = { version = "0.2", default-features = false, features = ["carousel-toml", "format-flatpak"] }
 ```
+
+The formats are `format-flatpak`, `format-snap`, `format-appimage` and `format-native` (a deb, an
+RPM, `cargo install`); the default has all of them and finds out at run time which one the program
+is in.
 
 ### System requirements
 
@@ -151,7 +157,8 @@ docs/                guides and the changelog page
 |---|---|
 | `helper::commands` | `run_command`, `capture_command_output`, `command_output_timeout`, `command_line`, `shell_line`, `command_pkexec`, `open_terminal_by_desktop`, `open_url`, `command_exists_native` |
 | `helper::cli` | `read_common_options`, `apply_debug_options`, `version_text` |
-| `helper::platform` | The layer between a program and the operating system: `Target`, `AppDirs`, `find_program`, `host_command`, `elevation_command`, `supports`, `PackageManager`, `init_logging` |
+| `helper::platform` | The layer between a program and the operating system: `OsProfile` (one file per system), `PackageFormat` (one file per package format: Flatpak, Snap, AppImage, native), `Target`, `AppDirs`, `find_program`, `host_command`, `elevation_command`, `supports`, `PackageManager`, `init_logging` |
+| `helper::download` | `download_file` over HTTP(S) without `curl` (feature `download`) |
 | `helper::sysinfo` | `SystemInfo`, `package_version` |
 | `helper::archive` | `detect_format`, `decompress`, `decompress_file` (feature `archive`) |
 | `helper::configuration` | `get_config`, `set_config`, `get_execution_environment`, `check_application_environment` |
@@ -202,7 +209,7 @@ cd atlantis-UI-base
 
 cargo build                 # debug build
 cargo build --release       # release build (optimized for size)
-cargo build --no-default-features    # without the TOML loader and the log viewer
+cargo build --no-default-features --features format-native   # one package format, without the TOML loader and the log viewer
 ```
 
 The `[profile.release]` settings of this repository only apply when you build this repository;
@@ -241,7 +248,7 @@ LANGUAGE=de cargo run --example dialogs  # German texts (needs the locale de_DE.
 ```
 
 `dialogs`, `guide` and `test_app` need the default features (they are skipped by
-`--no-default-features`).
+`--no-default-features`, which needs a `format-*` feature).
 
 ### Running the examples without a desktop
 
@@ -268,7 +275,7 @@ cargo test                  # everything: unit tests, tests/ and the examples in
 | `cargo test --test helper_files` | One file of `tests/`; replace the name with another file |
 | `cargo test --test helper_files add_line` | Only the tests whose name contains `add_line` |
 | `cargo test --features archive` | Everything including the archive module (its unit tests need the feature) |
-| `cargo test --no-default-features --lib --tests` | The same without the optional features |
+| `cargo test --no-default-features --features format-native --lib --tests` | The same without the optional features |
 
 What `tests/` covers:
 

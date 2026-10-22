@@ -29,16 +29,18 @@ use atlbase::prelude::{
 use atlbase::prelude::{ArchiveFormat, decompress, decompress_file, detect_format};
 // the platform layer
 use atlbase::prelude::{
-    APT_SOURCES_DIR, AppDirs, Arch, DataDirs, Feature, Os, PackageManager, Target, critical_paths,
-    documents_dir, elevation_command, elevation_command_for, find_program, home_dir, host_command,
-    host_command_line, in_sandbox, init_file_logging, init_logging, is_executable, is_mount_point,
-    journal_follow_command, journal_follow_command_for, package_bin_dirs, program_file_names,
-    program_path, protected_dirs, register_tool_dir, standard_home_folders, supports,
+    APT_SOURCES_DIR, AppDirs, Arch, DataDirs, FORMAT_OVERRIDE, Feature, Has, Lookup, Os, OsProfile,
+    PACKAGE_FORMATS, PackageFormat, PackageManager, Target, current_package_format,
+    detect_package_format, detect_package_format_at, documents_dir, elevation_command,
+    elevation_command_for, find_program, home_dir, host_command, host_command_line, in_sandbox,
+    init_file_logging, init_logging, is_executable, is_mount_point, journal_follow_command,
+    journal_follow_command_for, os_profile, os_profile_for, package_bin_dirs, package_roots,
+    program_file_names, program_path, register_tool_dir, supports,
 };
 use atlbase::prelude::{
     CliOptions, CliRequest, CommandResult as ChainResult, SystemInfo, apply_debug_options,
     clear_directory_except, command_line, command_output_timeout, cpu_model, current_environment,
-    debug_mode, fallback_language, gpu_model, language_code, move_file_into, os_release_value,
+    debug_mode, fallback_language, language_code, move_file_into, os_release_value,
     package_version, read_common_options, remove_dir_all_if_exists, require_dir_name,
     run_command_chain, running_in_wsl, set_debug_mode, shell_line, version_text,
 };
@@ -82,7 +84,7 @@ fn the_preludes_export_the_documented_names() {
     );
 }
 
-#[cfg(feature = "log-viewer")]
+#[cfg(all(feature = "log-viewer", target_os = "linux"))]
 #[test]
 fn the_log_viewer_is_part_of_the_ui_prelude() {
     let _ = (create_custom_headerbar, show_log_viewer);

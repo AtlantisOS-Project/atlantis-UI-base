@@ -87,6 +87,16 @@ fn the_debug_options_change_the_process() {
     assert_eq!(std::env::var("FLATPAK_ID").unwrap(), "org.example.Demo");
     assert_eq!(get_execution_environment(), "flatpak");
 
+    // `-debug -snp` alone: the program is not below $SNAP, but the flag says it is a Snap
+    unsafe {
+        std::env::remove_var("FLATPAK_ID");
+        std::env::remove_var(FORMAT_OVERRIDE);
+    }
+    let options = read(&["demo", "-debug", "-snp"]).unwrap();
+    apply_debug_options(&options, "org.example.Demo");
+    assert_eq!(std::env::var(FORMAT_OVERRIDE).unwrap(), "snap");
+    assert_eq!(get_execution_environment(), "snap");
+
     set_debug_mode(false);
     assert!(!debug_mode());
 }

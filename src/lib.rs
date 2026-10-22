@@ -60,6 +60,7 @@
 //! | Feature | Default | Description |
 //! |---|---|---|
 //! | `carousel-toml` | yes | Loads multi-page guides from TOML files ([`GuideLoader`](design::carousel::GuideLoader)). |
+//! | `download` | no | Downloads a file over HTTP(S) (`helper::download`) without `curl`. |
 //! | `archive` | no | Recognizes and unpacks archives ([`helper::archive`]): tar, tar.xz, tar.gz, tar.bz2, xz, gz, bz2, zip and 7z. |
 //! | `log-viewer` | yes | Journal viewer window and header bar menu; needs VTE (`libvte-2.91-gtk4`). |
 //! | `experimental-api` | no | Unfinished `system` module. Does not compile yet. |
@@ -164,27 +165,33 @@ pub mod prelude {
         },
         log::write_log::init_syslog,
         platform::{
-            dirs::{
-                AppDirs, DataDirs, critical_paths, documents_dir, home_dir, is_mount_point,
-                protected_dirs, standard_home_folders,
-            },
+            dirs::{AppDirs, DataDirs, documents_dir, home_dir, is_mount_point},
             elevate::{elevation_command, elevation_command_for},
             feature::{Feature, in_sandbox, supports},
             logging::{
-                init_file_logging, init_logging, journal_follow_command,
-                journal_follow_command_for,
+                init_file_logging, init_logging, journal_follow_command, journal_follow_command_for,
             },
+            os::{Has, OsProfile, os_profile, os_profile_for},
             package::{APT_SOURCES_DIR, PackageManager},
+            package_format::{
+                FORMAT_OVERRIDE, Lookup, PACKAGE_FORMATS, PackageFormat, current_package_format,
+                detect_package_format, detect_package_format_at, package_roots,
+            },
             program::{
                 find_program, host_command, host_command_line, is_executable, package_bin_dirs,
                 program_file_names, program_path, register_tool_dir,
             },
             target::{Arch, Os, Target},
         },
-        sysinfo::system_info::{
-            SystemInfo, cpu_model, gpu_model, language_code, os_release_value, package_version,
-        },
+        sysinfo::system_info::{SystemInfo, language_code, package_version},
     };
+
+    #[cfg(target_os = "linux")]
+    pub use crate::helper::sysinfo::system_info::{cpu_model, os_release_value};
+
+    #[cfg(feature = "download")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "download")))]
+    pub use crate::helper::download::download_file;
 
     #[cfg(feature = "archive")]
     #[cfg_attr(docsrs, doc(cfg(feature = "archive")))]
@@ -269,7 +276,7 @@ pub mod ui_prelude {
     #[cfg_attr(docsrs, doc(cfg(feature = "carousel-toml")))]
     pub use crate::design::carousel::{GuideError, GuideLoader};
 
-    #[cfg(feature = "log-viewer")]
+    #[cfg(all(feature = "log-viewer", target_os = "linux"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "log-viewer")))]
     pub use crate::helper::log::write_log_text::{create_custom_headerbar, show_log_viewer};
 }

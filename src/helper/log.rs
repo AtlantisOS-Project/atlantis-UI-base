@@ -12,11 +12,11 @@
 
 pub mod write_log;
 
-#[cfg(feature = "log-viewer")]
+#[cfg(all(feature = "log-viewer", target_os = "linux"))]
 #[cfg_attr(docsrs, doc(cfg(feature = "log-viewer")))]
 pub mod write_log_text;
 
 // Re-exports
 pub use write_log::*;
-#[cfg(feature = "log-viewer")]
+#[cfg(all(feature = "log-viewer", target_os = "linux"))]
 pub use write_log_text::*;

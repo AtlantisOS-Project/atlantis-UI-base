@@ -169,21 +169,32 @@ fn locale_dir_candidates(default_dir: &str, var: EnvLookup) -> Vec<PathBuf> {
 
     // Snap and AppImage mount the program below a root that is only known at run time;
     // an absolute default_dir such as /usr/share/locale lives below that root there
-    for root in places.app_roots() {
+    for (format, root) in places.roots().iter().filter(|(format, _)| format.relocated) {
         if !default_dir.is_empty() {
             push(rebase(root, default_path));
         }
-        push(root.join("usr/share/locale"));
-        push(root.join("share/locale"));
+        for share in format.share_paths(root) {
+            push(share.join("locale"));
+        }
     }
 
     if !default_dir.is_empty() {
         push(default_path.to_path_buf());
     }
-    if places.is_flatpak() {
-        push(PathBuf::from("/app/share/locale"));
+    // Flatpak: /app/share/locale
+    for (format, root) in places
+        .roots()
+        .iter()
+        .filter(|(format, _)| !format.relocated)
+    {
+        for share in format.share_paths(root) {
+            push(share.join("locale"));
+        }
     }
-    push(PathBuf::from("/usr/share/locale"));
+    // the main data folder of the system, also when $XDG_DATA_DIRS does not name it
+    if let Some(share) = places.default_system_dirs().last() {
+        push(share.join("locale"));
+    }
     for data_dir in places.system_dirs() {
         push(data_dir.join("locale"));
     }

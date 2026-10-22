@@ -18,8 +18,8 @@
 //! [`journal_follow_command`] gives the command that shows the messages as they come, for the
 //! log viewer; systems without a system log have none.
 
-#[cfg(not(unix))]
 use super::dirs::AppDirs;
+use super::os::{os_profile, os_profile_for};
 use super::target::Os;
 use log::{Level, LevelFilter, Log, Metadata, Record, SetLoggerError};
 use std::fs::{self, File, OpenOptions};
@@ -102,15 +102,12 @@ pub fn init_file_logging(path: &Path) -> Result<(), SetLoggerError> {
 /// ```
 pub fn init_logging(app_name: &str) -> Result<(), SetLoggerError> {
     #[cfg(unix)]
-    {
-        crate::helper::log::write_log::init_syslog(app_name)
+    if os_profile().syslog {
+        return crate::helper::log::write_log::init_syslog(app_name);
     }
-    #[cfg(not(unix))]
-    {
-        match AppDirs::new(app_name) {
-            Some(dirs) => init_file_logging(&dirs.log_file()),
-            None => Ok(()),
-        }
+    match AppDirs::new(app_name) {
+        Some(dirs) => init_file_logging(&dirs.log_file()),
+        None => Ok(()),
     }
 }
 
@@ -122,30 +119,19 @@ pub fn init_logging(app_name: &str) -> Result<(), SetLoggerError> {
 /// ```
 /// use atlbase::prelude::{Os, journal_follow_command_for};
 ///
-/// let command = journal_follow_command_for(Os::Linux, "my-app").unwrap();
-/// assert_eq!(command[0], "journalctl");
-/// assert!(command.contains(&"my-app".to_string()));
-/// assert!(journal_follow_command_for(Os::Windows, "my-app").is_none());
+/// if let Some(command) = journal_follow_command_for(Os::current(), "my-app") {
+///     assert!(command.contains(&"my-app".to_string()));
+/// }
 /// ```
 pub fn journal_follow_command_for(os: Os, app_name: &str) -> Option<Vec<String>> {
-    (os == Os::Linux).then(|| {
-        [
-            "journalctl",
-            "-f",
-            "-n",
-            "0",
-            "-t",
-            app_name,
-            "--output=short",
-        ]
-        .map(str::to_string)
-        .to_vec()
-    })
+    os_profile_for(os)?
+        .journal_follow
+        .map(|follow| follow(app_name))
 }
 
 /// [`journal_follow_command_for`] for the system the program runs on.
 pub fn journal_follow_command(app_name: &str) -> Option<Vec<String>> {
-    journal_follow_command_for(Os::current(), app_name)
+    os_profile().journal_follow.map(|follow| follow(app_name))
 }
 
 #[cfg(test)]

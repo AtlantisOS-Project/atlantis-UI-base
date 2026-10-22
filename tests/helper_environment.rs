@@ -59,7 +59,13 @@ fn the_environment_is_detected_from_markers() {
         AppEnvironment::AppImage
     );
 
+    // $SNAP counts only if the program lives below it: `cargo run` with the cargo of the rustup
+    // Snap inherits $SNAP, and the program is not in that Snap
+    unsafe { std::env::remove_var("APPIMAGE") };
     unsafe { std::env::set_var("SNAP", "/snap/my-app/1") };
+    assert_eq!(get_execution_environment(), "native");
+    let here = std::env::current_exe().unwrap();
+    unsafe { std::env::set_var("SNAP", here.parent().unwrap()) };
     assert_eq!(get_execution_environment(), "snap");
     assert_eq!(
         check_application_environment("my-app", dir),

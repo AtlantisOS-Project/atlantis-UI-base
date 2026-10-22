@@ -24,6 +24,7 @@
 //! it fails with `NotFound` as it always did.
 
 use super::dirs::DataDirs;
+use super::os::{os_profile, os_profile_for};
 use super::target::Os;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -61,44 +62,18 @@ pub fn register_tool_dir(dir: impl Into<PathBuf>) {
     }
 }
 
-/// The ending of executable files on Windows, from `PATHEXT` (`.COM;.EXE;.BAT;.CMD`).
-fn windows_extensions(pathext: Option<&str>) -> Vec<String> {
-    pathext
-        .unwrap_or(".COM;.EXE;.BAT;.CMD")
-        .split(';')
-        .filter(|ext| ext.starts_with('.'))
-        .map(str::to_ascii_lowercase)
-        .collect()
-}
-
-/// The file names to try for a program: the name itself, and on Windows the name with every
-/// executable ending unless it has one.
+/// The file names to try for a program on `os`: the name itself, and on Windows the name with
+/// every executable ending unless it has one. `None` if `os` is not compiled in.
 ///
 /// # Examples
 ///
 /// ```
 /// use atlbase::prelude::{Os, program_file_names};
 ///
-/// assert_eq!(program_file_names(Os::Linux, "adb", None), ["adb"]);
-/// assert_eq!(
-///     program_file_names(Os::Windows, "adb", Some(".EXE;.CMD")),
-///     ["adb.exe", "adb.cmd"]
-/// );
-/// assert_eq!(program_file_names(Os::Windows, "adb.exe", None), ["adb.exe"]);
+/// assert!(program_file_names(Os::current(), "adb", None).unwrap()[0].starts_with("adb"));
 /// ```
-pub fn program_file_names(os: Os, name: &str, pathext: Option<&str>) -> Vec<String> {
-    if os != Os::Windows {
-        return vec![name.to_string()];
-    }
-    let extensions = windows_extensions(pathext);
-    let lower = name.to_ascii_lowercase();
-    if extensions.iter().any(|ext| lower.ends_with(ext.as_str())) {
-        return vec![name.to_string()];
-    }
-    extensions
-        .iter()
-        .map(|ext| format!("{name}{ext}"))
-        .collect()
+pub fn program_file_names(os: Os, name: &str, pathext: Option<&str>) -> Option<Vec<String>> {
+    Some((os_profile_for(os)?.program_names)(name, pathext))
 }
 
 /// Whether `path` is a file that can be started.
@@ -135,26 +110,23 @@ pub fn is_executable(path: &Path) -> bool {
 /// assert!(package_bin_dirs(&DataDirs::default()).is_empty());
 /// ```
 pub fn package_bin_dirs(places: &DataDirs) -> Vec<PathBuf> {
-    let mut dirs = Vec::new();
-    for root in places.app_roots() {
-        dirs.push(root.join("usr/bin"));
-        dirs.push(root.join("bin"));
-    }
-    if places.is_flatpak() {
-        dirs.push(PathBuf::from("/app/bin"));
-    }
-    dirs
+    places
+        .roots()
+        .iter()
+        .flat_map(|(format, root)| format.bin_paths(root))
+        .collect()
 }
 
 /// The folders a program is looked for in: registered folders, the folders of the package format,
 /// the folder of the executable (Windows only), then `PATH`.
-fn search_dirs(os: Os) -> Vec<PathBuf> {
+fn search_dirs() -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = TOOL_DIRS.lock().unwrap_or_else(|p| p.into_inner()).clone();
     dirs.extend(package_bin_dirs(&DataDirs::current()));
-    if os == Os::Windows
-        && let Some(dir) = env::current_exe()
-            .ok()
-            .and_then(|exe| exe.parent().map(Path::to_path_buf))
+    // Windows starts a program from the folder of the running program first
+    #[cfg(windows)]
+    if let Some(dir) = env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(Path::to_path_buf))
     {
         dirs.push(dir);
     }
@@ -182,9 +154,8 @@ fn search_dirs(os: Os) -> Vec<PathBuf> {
 /// assert!(find_program("this-program-does-not-exist").is_none());
 /// ```
 pub fn find_program(program: &str) -> Option<PathBuf> {
-    let os = Os::current();
     let pathext = env::var("PATHEXT").ok();
-    let names = program_file_names(os, program, pathext.as_deref());
+    let names = (os_profile().program_names)(program, pathext.as_deref());
 
     if Path::new(program).is_absolute() {
         return names
@@ -192,7 +163,7 @@ pub fn find_program(program: &str) -> Option<PathBuf> {
             .map(PathBuf::from)
             .find(|candidate| is_executable(candidate));
     }
-    search_dirs(os)
+    search_dirs()
         .iter()
         .flat_map(|dir| names.iter().map(move |name| dir.join(name)))
         .find(|candidate| is_executable(candidate))
@@ -267,16 +238,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn windows_programs_get_their_ending() {
-        assert_eq!(
-            program_file_names(Os::Windows, "adb", None),
-            ["adb.com", "adb.exe", "adb.bat", "adb.cmd"]
-        );
-        assert_eq!(
-            program_file_names(Os::Windows, "ADB.EXE", None),
-            ["ADB.EXE"]
-        );
-        assert_eq!(program_file_names(Os::MacOs, "adb", None), ["adb"]);
+    fn the_names_to_try_follow_the_system() {
+        let names = |os| program_file_names(os, "adb", Some(".EXE;.CMD"));
+        assert_eq!(names(Os::Windows).unwrap(), ["adb.exe", "adb.cmd"]);
+        assert_eq!(names(Os::MacOs).unwrap(), ["adb"]);
+        assert_eq!(names(Os::Linux).unwrap(), ["adb"]);
     }
 
     #[test]
@@ -313,16 +279,18 @@ mod tests {
 
     #[test]
     fn the_tools_of_a_package_are_found_in_its_own_folders() {
-        let places = DataDirs {
-            snap: Some("/snap/app/7".into()),
-            appdir: Some("/tmp/.mount_x".into()),
-            flatpak: true,
-            ..DataDirs::default()
-        };
+        let places = DataDirs::from_lookup(&|key| match key {
+            "SNAP" => Some("/snap/app/7".into()),
+            "APPDIR" => Some("/tmp/.mount_x".into()),
+            "FLATPAK_ID" => Some("org.example.App".into()),
+            _ => None,
+        });
         let dirs = package_bin_dirs(&places);
-        assert_eq!(dirs[0], PathBuf::from("/snap/app/7/usr/bin"));
-        assert!(dirs.contains(&PathBuf::from("/tmp/.mount_x/usr/bin")));
-        assert_eq!(dirs.last(), Some(&PathBuf::from("/app/bin")));
+        // the formats in the order they are tried: Flatpak, Snap, AppImage
+        assert_eq!(dirs[0], PathBuf::from("/app/bin"));
+        assert!(dirs.contains(&PathBuf::from("/snap/app/7/usr/bin")));
+        assert!(dirs.contains(&PathBuf::from("/snap/app/7/bin")));
+        assert_eq!(dirs.last(), Some(&PathBuf::from("/tmp/.mount_x/usr/bin")));
         assert!(package_bin_dirs(&DataDirs::default()).is_empty());
     }
 

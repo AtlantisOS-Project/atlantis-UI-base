@@ -23,12 +23,47 @@ library are missing. Always install `gettext` in your build environment.
 |---|---|---|
 | `carousel-toml` | on | pulls in the `toml` crate; no system libraries |
 | `log-viewer` | on | needs VTE. The GNOME Flatpak runtime has **no** VTE for GTK 4; either build VTE as a Flatpak module or turn the feature off |
+| `archive` | off | pulls in the archive crates; the C code of `bzip2` is compiled in |
+| `download` | off | `download_file` with `ureq` and rustls (bundled root certificates); no system library, no `curl` |
+| `format-flatpak`, `format-snap`, `format-appimage`, `format-native` | all on | the package formats that are compiled in; see below |
 | `experimental-api` | off | do not use yet; needs `libdbus-1` |
 
 ```toml
-# without the log viewer and without VTE
-atlbase = { version = "0.2", default-features = false, features = ["carousel-toml"] }
+# without the log viewer and without VTE, built for a Flatpak
+atlbase = { version = "0.2", default-features = false, features = ["carousel-toml", "format-flatpak"] }
 ```
+
+## One build per package format
+
+Snap, Flatpak and AppImage are three descriptions of the same kind (`PackageFormat`, one file each in
+`src/helper/platform/package_format/`): where the program is mounted, where its programs and shared
+files are, how it is recognized, whether it is sandboxed. The library has no other code for them. A
+format is compiled in only when its Cargo feature is on, so a package contains nothing of the others:
+
+| You build | Features | What is left out |
+|---|---|---|
+| deb, RPM, `cargo install` | `format-native` | Flatpak, Snap, AppImage |
+| Flatpak | `format-flatpak` (no `log-viewer`: the GNOME runtime has no VTE) | Snap, AppImage, native |
+| Snap | `format-snap` (no `log-viewer`) | Flatpak, AppImage, native |
+| AppImage | `format-appimage` | Flatpak, Snap, native |
+| Windows | any one; no Linux code is compiled for Windows at all | everything that is Linux |
+
+```sh
+cargo build --release --no-default-features --features format-snap,carousel-toml
+```
+
+With one format compiled in the program does not ask at run time what it is. With several (the
+default) it finds out at start. At least one is required (`compile_error!` otherwise). In your own
+`Cargo.toml` pass the choice on:
+
+```toml
+[features]
+format-snap = ["atlbase/format-snap"]
+format-flatpak = ["atlbase/format-flatpak"]
+```
+
+**A new format** is one file (copy `appimage.rs`), one line in `PACKAGE_FORMATS` and a feature; nothing
+else in the library changes.
 
 ## Translations
 

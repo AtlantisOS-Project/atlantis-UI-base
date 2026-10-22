@@ -17,7 +17,7 @@
 //!
 //! * system-critical paths (`/`, `/bin`, `/etc`, `/usr`, `/var`, … and everything below
 //!   them; `C:\Windows` and `C:\Program Files` on Windows, see
-//!   [`critical_paths`]),
+//!   [`OsProfile::critical_paths`]),
 //! * important top-level directories (`/home`, `/tmp`, `/opt`, `/mnt`, `/media`, `/run`,
 //!   `/srv`, `/app`, `/snap`) — the directories themselves, not their contents,
 //! * the home directory and its standard folders (`Documents`, `Pictures`, `.config`, …),
@@ -26,10 +26,8 @@
 //! Even so, use them only for data that belongs to your application.
 
 use crate::helper::filesystem::home_dir::home_directory;
-use crate::helper::platform::dirs::{
-    critical_paths, is_mount_point, protected_dirs, standard_home_folders,
-};
-use crate::helper::platform::target::Os;
+use crate::helper::platform::dirs::is_mount_point;
+use crate::helper::platform::os::{OsProfile, os_profile};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -42,19 +40,23 @@ fn is_mount_point_blocked(path: &Path) -> bool {
     blocked
 }
 
-/// Checks whether `path` belongs to a protected system directory of `os`.
-fn is_critical_for(os: Os, path: &Path) -> bool {
+/// Checks whether `path` belongs to a protected system directory of the system of `profile`.
+fn is_critical_for(profile: &OsProfile, path: &Path) -> bool {
     // a root ("/", "C:\") is protected, but not everything is "below" it
     (path.parent().is_none() && !path.as_os_str().is_empty())
-        || critical_paths(os)
+        || profile
+            .critical_paths
             .iter()
             .any(|critical| path.starts_with(critical))
-        || protected_dirs(os).iter().any(|dir| path == Path::new(dir))
+        || profile
+            .protected_dirs
+            .iter()
+            .any(|dir| path == Path::new(dir))
 }
 
 /// Checks whether the path belongs to a protected system directory.
 fn is_critical_system_path(path: &Path) -> bool {
-    let critical = is_critical_for(Os::current(), path);
+    let critical = is_critical_for(os_profile(), path);
     if critical {
         println!(
             "[ERROR] Blocked: Critical System Path detected: {}",
@@ -75,7 +77,8 @@ fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
         return true;
     }
 
-    let standard = standard_home_folders(Os::current())
+    let standard = os_profile()
+        .standard_home_folders
         .iter()
         .any(|folder| path == home.join(folder));
     if standard {

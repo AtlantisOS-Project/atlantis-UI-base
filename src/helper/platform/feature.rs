@@ -9,14 +9,13 @@
 //!
 //! A button that needs `pkexec`, a terminal of the host or the system log must not be shown
 //! where there is none: not in a Flatpak or Snap sandbox, not on Windows. [`supports`] answers
-//! the question for one [`Feature`]; the program never has to know why.
+//! the question for one [`Feature`]; the program never has to know why. The answer comes from the
+//! [`OsProfile`] of the system and the [`PackageFormat`](super::package_format::PackageFormat) of the package.
 
-use super::elevate::elevation_program;
+use super::os::{Has, OsProfile, os_profile};
 use super::package::PackageManager;
+use super::package_format::detect_package_format;
 use super::program::find_program;
-use super::target::Os;
-use crate::helper::commands::open_terminal_desktop::TERMINALS;
-use crate::helper::configuration::application_environment::get_execution_environment;
 
 /// Something the host may or may not offer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -33,32 +32,32 @@ pub enum Feature {
     PosixShell,
 }
 
-/// Whether the program runs in a Flatpak or Snap sandbox, which has no access to the programs of
+/// Whether the program runs in a sandbox (Flatpak or Snap), which has no access to the programs of
 /// the host.
 pub fn in_sandbox() -> bool {
-    matches!(get_execution_environment().as_str(), "flatpak" | "snap")
+    detect_package_format(&|key| std::env::var_os(key)).sandboxed
 }
 
-/// Whether `feature` is available on `os`, in a sandbox or not. `has` tells whether a program is
-/// installed.
-fn available(os: Os, sandboxed: bool, has: &dyn Fn(&str) -> bool, feature: Feature) -> bool {
+/// Whether `feature` is available on a system with `profile`, in a sandbox or not. `has` tells
+/// whether a program is installed.
+pub(crate) fn available(profile: &OsProfile, sandboxed: bool, has: Has, feature: Feature) -> bool {
     match feature {
-        Feature::Elevation => !sandboxed && elevation_program(os).is_some_and(has),
-        Feature::HostTerminal => match os {
-            Os::Windows => !sandboxed,
-            Os::MacOs => !sandboxed && has("osascript"),
-            Os::Linux | Os::Other => {
-                !sandboxed && TERMINALS.iter().any(|(terminal, _)| has(terminal))
-            }
-        },
-        Feature::SystemLog => os == Os::Linux && !sandboxed && has("journalctl"),
-        Feature::PackageInstall => {
-            available(os, sandboxed, has, Feature::Elevation)
-                && PackageManager::ALL
-                    .iter()
-                    .any(|m| m.os() == os && has(m.program()))
+        Feature::Elevation => !sandboxed && profile.elevation_program.is_some_and(has),
+        Feature::HostTerminal => !sandboxed && (profile.terminal_available)(has),
+        Feature::SystemLog => {
+            !sandboxed
+                && profile
+                    .journal_follow
+                    .is_some_and(|follow| follow("x").first().is_some_and(|program| has(program)))
         }
-        Feature::PosixShell => os.has_posix_shell(),
+        Feature::PackageInstall => {
+            available(profile, sandboxed, has, Feature::Elevation)
+                && profile
+                    .package_managers
+                    .iter()
+                    .any(|manager: &PackageManager| has(manager.program()))
+        }
+        Feature::PosixShell => profile.posix_shell,
     }
 }
 
@@ -77,7 +76,7 @@ fn available(os: Os, sandboxed: bool, has: &dyn Fn(&str) -> bool, feature: Featu
 /// ```
 pub fn supports(feature: Feature) -> bool {
     available(
-        Os::current(),
+        os_profile(),
         in_sandbox(),
         &|program| find_program(program).is_some(),
         feature,
@@ -87,9 +86,15 @@ pub fn supports(feature: Feature) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::helper::platform::os::os_profile_for;
+    use crate::helper::platform::target::Os;
 
     fn with(programs: &'static [&'static str]) -> impl Fn(&str) -> bool {
         move |name| programs.contains(&name)
+    }
+
+    fn profile(os: Os) -> &'static OsProfile {
+        os_profile_for(os).unwrap()
     }
 
     #[test]
@@ -101,24 +106,31 @@ mod tests {
             Feature::SystemLog,
             Feature::PackageInstall,
         ] {
-            assert!(!available(Os::Linux, true, &all, feature), "{feature:?}");
-            assert!(available(Os::Linux, false, &all, feature), "{feature:?}");
+            assert!(
+                !available(profile(Os::Linux), true, &all, feature),
+                "{feature:?}"
+            );
+            assert!(
+                available(profile(Os::Linux), false, &all, feature),
+                "{feature:?}"
+            );
         }
     }
 
     #[test]
     fn features_need_their_program() {
+        let linux = profile(Os::Linux);
         let none = with(&[]);
-        assert!(!available(Os::Linux, false, &none, Feature::Elevation));
-        assert!(!available(Os::Linux, false, &none, Feature::HostTerminal));
+        assert!(!available(linux, false, &none, Feature::Elevation));
+        assert!(!available(linux, false, &none, Feature::HostTerminal));
         assert!(!available(
-            Os::Linux,
+            linux,
             false,
             &with(&["pkexec"]),
             Feature::PackageInstall
         ));
         assert!(available(
-            Os::Linux,
+            linux,
             false,
             &with(&["pkexec", "dnf"]),
             Feature::PackageInstall
@@ -128,10 +140,16 @@ mod tests {
     #[test]
     fn windows_has_a_terminal_but_no_shell_and_no_journal() {
         let all = with(&["powershell", "journalctl"]);
-        assert!(available(Os::Windows, false, &all, Feature::HostTerminal));
-        assert!(available(Os::Windows, false, &all, Feature::Elevation));
-        assert!(!available(Os::Windows, false, &all, Feature::SystemLog));
-        assert!(!available(Os::Windows, false, &all, Feature::PosixShell));
-        assert!(available(Os::MacOs, false, &all, Feature::PosixShell));
+        let windows = profile(Os::Windows);
+        assert!(available(windows, false, &all, Feature::HostTerminal));
+        assert!(available(windows, false, &all, Feature::Elevation));
+        assert!(!available(windows, false, &all, Feature::SystemLog));
+        assert!(!available(windows, false, &all, Feature::PosixShell));
+        assert!(available(
+            profile(Os::MacOs),
+            false,
+            &all,
+            Feature::PosixShell
+        ));
     }
 }

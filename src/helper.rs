@@ -21,6 +21,7 @@
 //! | [`log`] | Syslog logger and journal viewer |
 //! | [`platform`] | The layer between a program and the operating system: folders, programs, rights, logging |
 //! | [`sysinfo`] | Distribution, kernel, processor and package versions |
+//! | `download` | Download a file over HTTP(S) (feature `download`) |
 //! | `archive` | Recognize and unpack archives (feature `archive`) |
 
 pub mod cli;
@@ -28,6 +29,10 @@ pub mod cli;
 pub mod commands;
 
 pub mod configuration;
+
+#[cfg(feature = "download")]
+#[cfg_attr(docsrs, doc(cfg(feature = "download")))]
+pub mod download;
 
 pub mod file;
 
@@ -49,6 +54,8 @@ pub mod archive;
 pub use cli::*;
 pub use commands::*;
 pub use configuration::*;
+#[cfg(feature = "download")]
+pub use download::*;
 pub use file::*;
 pub use filesystem::*;
 pub use language::*;

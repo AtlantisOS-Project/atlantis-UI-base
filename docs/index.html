@@ -10,8 +10,9 @@
   The changelog page of AtlBase for GitHub Pages (Settings > Pages > Branch "main", folder "/docs").
   The text lives in the folder CHANGELOG/: one file per version series (v.0.2.x.md, ...) and
   CHANGELOG/README.md, which has the intro and the list of the files (newest first). This page
-  loads the list, then every file in it, and renders them as one page. No build step and no
-  external script or font: everything is in this file.
+  loads the list, then every file in it, and renders them as one page. The versions are listed in
+  a navigation bar on the left (the one that is being read is marked; on a narrow screen the bar
+  folds above the text). No build step and no external script or font: everything is in this file.
 
   Where the folder is looked for, in this order:
     1. CHANGELOG/               next to this page (copy it here if you want a self-contained site)
@@ -70,9 +71,39 @@
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
   .wrap { max-width: 52rem; margin: 0 auto; padding: 0 1rem; }
+  .wide { max-width: 72rem; margin: 0 auto; padding: 0 1rem; }
+
+  /* the navigation bar on the left and the text next to it */
+  .layout { display: grid; grid-template-columns: 15.5rem minmax(0, 1fr); gap: 0 3rem; align-items: start; }
+  details.side {
+    position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto;
+    padding: 2rem 0 2rem; font-size: .9rem; overscroll-behavior: contain;
+  }
+  details.side > summary { display: none; }
+  .side .label { display: block; text-transform: uppercase; letter-spacing: .06em; font-size: .72rem; color: var(--muted); margin: 0 0 .4rem; }
+  .side ul { list-style: none; margin: 0; padding: 0; }
+  .side li { margin: 0; }
+  .side a { display: block; color: var(--muted); }
+  .side a:hover { color: var(--fg); text-decoration: none; }
+  .side .series-name { margin: 1.4rem 0 .3rem; font-weight: 600; color: var(--fg); }
+  .side .versions > li > a {
+    padding: .25rem .6rem; border-left: 2px solid var(--line); margin-left: .1rem;
+  }
+  .side .versions > li > a small { color: var(--muted); font-weight: 400; margin-left: .35rem; }
+  .side .versions > li.active > a { border-left-color: var(--accent); color: var(--fg); font-weight: 600; }
+  /* what the version in view contains: only for that version */
+  .side .parts { display: none; padding: .1rem 0 .4rem 1.1rem; border-left: 2px solid var(--accent); margin-left: .1rem; }
+  .side li.active > .parts { display: block; }
+  .side .parts a { padding: .1rem .6rem; font-size: .85rem; }
+  .side .parts a[aria-current] { color: var(--accent); }
+  .side .filter { display: flex; flex-wrap: wrap; gap: .15rem .75rem; margin-bottom: .2rem; }
+  .side .filter button { all: unset; cursor: pointer; color: var(--muted); border-bottom: 1px solid transparent; }
+  .side .filter button:hover { color: var(--fg); }
+  .side .filter button[aria-pressed="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+  .side .filter button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   header.top { border-bottom: 1px solid var(--line); }
-  header.top .wrap {
+  header.top .wide {
     display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1.25rem;
     padding-top: 1.25rem; padding-bottom: 1rem;
   }
@@ -82,7 +113,8 @@
   nav.links a { color: var(--muted); }
   nav.links a:hover { color: var(--accent); text-decoration: none; }
 
-  main { padding: 2rem 0 4rem; }
+  main { padding: 2rem 0 4rem; min-width: 0; }
+  .series + .series { margin-top: 1rem; }
   h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .5rem; font-weight: 650; }
   h2 { font-size: 1.3rem; margin: 2.5rem 0 .75rem; padding-top: 1.5rem; border-top: 1px solid var(--line); font-weight: 600; }
   h3 { font-size: 1.05rem; margin: 1.75rem 0 .5rem; font-weight: 600; }
@@ -107,17 +139,6 @@
   .lead { color: var(--muted); }
   .version-tag { display: inline-block; margin-left: .5rem; font-size: .8rem; font-weight: 500; color: var(--muted); }
 
-  /* the small row of version links and filters */
-  .toolbar { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: 1.25rem 0 0; font-size: .88rem; color: var(--muted); }
-  .toolbar .group { display: flex; flex-wrap: wrap; gap: .1rem .9rem; align-items: baseline; }
-  .toolbar .label { text-transform: uppercase; letter-spacing: .06em; font-size: .72rem; }
-  .toolbar button {
-    all: unset; cursor: pointer; color: var(--muted); border-bottom: 1px solid transparent;
-  }
-  .toolbar button:hover { color: var(--fg); }
-  .toolbar button[aria-pressed="true"] { color: var(--fg); border-bottom-color: var(--accent); }
-  .toolbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
   /* a thin colored mark in front of the kind of change */
   section[data-kind] > h3::before {
     content: ""; display: inline-block; width: .5rem; height: .5rem; border-radius: 50%;
@@ -132,10 +153,24 @@
   #status { color: var(--muted); }
   #status.error { color: var(--removed); }
   footer { border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
-  footer .wrap { padding-top: 1rem; padding-bottom: 2rem; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+  footer .wide { padding-top: 1rem; padding-bottom: 2rem; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
   footer a { color: var(--muted); text-decoration: underline; text-decoration-color: var(--line); }
   footer a:hover { color: var(--accent); }
 
+  /* narrow screens: the bar folds above the text */
+  @media (max-width: 56rem) {
+    .layout { display: block; }
+    details.side { position: static; max-height: none; overflow: visible; padding: 1rem 0 0; }
+    details.side > summary {
+      display: block; cursor: pointer; font-weight: 600; padding: .5rem .8rem;
+      border: 1px solid var(--line); border-radius: var(--radius); background: var(--soft);
+    }
+    details.side[open] > summary { margin-bottom: .75rem; }
+    .side .versions > li > a { display: inline-block; }
+    .side .versions { display: flex; flex-wrap: wrap; gap: .1rem .5rem; }
+    .side .parts { display: none !important; }
+    main { padding-top: 1rem; }
+  }
   @media (max-width: 34rem) {
     nav.links { margin-left: 0; width: 100%; }
     h1 { font-size: 1.45rem; }
@@ -146,7 +181,7 @@
 <body>
 
 <header class="top">
-  <div class="wrap">
+  <div class="wide">
     <span class="brand">atlbase<small>changelog</small></span>
     <nav class="links" aria-label="Project links">
       <a href="https://crates.io/crates/atlbase">crates.io</a>
@@ -156,17 +191,23 @@
   </div>
 </header>
 
-<main class="wrap">
-  <p id="status" role="status">Loading the changelog…</p>
-  <noscript>
-    <p>This page needs JavaScript to show the changelog. You can read it as text:
-    <a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/tree/main/CHANGELOG">CHANGELOG/</a>.</p>
-  </noscript>
-  <article id="content" hidden></article>
-</main>
+<div class="wide layout">
+  <details class="side" id="side" aria-label="Versions" hidden>
+    <summary>Versions</summary>
+    <div id="side-body"></div>
+  </details>
+  <main>
+    <p id="status" role="status">Loading the changelog…</p>
+    <noscript>
+      <p>This page needs JavaScript to show the changelog. You can read it as text:
+      <a href="https://github.com/AtlantisOS-Project/atlantis-UI-base/tree/main/CHANGELOG">CHANGELOG/</a>.</p>
+    </noscript>
+    <article id="content" hidden></article>
+  </main>
+</div>
 
 <footer>
-  <div class="wrap">
+  <div class="wide">
     <span>Source: <a id="source-link" href="https://github.com/AtlantisOS-Project/atlantis-UI-base/tree/main/CHANGELOG">CHANGELOG/</a></span>
     <span>Get the library: <a href="https://crates.io/crates/atlbase">crates.io/crates/atlbase</a></span>
     <span>GPL-3.0</span>
@@ -197,7 +238,7 @@
     });
   }
 
-  // the first folder that has a README.md; then all the files it lists, as one text
+  // the first folder that has a README.md; then all the files it lists
   function load(i) {
     if (i >= SOURCES.length) { return Promise.reject(new Error('not found')); }
     var base = SOURCES[i];
@@ -211,7 +252,15 @@
       });
       if (files.length === 0) { throw new Error('no versions listed'); }
       return Promise.all(files.map(function (file) { return fetchText(base + file); }))
-        .then(function (texts) { return intro + '\n' + texts.join('\n\n'); });
+        .then(function (texts) {
+          return {
+            intro: intro,
+            // "v.0.2.x.md" is the series "0.2.x"
+            series: files.map(function (file, n) {
+              return { name: file.replace(/^v\./, '').replace(/\.md$/, ''), text: texts[n] };
+            })
+          };
+        });
     }).catch(function () { return load(i + 1); });
   }
 
@@ -383,58 +432,143 @@
     });
   }
 
-  function toolbar(root) {
-    var versions = Array.prototype.slice.call(root.querySelectorAll('h2'));
-    var kinds = [['all', 'All'], ['added', 'Added'], ['changed', 'Changed'], ['removed', 'Removed'], ['fixed', 'Fixed']];
+  var KINDS = [['all', 'All'], ['added', 'Added'], ['changed', 'Changed'], ['removed', 'Removed'], ['fixed', 'Fixed']];
 
-    var bar = document.createElement('div');
-    bar.className = 'toolbar';
+  // the id of a part is unique over all versions: "0-2-0-added"
+  function numberParts(series) {
+    var version = '';
+    Array.prototype.slice.call(series.children).forEach(function (node) {
+      if (node.tagName === 'H2') { version = node.id; }
+      if (node.tagName === 'H3') { node.id = version + '-' + slug(node.textContent); }
+    });
+  }
 
-    var v = document.createElement('div');
-    v.className = 'group';
-    v.innerHTML = '<span class="label">Versions</span>' + versions.map(function (h) {
-      return '<a href="#' + h.id + '">' + esc(h.dataset.name) + '</a>';
-    }).join('');
-    bar.appendChild(v);
+  // the parts (Added, Changed, ...) of a version: the h3 headings between its h2 and the next one
+  function partsOf(h2) {
+    var parts = [];
+    for (var node = h2.nextElementSibling; node && node.tagName !== 'H2'; node = node.nextElementSibling) {
+      var h3 = node.tagName === 'SECTION' && node.firstElementChild;
+      if (h3 && h3.tagName === 'H3') { parts.push(h3); }
+    }
+    return parts;
+  }
 
-    var f = document.createElement('div');
-    f.className = 'group';
-    f.setAttribute('role', 'group');
-    f.setAttribute('aria-label', 'Filter by kind of change');
-    f.innerHTML = '<span class="label">Show</span>' + kinds.map(function (k) {
-      return '<button type="button" data-filter="' + k[0] + '" aria-pressed="' + (k[0] === 'all') + '">' + k[1] + '</button>';
-    }).join('');
-    bar.appendChild(f);
+  // the navigation bar: filter, then every series with its versions and, for the version in view,
+  // its parts
+  function buildSide(root) {
+    var html = '<span class="label">Show</span><div class="filter" role="group" aria-label="Filter by kind of change">' +
+      KINDS.map(function (k) {
+        return '<button type="button" data-filter="' + k[0] + '" aria-pressed="' + (k[0] === 'all') + '">' + k[1] + '</button>';
+      }).join('') + '</div>';
+    root.querySelectorAll('.series').forEach(function (series) {
+      html += '<p class="series-name">' + esc(series.dataset.name) + '</p><ul class="versions">';
+      series.querySelectorAll('h2').forEach(function (h2) {
+        var tag = h2.querySelector('.version-tag');
+        html += '<li data-target="' + h2.id + '"><a href="#' + h2.id + '">' + esc(h2.dataset.name) +
+          (tag ? '<small>' + esc(tag.textContent) + '</small>' : '') + '</a><ul class="parts">' +
+          partsOf(h2).map(function (h3) {
+            return '<li data-kind="' + kindOf(h3.textContent) + '"><a href="#' + h3.id + '" data-target="' + h3.id + '">' +
+              esc(h3.textContent) + '</a></li>';
+          }).join('') + '</ul></li>';
+      });
+      html += '</ul>';
+    });
+    var body = document.getElementById('side-body');
+    body.innerHTML = html;
 
-    f.addEventListener('click', function (e) {
+    body.querySelector('.filter').addEventListener('click', function (e) {
       var button = e.target.closest('button[data-filter]');
       if (!button) { return; }
       var wanted = button.dataset.filter;
-      f.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === button)); });
-      root.querySelectorAll('section[data-kind]').forEach(function (s) {
-        s.classList.toggle('hidden', wanted !== 'all' && s.dataset.kind !== wanted);
-      });
+      body.querySelectorAll('.filter button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === button)); });
+      var hide = function (el) { el.classList.toggle('hidden', wanted !== 'all' && el.dataset.kind !== wanted); };
+      root.querySelectorAll('section[data-kind]').forEach(hide);
+      body.querySelectorAll('.parts li[data-kind]').forEach(hide);
     });
-    return bar;
+
+    // on a narrow screen the bar folds after a choice; on a wide one it is always open
+    var side = document.getElementById('side');
+    var wide = window.matchMedia('(min-width: 56.01rem)');
+    var sync = function () { side.open = wide.matches; };
+    sync();
+    if (wide.addEventListener) { wide.addEventListener('change', sync); }
+    body.addEventListener('click', function (e) {
+      if (e.target.closest('a') && !wide.matches) { side.open = false; }
+    });
+    side.hidden = false;
   }
 
-  function show(md) {
-    content.innerHTML = render(md);
+  // marks the version (and the part) that is at the top of the window
+  function watch(root) {
+    var side = document.getElementById('side-body');
+    var heads = Array.prototype.slice.call(root.querySelectorAll('h2, h3'));
+    var ticking = false;
+    function update() {
+      ticking = false;
+      var current = null;
+      var part = null;
+      heads.forEach(function (h) {
+        if (h.getBoundingClientRect().top <= 120) {
+          if (h.tagName === 'H2') { current = h; part = null; } else if (!h.closest('.hidden')) { part = h; }
+        }
+      });
+      // at the end of the page a short last version never reaches the top: it counts as read
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+        var last = root.querySelectorAll('h2');
+        current = last[last.length - 1];
+        part = null;
+      }
+      if (!current) { current = heads[0]; }
+      side.querySelectorAll('li.active').forEach(function (li) { li.classList.remove('active'); });
+      side.querySelectorAll('[aria-current]').forEach(function (a) { a.removeAttribute('aria-current'); });
+      var item = current && side.querySelector('li[data-target="' + current.id + '"]');
+      if (item) {
+        item.classList.add('active');
+        var link = item.firstElementChild;
+        link.setAttribute('aria-current', 'location');
+        // keep the active entry in view when the bar itself scrolls
+        var bar = document.getElementById('side');
+        var box = link.getBoundingClientRect();
+        if (bar.scrollHeight > bar.clientHeight && (box.top < 0 || box.bottom > window.innerHeight)) {
+          link.scrollIntoView({ block: 'nearest' });
+        }
+      }
+      if (part) {
+        var a = side.querySelector('a[data-target="' + part.id + '"]');
+        if (a) { a.setAttribute('aria-current', 'location'); }
+      }
+    }
+    function request() { if (!ticking) { ticking = true; window.setTimeout(update, 60); } }
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request);
+    update();
+  }
+
+  function show(data) {
+    content.innerHTML = render(data.intro);
 
     // the first h1 is the page title; the line after it is the intro text
     var title = content.querySelector('h1');
     if (title) {
       document.title = 'AtlBase – ' + title.textContent;
     }
-
-    var first = content.querySelector('h2');
-    structure(content);
-    if (first) { content.insertBefore(toolbar(content), first); }
     var lead = title && title.nextElementSibling;
     if (lead && lead.tagName === 'P') { lead.classList.add('lead'); }
 
+    data.series.forEach(function (entry) {
+      var series = document.createElement('div');
+      series.className = 'series';
+      series.dataset.name = entry.name;
+      series.innerHTML = render(entry.text);
+      numberParts(series);
+      structure(series);
+      content.appendChild(series);
+    });
+
     status.hidden = true;
     content.hidden = false;
+    buildSide(content);
+    watch(content);
 
     // jump to the section named in the address (the page was built after the load)
     if (location.hash) {

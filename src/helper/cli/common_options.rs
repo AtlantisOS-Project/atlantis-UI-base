@@ -39,6 +39,8 @@
 //! ```
 
 use crate::helper::configuration::application_environment::AppEnvironment;
+#[cfg(any(feature = "format-snap", feature = "format-flatpak"))]
+use crate::helper::platform::package_format::FORMAT_OVERRIDE;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// The lines of `--help` that describe the shared options; put them below your own usage
@@ -179,8 +181,10 @@ pub fn fallback_language() -> bool {
 }
 
 /// Applies the options: turns the debug mode on and remembers the fallback language. `-snp`
-/// sets `$SNAP` and `-flp` sets `$FLATPAK_ID` (to `flatpak_id`), so the program believes it
-/// runs in that sandbox.
+/// sets `$SNAP` and `-flp` sets `$FLATPAK_ID` (to `flatpak_id`); both also set
+/// `ATL_PACKAGE_FORMAT` (`package_format::FORMAT_OVERRIDE`), so the program believes it runs in that
+/// sandbox wherever it is. Only the formats that are compiled in can be pretended: a build for one
+/// format ignores the flags.
 ///
 /// Call it once at the start of `main`, before other threads exist, because it changes the
 /// environment of the process.
@@ -189,14 +193,22 @@ pub fn apply_debug_options(options: &CliOptions, flatpak_id: &str) {
     FALLBACK_LANGUAGE.store(options.fallback_language, Ordering::Relaxed);
 
     // SAFETY: documented to be called from `main` before any thread is started.
+    #[allow(unused_unsafe)] // nothing to set when no sandbox format is compiled in
     unsafe {
+        // only for the package formats that are compiled in
+        #[cfg(feature = "format-snap")]
         if options.fake_snap {
             std::env::set_var("SNAP", "/tmp/snap-debug");
+            std::env::set_var(FORMAT_OVERRIDE, "snap");
             println!("[DEBUG] SNAP-Env: $SNAP=/tmp/snap-debug");
         }
+        #[cfg(feature = "format-flatpak")]
         if options.fake_flatpak {
             std::env::set_var("FLATPAK_ID", flatpak_id);
+            std::env::set_var(FORMAT_OVERRIDE, "flatpak");
             println!("[DEBUG] Flatpak-Env: $FLATPAK_ID is set");
         }
+        #[cfg(not(feature = "format-flatpak"))]
+        let _ = flatpak_id;
     }
 }

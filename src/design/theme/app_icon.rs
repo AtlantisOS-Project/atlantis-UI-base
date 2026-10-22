@@ -33,14 +33,16 @@ fn icon_dirs() -> Vec<PathBuf> {
             dirs.push(dir);
         }
     };
-    // AppImage: the AppDir; Snap: the root of the snap
-    for root in places.app_roots() {
-        push(root.join("usr/share/icons"));
+    // the shared folders of the package format: the AppDir, the root of the snap, /app
+    for (format, root) in places.roots() {
+        for share in format.share_paths(root) {
+            push(share.join("icons"));
+        }
     }
-    // Flatpak and the usual prefixes, in case $XDG_DATA_DIRS lacks them
-    push(PathBuf::from("/app/share/icons"));
-    push(PathBuf::from("/usr/local/share/icons"));
-    push(PathBuf::from("/usr/share/icons"));
+    // the usual prefixes, in case $XDG_DATA_DIRS lacks them
+    for share in places.default_system_dirs() {
+        push(share.join("icons"));
+    }
     // <prefix>/bin/<program> with <prefix>/share/icons next to it
     if let Some(prefix) = env::current_exe()
         .ok()

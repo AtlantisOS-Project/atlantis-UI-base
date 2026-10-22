@@ -420,12 +420,14 @@ impl GuideLoader {
             match root {
                 ImageRoot::Dir(dir) => {
                     dirs.push(dir.clone());
-                    // Snap: a path compiled in like /usr/share/app lives below $SNAP at
-                    // run time
-                    if let (Some(snap), Ok(rel)) = (&env.snap, dir.strip_prefix("/"))
-                        && !dir.starts_with(snap)
-                    {
-                        dirs.push(snap.join(rel));
+                    // Snap, AppImage: a path compiled in like /usr/share/app lives below the
+                    // root of the package at run time
+                    for root in env.relocated_roots() {
+                        if let Ok(rel) = dir.strip_prefix("/")
+                            && !dir.starts_with(&root)
+                        {
+                            dirs.push(root.join(rel));
+                        }
                     }
                 }
                 ImageRoot::DataSubdir(sub) => {
@@ -448,7 +450,7 @@ impl GuideLoader {
             loader: self,
             base,
             image_dirs: self.image_search_dirs(&env),
-            snap: env.snap,
+            relocated: env.relocated_roots(),
         };
 
         let mut labels = Labels::default();
@@ -503,7 +505,8 @@ struct Ctx<'a> {
     base: Option<&'a Base>,
     /// Folders for installed images, already resolved (XDG, Flatpak, Snap, AppImage)
     image_dirs: Vec<PathBuf>,
-    snap: Option<PathBuf>,
+    /// the roots of the packages that are mounted at run time (`$SNAP`, `$APPDIR`)
+    relocated: Vec<PathBuf>,
 }
 
 const CONTENT_KEYS: &str =
@@ -662,11 +665,13 @@ impl Ctx<'_> {
         let mut candidates: Vec<Spot> = Vec::new();
         if path.is_absolute() {
             candidates.push(Spot::File(path.to_path_buf()));
-            // Snap: a path compiled in lives below $SNAP at run time
-            if let (Some(snap), Ok(rel)) = (&self.snap, path.strip_prefix("/"))
-                && !path.starts_with(snap)
-            {
-                candidates.push(Spot::File(snap.join(rel)));
+            // Snap, AppImage: a path compiled in lives below the root of the package at run time
+            for root in &self.relocated {
+                if let Ok(rel) = path.strip_prefix("/")
+                    && !path.starts_with(root)
+                {
+                    candidates.push(Spot::File(root.join(rel)));
+                }
             }
         } else {
             candidates.push(match self.base {
@@ -1129,6 +1134,23 @@ blocks = [
         }
     }
 
+    /// The folders for an environment made of these variables (and no program prefix).
+    fn env_of(pairs: &[(&str, &str)]) -> DataDirs {
+        let pairs: Vec<(String, String)> = pairs
+            .iter()
+            .map(|(key, value)| (key.to_string(), value.to_string()))
+            .collect();
+        DataDirs {
+            exe_prefix: None,
+            ..DataDirs::from_lookup(&move |key| {
+                pairs
+                    .iter()
+                    .find(|(k, _)| k == key)
+                    .map(|(_, v)| std::ffi::OsString::from(v))
+            })
+        }
+    }
+
     fn paths(list: &[&str]) -> Vec<PathBuf> {
         list.iter().map(PathBuf::from).collect()
     }
@@ -1137,15 +1159,13 @@ blocks = [
     fn data_dirs_follow_xdg_and_add_flatpak_and_snap() {
         // user first; duplicates, empty and relative entries are dropped; Flatpak, Snap and
         // AppImage follow
-        let env = DataDirs {
-            home: Some("/home/u".into()),
-            xdg_data_home: None,
-            xdg_data_dirs: Some("/opt/a::/usr/share:/opt/a:relative".into()),
-            snap: Some("/snap/x/1".into()),
-            appdir: Some("/tmp/.mount_x".into()),
-            flatpak: true,
-            ..DataDirs::default()
-        };
+        let env = env_of(&[
+            ("HOME", "/home/u"),
+            ("XDG_DATA_DIRS", "/opt/a::/usr/share:/opt/a:relative"),
+            ("SNAP", "/snap/x/1"),
+            ("APPDIR", "/tmp/.mount_x"),
+            ("FLATPAK_ID", "org.example.App"),
+        ]);
         assert_eq!(
             env.data_dirs(),
             paths(&[
@@ -1160,11 +1180,7 @@ blocks = [
         );
 
         // XDG_DATA_HOME replaces ~/.local/share
-        let env = DataDirs {
-            home: Some("/home/u".into()),
-            xdg_data_home: Some("/data".into()),
-            ..DataDirs::default()
-        };
+        let env = env_of(&[("HOME", "/home/u"), ("XDG_DATA_HOME", "/data")]);
         assert_eq!(env.data_dirs()[0], PathBuf::from("/data"));
 
         // without XDG_DATA_DIRS the defaults of the specification apply (Debian: /usr/share)
@@ -1201,12 +1217,11 @@ blocks = [
     fn flatpak_and_snap_locations_are_searched_without_xdg_data_dirs() {
         let tmp = scratch("snap");
         touch(&tmp.join("usr/share/myapp/a.png"));
-        let env = DataDirs {
-            // this is how some Snaps look: $SNAP/usr/share is missing in XDG_DATA_DIRS
-            xdg_data_dirs: Some("/nonexistent".into()),
-            snap: Some(tmp.clone()),
-            ..DataDirs::default()
-        };
+        // this is how some Snaps look: $SNAP/usr/share is missing in XDG_DATA_DIRS
+        let env = env_of(&[
+            ("XDG_DATA_DIRS", "/nonexistent"),
+            ("SNAP", tmp.to_str().unwrap()),
+        ]);
         let loader = GuideLoader::new().image_data_subdir("myapp").with_env(env);
         assert_eq!(
             file(resolved(&loader, "a.png")),
@@ -1219,10 +1234,7 @@ blocks = [
     fn fixed_dirs_and_absolute_paths_get_the_snap_prefix() {
         let tmp = scratch("pkgdatadir");
         touch(&tmp.join("usr/share/myapp/a.png"));
-        let env = DataDirs {
-            snap: Some(tmp.clone()),
-            ..DataDirs::default()
-        };
+        let env = env_of(&[("SNAP", tmp.to_str().unwrap())]);
 
         // PKGDATADIR was compiled in as /usr/share/myapp, but it lives below $SNAP
         let loader = GuideLoader::new()

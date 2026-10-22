@@ -21,7 +21,9 @@ atlbase
 │   │                    search_file_directory, search_string_name
 │   ├── language         language (gettext, locale directory lookup)
 │   ├── log              write_log (syslog), write_log_text (journal viewer, feature log-viewer)
-│   ├── platform         target, dirs, program, elevate, feature, package, logging
+│   ├── download         download_file (feature download)
+│   ├── platform         target, os (+ os/*), package_format (+ package_format/*), dirs,
+│   │                    program, elevate, feature, package, logging
 │   │                    (the layer between a program and the operating system)
 │   └── sysinfo          system_info (distribution, kernel, processor, packages)
 ├── design           everything with a user interface
@@ -60,13 +62,16 @@ atlbase
 | `helper::log::write_log` | `log` crate backend for syslog |
 | `helper::log::write_log_text` | Journal viewer window and header bar menu |
 | `helper::platform::target` | `Os`, `Arch`, `Target`: the system and processor the program was built for |
-| `helper::platform::dirs` | `AppDirs` (settings, data, cache, logs), `home_dir`, `DataDirs` (resources), protected paths |
+| `helper::platform::os` | `OsProfile`: one file per operating system (`os/linux.rs`, `windows.rs`, `macos.rs`, `other.rs`); only the profile of the target is compiled |
+| `helper::platform::package_format` | `PackageFormat`: one file per package format (`flatpak`, `snap`, `appimage`, `native`); only the formats of the enabled `format-*` features are compiled |
+| `helper::platform::dirs` | `AppDirs` (settings, data, cache, logs), `home_dir`, `DataDirs` (resources, from the package formats) |
 | `helper::platform::program` | Find and start programs of the host: `find_program`, `host_command`, `register_tool_dir` |
 | `helper::platform::elevate` | Run a command as administrator: `pkexec`, `osascript` or UAC |
 | `helper::platform::feature` | `supports(Feature::…)`: what the host offers |
 | `helper::platform::package` | `PackageManager`: `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
 | `helper::platform::logging` | `init_logging`: syslog or a log file; the command that follows the journal |
-| `helper::sysinfo::system_info` | Distribution, kernel, processor, graphics card, package versions |
+| `helper::download` | `download_file`: HTTP(S) download without `curl` (feature `download`) |
+| `helper::sysinfo::system_info` | Distribution, kernel, processor, graphics card, package versions (from files, no program is started) |
 | `design::carousel` | Swipeable multi-page guides (builder or TOML) |
 | `design::chooser::*` | File and folder dialogs |
 | `design::dialogs::*` | Alert, entry, custom, image, about, confirm, spinner, work and task dialogs; `CommandTask` |

@@ -8,6 +8,7 @@
 //! The platform layer as a program sees it: only the public names of the prelude.
 
 use atlbase::prelude::*;
+use std::path::PathBuf;
 
 #[test]
 fn the_target_is_the_one_the_test_was_built_for() {
@@ -70,18 +71,32 @@ fn the_folders_of_an_application_follow_the_system() {
 }
 
 #[test]
-fn administrator_commands_are_built_for_every_system() {
+fn administrator_commands_are_built_by_the_profile_of_the_system() {
     let command = command_line("id", ["-u"]);
-    for os in [Os::Linux, Os::Windows, Os::MacOs] {
-        let elevated = elevation_command_for(os, &command).unwrap();
-        assert!(elevated.iter().any(|word| word.contains("id")), "{os}");
-    }
-    assert!(
-        elevation_command(&command)
-            .unwrap()
-            .iter()
-            .any(|word| word.contains("id"))
+    let elevated = elevation_command(&command).unwrap();
+    assert!(elevated.iter().any(|word| word.contains("id")));
+    // only the system the program is built for is compiled in
+    assert!(elevation_command_for(Os::current(), &command).is_some());
+    assert_eq!(os_profile().os, Os::current());
+    assert!(elevation_command(&[]).is_none());
+}
+
+#[test]
+fn the_package_format_describes_where_its_files_are() {
+    // the formats that are compiled in, the one that is no format last
+    assert_eq!(PACKAGE_FORMATS.last().unwrap().id, "native");
+    let snap = PACKAGE_FORMATS
+        .iter()
+        .find(|format| format.id == "snap")
+        .unwrap();
+    assert!(snap.sandboxed && snap.relocated);
+    let roots = package_roots(&|key| (key == "SNAP").then(|| "/snap/x/1".into()));
+    assert_eq!(roots.len(), 1);
+    assert_eq!(
+        snap.bin_paths(&roots[0].1)[0],
+        PathBuf::from("/snap/x/1/usr/bin")
     );
+    assert_eq!(detect_package_format(&|_| None).id, "native");
 }
 
 #[test]

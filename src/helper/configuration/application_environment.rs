@@ -12,6 +12,7 @@
 //! adjust paths and permissions at run time.
 
 use crate::helper::filesystem::search_string_name::search_string_file;
+use crate::helper::platform::package_format::detect_package_format;
 use std::env;
 use std::path::Path;
 use std::sync::OnceLock;
@@ -65,9 +66,11 @@ impl AppEnvironment {
     }
 }
 
-/// Returns the name of the current runtime environment.
+/// Returns the name of the current runtime environment: the [`id`](crate::helper::platform::package_format::PackageFormat::id) of the package
+/// [`PackageFormat`](crate::helper::platform::package_format::PackageFormat) the program runs in.
 ///
-/// The check needs only the file system and the environment variables:
+/// The check needs only the file system and the environment variables; every format describes
+/// how it is recognized (see [`platform::package_format`](crate::helper::platform::package_format)):
 ///
 /// | Result | Condition |
 /// |---|---|
@@ -75,6 +78,9 @@ impl AppEnvironment {
 /// | `"snap"` | `$SNAP` is set |
 /// | `"appimage"` | `$APPIMAGE` is set (the AppImage runtime sets it) |
 /// | `"native"` | none of the above (deb, rpm, `cargo install`, …) |
+///
+/// A program that was built for one format (`--features format-snap`) always answers with that
+/// one.
 ///
 /// # Examples
 ///
@@ -85,16 +91,9 @@ impl AppEnvironment {
 /// assert!(["flatpak", "snap", "appimage", "native"].contains(&env.as_str()));
 /// ```
 pub fn get_execution_environment() -> String {
-    let name = if Path::new("/.flatpak-info").exists() || env::var_os("FLATPAK_ID").is_some() {
-        "flatpak"
-    } else if env::var_os("SNAP").is_some() {
-        "snap"
-    } else if env::var_os("APPIMAGE").is_some() {
-        "appimage"
-    } else {
-        "native"
-    };
-    name.to_string()
+    detect_package_format(&|key| env::var_os(key))
+        .id
+        .to_string()
 }
 
 /// Analyzes the installation source of the application in detail.
@@ -186,7 +185,8 @@ pub fn current_environment(search_string: &str, source_dir: &str) -> AppEnvironm
 /// Whether the program runs in the Windows Subsystem for Linux (WSL).
 ///
 /// WSL is recognized by the Windows drive `/mnt/c/Users`. In WSL the Windows programs
-/// (`adb.exe`, …) are available next to the Linux ones.
+/// (`adb.exe`, …) are available next to the Linux ones. Always `false` on other systems than
+/// Linux.
 pub fn running_in_wsl() -> bool {
-    Path::new("/mnt/c/Users").is_dir()
+    cfg!(target_os = "linux") && Path::new("/mnt/c/Users").is_dir()
 }
