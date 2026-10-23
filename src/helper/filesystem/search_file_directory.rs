@@ -30,8 +30,10 @@ use std::path::Path;
 ///
 /// # Errors
 ///
-/// Returns an [`std::io::Error`] if the directory cannot be read (for example because it
-/// does not exist).
+/// Returns an [`std::io::Error`] if the directory cannot be read. A directory that does not exist
+/// is an error of kind [`NotFound`](std::io::ErrorKind::NotFound): a caller for whom "no
+/// directory" means "no file" (the APT sources of a system without APT) maps it to `false`, as the
+/// example shows. (This one function replaced `search_string_file`, which did that itself.)
 ///
 /// # Examples
 ///
@@ -43,7 +45,15 @@ use std::path::Path;
 ///
 /// assert!(search_file_directory(dir.path(), "atlantis").unwrap());
 /// assert!(!search_file_directory(dir.path(), "debian").unwrap());
-/// assert!(search_file_directory("/this/path/does/not/exist", "x").is_err());
+///
+/// // no directory: an error, which the caller may read as "no file"
+/// let missing = search_file_directory("/this/path/does/not/exist", "x");
+/// assert_eq!(missing.unwrap_err().kind(), std::io::ErrorKind::NotFound);
+/// let found = match search_file_directory("/this/path/does/not/exist", "x") {
+///     Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+///     other => other.unwrap(),
+/// };
+/// assert!(!found);
 /// ```
 pub fn search_file_directory<P: AsRef<Path>>(
     directory: P,

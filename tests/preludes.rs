@@ -21,8 +21,8 @@ use atlbase::prelude::{
     delete_files_in_dir, delete_files_with_parent, directory_exists, expand_path, file_exists,
     get_config, get_config_value, get_execution_environment, get_home_directory, get_language_dir,
     init_language, init_syslog, make_path, make_path_dirname, open_terminal_by_desktop, open_url,
-    read_from_temp, remove_line_from_temp, run_command, search_file_directory, search_string_file,
-    set_config, set_language_dir, write_file, write_to_temp,
+    read_from_temp, remove_line_from_temp, run_command, search_file_directory, set_config,
+    set_language_dir, write_file, write_to_temp,
 };
 // the building blocks for programs with many pages
 #[cfg(feature = "archive")]

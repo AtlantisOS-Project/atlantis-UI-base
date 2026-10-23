@@ -11,7 +11,7 @@
 //! Snap, AppImage) or as a native system package (PPA, local deb). The result is used to
 //! adjust paths and permissions at run time.
 
-use crate::helper::filesystem::search_string_name::search_string_file;
+use crate::helper::filesystem::search_file_directory::search_file_directory;
 use crate::helper::platform::package_format::detect_package_format;
 use std::env;
 use std::path::Path;
@@ -143,7 +143,7 @@ pub fn check_application_environment(search_string: &str, source_dir: &str) -> A
                 );
                 return AppEnvironment::Unknown;
             }
-            match search_string_file(source_dir, search_string) {
+            match search_file_directory(source_dir, search_string) {
                 Ok(true) => AppEnvironment::Ppa,
                 Ok(false) => {
                     println!("[INFO] Running as local deb package.");

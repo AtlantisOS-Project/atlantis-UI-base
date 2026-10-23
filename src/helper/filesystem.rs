@@ -28,8 +28,6 @@ pub mod move_file;
 
 pub mod search_file_directory;
 
-pub mod search_string_name;
-
 // Re-exports
 pub use delete_directory::*;
 pub use delete_files::*;
@@ -40,4 +38,3 @@ pub use home_dir::*;
 pub use make_path::*;
 pub use move_file::*;
 pub use search_file_directory::*;
-pub use search_string_name::*;

@@ -44,13 +44,9 @@ fn searching_file_names() {
 
     assert!(search_file_directory(root.path(), "atlantis").unwrap());
     assert!(!search_file_directory(root.path(), "other").unwrap());
-    assert!(search_file_directory(root.path().join("missing"), "x").is_err());
-
-    let dir = root.path().to_str().unwrap();
-    assert!(search_string_file(dir, "atlantis").unwrap());
-    assert!(!search_string_file(dir, "other").unwrap());
-    // unlike search_file_directory, a missing directory is no error
-    assert!(!search_string_file("/does/not/exist", "x").unwrap());
+    // a missing directory is an error of kind NotFound: the caller decides what it means
+    let missing = search_file_directory(root.path().join("missing"), "x").unwrap_err();
+    assert_eq!(missing.kind(), std::io::ErrorKind::NotFound);
 }
 
 #[test]
@@ -71,8 +67,22 @@ fn delete_directory_removes_an_empty_directory() {
     let dir = root.path().join("empty");
     fs::create_dir(&dir).unwrap();
 
-    delete_directory(&dir);
+    delete_directory(&dir).unwrap();
     assert!(!dir.exists());
+}
+
+#[test]
+fn delete_directory_reports_what_went_wrong_and_does_not_end_the_process() {
+    let root = tempfile::tempdir().unwrap();
+    // not there
+    let error = delete_directory(root.path().join("missing")).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    // not empty: nothing is deleted
+    let full = root.path().join("full");
+    fs::create_dir(&full).unwrap();
+    fs::write(full.join("file"), "x").unwrap();
+    assert!(delete_directory(&full).is_err());
+    assert!(full.join("file").exists());
 }
 
 #[test]

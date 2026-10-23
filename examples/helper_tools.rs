@@ -42,8 +42,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let conf = root.join("config/app.conf");
     let conf = conf.to_str().ok_or("path is not UTF-8")?;
 
-    add_line_file(&true, conf, "THEME=dark")?;
-    add_line_file(&true, conf, "THEME=dark")?; // already there, nothing happens
+    add_line_file(true, conf, "THEME=dark")?;
+    add_line_file(true, conf, "THEME=dark")?; // already there, nothing happens
     println!("MODE  = {:?}", get_config_value(conf, "MODE"));
     println!("THEME = {:?}", get_config_value(conf, "THEME"));
     println!("clean = {:?}", trim_and_clean("  \"quoted text\"  "));

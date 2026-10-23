@@ -15,10 +15,9 @@ generated from the source: `cargo doc --open` (or docs.rs).
   `no_run`.
 * **Sandboxes:** modules that depend on the host (`pkexec`, terminals, `journalctl`) have a
   `# Packaging` section that tells what happens in Flatpak and Snap.
-* **Errors:** functions return `io::Result` or `Result`; "fire and forget" helpers (for
-  example `create_directory`) print their result to the console instead. Two helpers end the
-  process on purpose and say so in their documentation: `delete_directory` and
-  `get_home_directory`.
+* **Errors:** functions return `io::Result`, `Result` or `Option`; "fire and forget" helpers (for
+  example `create_directory`) print their result to the console instead. No function of the
+  library ends the process: the caller decides what a failure means.
 * **Tests:** unit tests sit next to the code, integration tests in `tests/`, programs that show
   how to use the library in `examples/`.
 
@@ -67,7 +66,7 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 
 | Function | Purpose |
 |---|---|
-| `add_line_file(create_backup: &bool, path, line) -> io::Result<()>` | Append a line once, with optional `.bak` |
+| `add_line_file(create_backup: bool, path, line) -> io::Result<()>` | Append a line once, with optional `.bak` |
 | `get_config_value(filename, key) -> Option<String>` | Read `KEY=VALUE` / `KEY="VALUE"` files |
 | `trim_and_clean(s: &str) -> &str` | Trim whitespace and enclosing quotes |
 | `write_file(filename, content, base_path, path_list) -> io::Result<()>` | Write a file and create the directories |
@@ -80,11 +79,11 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 | `create_directory(path)` / `make_path(path)` / `make_path_dirname(filepath)` | Create directories (logging / returning / for a file path) |
 | `directory_exists(path)` / `file_exists(path)` | Existence checks |
 | `expand_path(path) -> PathBuf` | Replace a leading `~` by `$HOME` |
-| `get_home_directory() -> PathBuf` | `$HOME`; ends the process if it is not set |
-| `delete_directory(path)` | Remove an empty directory; ends the process on failure |
+| `get_home_directory() -> Option<PathBuf>` | `$HOME`, then the system (`USERPROFILE` on Windows); `None` if there is no home directory |
+| `delete_directory(path) -> io::Result<()>` | Remove an empty directory (`fs::remove_dir`) |
 | `delete_files_in_dir(path)` | Delete the files of a directory (protected directories are refused) |
 | `delete_files_and_parents(path, stop_dir)` / `delete_files_with_parent(path)` | Delete the files, then the empty directory and its empty parents |
-| `search_file_directory(dir, text)` / `search_string_file(dir, text)` | Is there a file whose name contains the text? |
+| `search_file_directory(dir, text) -> io::Result<bool>` | Is there a file whose name contains the text? A missing directory is a `NotFound` error |
 | `move_file_into(source, target_dir, new_name) -> io::Result<PathBuf>` | Move and rename a file, also to another file system |
 | `require_dir_name(dir, name) -> io::Result<()>` | Refuse (`PermissionDenied`) unless the folder has this name: the check before a cleanup |
 | `remove_dir_all_if_exists(dir)` / `clear_directory_except(dir, keep)` | Delete a folder / its content except some entries; a missing folder is fine |

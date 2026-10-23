@@ -12,8 +12,8 @@
 //! is not empty.
 
 use std::fs;
+use std::io;
 use std::path::Path;
-use std::process;
 
 /// Deletes an empty directory.
 ///
@@ -22,17 +22,15 @@ use std::process;
 /// [`delete_files_with_parent`](crate::helper::filesystem::delete_files::delete_files_with_parent)
 /// to clean up a directory with files in it.
 ///
-/// # Process exit
-///
-/// If the directory cannot be deleted (it is not empty, does not exist or the permissions
-/// are missing), the function prints an error to `stderr` and **terminates the whole
-/// process** with status `1`. This suits cleanup steps of installers and command line
-/// tools; do not use it where the application has to carry on after a failure — use
-/// [`std::fs::remove_dir`] there.
-///
 /// # Arguments
 ///
 /// * `path` - The directory to delete (`&str`, `String`, `PathBuf`, …).
+///
+/// # Errors
+///
+/// Returns the [`io::Error`] of [`std::fs::remove_dir`] if the directory cannot be deleted: it is
+/// not empty (`DirectoryNotEmpty`), does not exist (`NotFound`) or the permissions are missing
+/// (`PermissionDenied`). The process is not ended: the caller decides what to do.
 ///
 /// # Examples
 ///
@@ -43,20 +41,14 @@ use std::process;
 /// let dir = parent.path().join("empty");
 /// std::fs::create_dir(&dir).unwrap();
 ///
-/// delete_directory(&dir);
+/// delete_directory(&dir).unwrap();
 /// assert!(!dir.exists());
+/// // a directory that is not there is an error, not the end of the program
+/// assert!(delete_directory(&dir).is_err());
 /// ```
-pub fn delete_directory<P: AsRef<Path>>(path: P) {
-    let path_ref = path.as_ref();
-
-    match fs::remove_dir(path_ref) {
-        Ok(_) => println!("Directory deleted: {:?}", path_ref),
-        Err(e) => {
-            eprintln!(
-                "Error deleting directory {:?}: {} (Note: Only empty directories can be deleted.)",
-                path_ref, e
-            );
-            process::exit(1);
-        }
-    }
+pub fn delete_directory<P: AsRef<Path>>(path: P) -> io::Result<()> {
+    let path = path.as_ref();
+    fs::remove_dir(path)?;
+    println!("Directory deleted: {:?}", path);
+    Ok(())
 }

@@ -12,33 +12,29 @@
 
 use crate::helper::platform::dirs::home_dir;
 use std::path::PathBuf;
-use std::process;
 
-/// Returns the home directory of the current user.
+/// Returns the home directory of the current user, if there is one.
 ///
 /// The function reads the `$HOME` environment variable and, if that is not set, asks the
 /// system (`USERPROFILE` on Windows). In a Snap, `$HOME` is the private data directory of the
 /// snap, not the real home directory of the user.
 ///
-/// # Process exit
+/// # Returns
 ///
-/// If no home directory can be found, an error with the prefix `[ERROR]` is printed to
-/// `stderr` and the process is terminated with status `1`, because the application cannot
-/// work correctly without it. Use [`home_dir`] if you want to handle the case yourself.
+/// `None` if no home directory can be found (a service without a user, an empty environment).
+/// The process is not ended: the caller decides what to do. It is the same as [`home_dir`] of the
+/// platform layer.
 ///
 /// # Examples
 ///
 /// ```
 /// use atlbase::prelude::get_home_directory;
 ///
-/// let home = get_home_directory();
+/// let home = get_home_directory().expect("a home directory");
 /// println!("Home: {:?}", home);
 /// ```
-pub fn get_home_directory() -> PathBuf {
-    home_dir().unwrap_or_else(|| {
-        eprintln!("[ERROR] Could not determine the home directory.");
-        process::exit(1);
-    })
+pub fn get_home_directory() -> Option<PathBuf> {
+    home_dir()
 }
 
 /// The home directory, if there is one: the one place of the library that asks for it (the

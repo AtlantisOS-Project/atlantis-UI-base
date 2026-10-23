@@ -45,14 +45,14 @@ use std::path::Path;
 /// let file = dir.path().join("hosts");
 /// let file = file.to_str().unwrap();
 ///
-/// add_line_file(&false, file, "127.0.0.1 localhost").unwrap();
-/// add_line_file(&false, file, "127.0.0.1 localhost").unwrap(); // already there
-/// add_line_file(&false, file, "10.0.0.1 server").unwrap();
+/// add_line_file(false, file, "127.0.0.1 localhost").unwrap();
+/// add_line_file(false, file, "127.0.0.1 localhost").unwrap(); // already there
+/// add_line_file(false, file, "10.0.0.1 server").unwrap();
 ///
 /// let content = std::fs::read_to_string(file).unwrap();
 /// assert_eq!(content, "127.0.0.1 localhost\n10.0.0.1 server\n");
 /// ```
-pub fn add_line_file(create_backup: &bool, path: &str, line: &str) -> io::Result<()> {
+pub fn add_line_file(create_backup: bool, path: &str, line: &str) -> io::Result<()> {
     let content = match fs::read_to_string(path) {
         Ok(content) => content,
         Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
@@ -67,7 +67,7 @@ pub fn add_line_file(create_backup: &bool, path: &str, line: &str) -> io::Result
         return Ok(());
     }
 
-    if *create_backup && Path::new(path).exists() {
+    if create_backup && Path::new(path).exists() {
         let backup_path = format!("{}.bak", path);
         if !Path::new(&backup_path).exists() {
             fs::copy(path, &backup_path)?;

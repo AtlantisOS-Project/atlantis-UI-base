@@ -19,7 +19,7 @@ mkdir -p "$work/src/helper"
 cp "$helper/platform.rs" "$work/src/helper/"
 cp -r "$helper/platform" "$work/src/helper/"
 for file in commands/command_line commands/open_terminal_desktop commands/execute_command \
-    configuration/application_environment filesystem/search_string_name \
+    configuration/application_environment \
     filesystem/search_file_directory filesystem/delete_files filesystem/home_dir \
     file/get_config_value sysinfo/system_info log/write_log; do
     mkdir -p "$work/src/helper/$(dirname "$file")"
@@ -37,7 +37,6 @@ directories = "6.0"
 confy = "0.6"
 log = { version = "0.4", features = ["std"] }
 serde = { version = "1.0", features = ["derive"] }
-open = "5.3"
 tempfile = "3"
 
 [target.'cfg(unix)'.dependencies]
@@ -65,7 +64,6 @@ pub mod helper {
         pub mod delete_files;
         pub mod home_dir;
         pub mod search_file_directory;
-        pub mod search_string_name;
     }
     pub mod file {
         pub mod get_config_value;

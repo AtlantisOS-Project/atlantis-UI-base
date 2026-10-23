@@ -22,6 +22,10 @@ What you have to look at when you update. Everything not listed here keeps worki
 | `SystemInfo`                    | had no architecture                                                                                         | new field `architecture`: a struct literal needs `..Default::default()` |
 | `syslog`, `log`                 | `syslog` always compiled                                                                                    | `syslog` only on Unix; `log` with `std`; Windows logs to a file   |
 | `get_home_directory`            | only `$HOME`                                                                                                | `$HOME`, then the system (`USERPROFILE` on Windows)               |
+| `delete_directory`              | returned `()` and ended the whole process (`exit(1)`) when the directory could not be removed                | returns `io::Result<()>`                                          | Handle the result: `?`, or `.unwrap()` if the program should stop (a library must not end it) |
+| `get_home_directory`            | returned `PathBuf` and ended the whole process when there was no home directory                              | returns `Option<PathBuf>` (the same as `home_dir()`)              | `get_home_directory().expect("a home directory")`, or handle `None` |
+| `add_line_file`                 | `create_backup: &bool`                                                                                       | `create_backup: bool`                                             | Pass `true` / `false` instead of `&true` / `&false` (the compiler shows every place) |
+| `search_string_file`            | a function of its own: a missing directory gave `Ok(false)`                                                  | removed: it is `search_file_directory`                            | Call `search_file_directory`; map the error kind `NotFound` to `false` if a missing directory means "no file" |
 | Rust version                    | not declared                                                                                                | `rust-version = "1.93"`                                           | Use Rust 1.93 or newer (gtk4 0.11 needs 1.92, sevenz-rust2 of the feature `archive` 1.93) |
 | Version                         | 0.1.9                                                                                                       | 0.2.0                                                             | Change `atlbase = "0.1"` to `"0.2"` (Cargo does not update across `0.x` on its own) |
 
@@ -203,6 +207,16 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 | `create_custom_headerbar` | `domain: &'static str` | `domain: &str` |
 | `use_adw_provider` | `(css: &str)` returns nothing | `(css: &str) -> CssProvider` |
 
+The next four **do not compile unchanged** (they were the suggestions of the review of 0.1.9 for the
+next breaking release; 0.2 is that release):
+
+| Function | Before | Now |
+|---|---|---|
+| `delete_directory(path)` | returned nothing; printed the error and ended the process with status `1` | `-> io::Result<()>`: the error of `fs::remove_dir` (`DirectoryNotEmpty`, `NotFound`, `PermissionDenied`) goes to the caller |
+| `get_home_directory()` | `-> PathBuf`; printed `[ERROR]` and ended the process with status `1` if there was no home directory | `-> Option<PathBuf>` |
+| `add_line_file(create_backup, path, line)` | `create_backup: &bool` | `create_backup: bool` |
+| `search_file_directory(dir, text)`, `search_string_file(dir, text)` | two functions that did nearly the same: the second returned `Ok(false)` for a missing directory | one function, `search_file_directory`: a missing directory is an `io::Error` of kind `NotFound` |
+
 #### Behavior changed
 
 ##### `helper::commands`
@@ -270,18 +284,20 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 | `show_spinner_dialog`, `show_spinner_dialog_return_output`, `show_task_dialog` | three copies of the same code with three slightly different looks; the progress bar timer ran forever; `show_task_dialog` put the title into Pango markup (a `&` or `<` broke it) | one implementation: same look (`title-3` heading, spinner 96 px, bar 250 px wide), the timer stops with the dialog, titles are plain text |
 | the progress dialogs (`show_spinner_dialog`, `show_spinner_dialog_return_output`, `show_task_dialog`) | polled a channel every 25 ms, had two copies of the loop that runs the commands, and stayed open if the work panicked | one worker (`run_command_chain`) and one background helper; no polling; the dialog closes when the work panicked, too |
 | `show_alert_dialog`, `show_custom_content_dialog`, `show_image_dialog`, `create_button_icon*`, `create_label_icon*`, the buttons of the log viewer menu | each built the same alert dialog or the same icon-and-label box itself | share the code; the box of the log viewer entries has 5 instead of 6 pixels between icon and text |
-| `search_string_file`, `create_directory`, `expand_path`, `get_home_directory`, `delete_files_*`, `write_file`, `os_release_value`, `package_version` | each had its own copy of reading `$HOME`, listing a directory, creating a directory or parsing `KEY=VALUE` | use one implementation; the results are the same |
+| `search_file_directory`, `create_directory`, `expand_path`, `get_home_directory`, `delete_files_*`, `write_file`, `os_release_value`, `package_version` | each had its own copy of reading `$HOME`, listing a directory, creating a directory or parsing `KEY=VALUE` | use one implementation; the results are the same |
 | `commands_pkexec_*` | an empty list showed a dialog that closed at once | does nothing (as `command_pkexec_*` did already) |
 | `use_adw_provider` | one global provider; a second call made the first stylesheet overwrite the second on every theme change | one provider per call, reloaded independently |
 
 ### Removed
 
-**No public function, type or module was removed.** What went away:
+**One public function was removed** (`search_string_file`, merged into `search_file_directory`); no type or module. What went away:
 
 | Removed | Why | Replacement |
 |---|---|---|
 | `./po` lookup in `init_language` | it holds `.po` sources, not `.mo` files, so it hid the real directory whenever the working directory had a `po/` folder; relative to the working directory it was also unsafe | `default_dir` (use `env!("COMPILED_LOCALE_DIR")` while developing) or `ATL_LOCALEDIR` |
+| `search_string_file` | it did what `search_file_directory` does, except that a missing directory gave `Ok(false)` | `search_file_directory`; map the error kind `NotFound` to `false` |
 | `exit(1)` in `check_application_environment` | a library must not end the application | returns `AppEnvironment::Unknown` |
+| `exit(1)` in `delete_directory` and `get_home_directory` | a library must not end the application: the caller decides what a failed delete or a missing home directory means | `io::Result<()>` and `Option<PathBuf>` |
 | `exit(0)` behind the header bar "Exit" button (private `kill_program`) | skipped shutdown handlers and unsaved state | `Application::quit()` |
 | `expect(…)` in `init_language` | a broken locale directory crashed the application at start-up | warning on `stderr` |
 | need for `gettext-rs` in your own crate | the macro named `gettextrs::dgettext` | the macro uses `$crate::…::translate` |
@@ -292,15 +308,12 @@ except for the return value of `use_adw_provider` in `let () = …` patterns.
 
 ### Known issues and suggestions
 
-These behave as documented. Changing them breaks the API, so they are only suggestions for the next
-breaking release (not decided).
+No function of the library ends the process any more, and the four suggestions of the review of 0.1.9
+(`delete_directory`, `get_home_directory`, `add_line_file`, the two search functions) are done in this
+release (see "Call changed"). What is left:
 
-| Function | Issue | Suggestion (and what to use meanwhile) |
+| Function | Issue | Suggestion |
 |---|---|---|
-| `delete_directory` | ends the whole process when the directory cannot be removed | return `io::Result<()>`; use `std::fs::remove_dir` meanwhile |
-| `get_home_directory` | ends the whole process when `$HOME` is not set | return `Option<PathBuf>`; use `std::env::var_os("HOME")` meanwhile |
-| `add_line_file` | takes `create_backup: &bool` | take `bool` |
-| `search_file_directory`, `search_string_file` | do nearly the same | merge into one function |
 | module `system` (`experimental-api`) | does not compile (`apply_wifi.rs`) | out of scope of this release |
 
 ### Fixed
@@ -328,8 +341,15 @@ breaking release (not decided).
 
 ### Security
 
+A security review and a code audit (`cargo audit` for the dependencies, a read through the code that
+touches files, archives, temporary files and commands) went into this release. What they found and
+what was done:
+
 * `show_log_viewer`: no shell command line is built from `domain` any more.
 * The deletion helpers protect more directories and check them before deleting anything.
+* No function of the library ends the process (`delete_directory` and `get_home_directory` were the
+  last ones): a library that can stop its caller is a denial of service waiting for an unusual
+  input, and skips the cleanup of the program.
 * The `./po` lookup relative to the working directory is gone.
 * `open_terminal_by_desktop`: documented that the command is run by a shell; the AppleScript string
   is escaped on macOS.

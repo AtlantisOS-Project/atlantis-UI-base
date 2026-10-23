@@ -17,17 +17,17 @@ fn add_line_file_never_glues_lines_together() {
     let path = path.to_str().unwrap();
 
     // creates the file, with a line break
-    add_line_file(&false, path, "first").unwrap();
+    add_line_file(false, path, "first").unwrap();
     assert_eq!(fs::read_to_string(path).unwrap(), "first\n");
 
     // duplicates (even with surrounding spaces) are ignored
-    add_line_file(&false, path, "first").unwrap();
-    add_line_file(&false, path, "  first  ").unwrap();
+    add_line_file(false, path, "first").unwrap();
+    add_line_file(false, path, "  first  ").unwrap();
     assert_eq!(fs::read_to_string(path).unwrap(), "first\n");
 
     // a file without a final line break gets one before the new line
     fs::write(path, "no break at the end").unwrap();
-    add_line_file(&false, path, "second").unwrap();
+    add_line_file(false, path, "second").unwrap();
     assert_eq!(
         fs::read_to_string(path).unwrap(),
         "no break at the end\nsecond\n"
@@ -41,8 +41,8 @@ fn add_line_file_makes_one_backup_of_an_existing_file() {
     let path_str = path.to_str().unwrap();
     fs::write(&path, "original\n").unwrap();
 
-    add_line_file(&true, path_str, "added").unwrap();
-    add_line_file(&true, path_str, "added later").unwrap();
+    add_line_file(true, path_str, "added").unwrap();
+    add_line_file(true, path_str, "added later").unwrap();
 
     let backup = dir.path().join("config.bak");
     assert_eq!(

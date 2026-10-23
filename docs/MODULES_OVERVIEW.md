@@ -18,7 +18,7 @@ atlbase
 │   │                    trim_and_clean, write_file
 │   ├── filesystem       delete_directory, delete_files, directory_exists, expand_path,
 │   │                    guarded_delete, home_dir, make_path, move_file,
-│   │                    search_file_directory, search_string_name
+│   │                    search_file_directory
 │   ├── language         language (gettext, locale directory lookup)
 │   ├── log              write_log (syslog), write_log_text (journal viewer, feature log-viewer)
 │   ├── download         download_file (feature download)

@@ -158,7 +158,6 @@ pub mod prelude {
             make_path::{create_directory, make_path, make_path_dirname},
             move_file::move_file_into,
             search_file_directory::search_file_directory,
-            search_string_name::search_string_file,
         },
         language::language::{
             LIB_DOMAIN, get_current_domain, get_language_dir, init_language, set_language_dir,
