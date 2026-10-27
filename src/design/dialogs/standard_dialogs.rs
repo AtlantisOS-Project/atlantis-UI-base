@@ -31,6 +31,7 @@
 
 use crate::design::theme::load_adw_provider;
 use crate::gettext;
+use crate::helper::platform::logging::excerpt;
 use adw::Dialog;
 use adw::prelude::*;
 use gtk4::{
@@ -206,6 +207,15 @@ fn show_status_dialog(
     body: &str,
     button_label: &str,
 ) {
+    // what the user is told is part of the log: a bug report with the log shows the error dialog.
+    // Only the beginning: the text can be the output of a command.
+    let shown = excerpt(body);
+    match kind {
+        Kind::Info => log::info!("dialog '{heading}': {shown}"),
+        Kind::Success => log::info!("success dialog '{heading}': {shown}"),
+        Kind::Warning => log::warn!("warning dialog '{heading}': {shown}"),
+        Kind::Error => log::error!("error dialog '{heading}': {shown}"),
+    }
     build_status_dialog(kind, heading, body, button_label).present(Some(parent));
 }
 

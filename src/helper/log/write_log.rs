@@ -10,8 +10,9 @@
 //!
 //! The module implements a logger for the [`log`] crate that forwards the messages to the
 //! Unix syslog daemon. That makes centralized error handling and monitoring possible; on
-//! systemd systems the messages show up in `journalctl -t <app name>` and can be displayed
-//! with `show_log_viewer` (feature `log-viewer`).
+//! systemd systems the messages show up in `journalctl -t <app name>`.
+//! [`init_logging`](crate::helper::platform::logging::init_logging) uses this logger next to a
+//! log file, and the log viewer (`show_log_viewer`, feature `log-viewer`) shows that file.
 //!
 //! # Packaging
 //!
@@ -30,7 +31,7 @@ use syslog::{Facility, Formatter3164, Logger, LoggerBackend};
 
 /// Forwards `log` records to syslog.
 #[cfg(unix)]
-struct SyslogLogger {
+pub(crate) struct SyslogLogger {
     formatter: Formatter3164,
     /// The connection is opened with the first message and reused; it is dropped after a
     /// failed write so that the next message reconnects (for example after a restart of
@@ -58,7 +59,13 @@ impl log::Log for SyslogLogger {
             return;
         };
 
-        let message = record.args().to_string();
+        // the part of the program in front of the message: `flash::manager: failed`
+        let message = format!(
+            "{}: {}",
+            crate::helper::platform::logging::short_target(record.target()),
+            // one line, and nothing a terminal would act on
+            crate::helper::platform::logging::clean_message(&record.args().to_string(), "\\n")
+        );
         let sent = match record.level() {
             Level::Error => writer.err(message),
             Level::Warn => writer.warning(message),
@@ -73,7 +80,24 @@ impl log::Log for SyslogLogger {
     fn flush(&self) {}
 }
 
-/// Initializes syslog logging for the current application.
+/// The logger of syslog for `app_name`; [`init_logging`](crate::helper::platform::logging::init_logging)
+/// puts it next to the log file.
+#[cfg(unix)]
+pub(crate) fn syslog_logger(app_name: &str) -> SyslogLogger {
+    SyslogLogger {
+        formatter: Formatter3164 {
+            facility: Facility::LOG_USER,
+            hostname: None,
+            process: app_name.to_string(),
+            pid: process::id(),
+        },
+        writer: Mutex::new(None),
+    }
+}
+
+/// Initializes syslog logging for the current application, **only** syslog. Most programs want
+/// [`init_logging`](crate::helper::platform::logging::init_logging), which also writes the log
+/// file (the only log of a Flatpak, which cannot reach syslog).
 ///
 /// Afterwards the standard macros `info!()`, `warn!()`, `error!()` and so on log to the
 /// system. The log level is `Debug`.
@@ -99,17 +123,8 @@ impl log::Log for SyslogLogger {
 /// ```
 #[cfg(unix)]
 pub fn init_syslog(app_name: &str) -> Result<(), log::SetLoggerError> {
-    let logger = SyslogLogger {
-        formatter: Formatter3164 {
-            facility: Facility::LOG_USER,
-            hostname: None,
-            process: app_name.to_string(),
-            pid: process::id(),
-        },
-        writer: Mutex::new(None),
-    };
-
-    log::set_boxed_logger(Box::new(logger)).map(|_| log::set_max_level(LevelFilter::Debug))
+    log::set_boxed_logger(Box::new(syslog_logger(app_name)))
+        .map(|_| log::set_max_level(LevelFilter::Debug))
 }
 
 /// On systems without syslog (Windows) the messages go to the log file of the application

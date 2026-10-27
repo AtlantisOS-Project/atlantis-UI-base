@@ -23,13 +23,18 @@
 //! * the home directory and its standard folders (`Documents`, `Pictures`, `.config`, …),
 //! * mount points (they are never removed).
 //!
+//! The path is resolved first (`..` and symbolic links), so `/tmp/../etc` and a link to `/etc` are
+//! `/etc` for the check. On Windows upper and lower case do not matter.
+//!
 //! Even so, use them only for data that belongs to your application.
 
 use crate::helper::filesystem::home_dir::home_directory;
 use crate::helper::platform::dirs::is_mount_point;
 use crate::helper::platform::os::{OsProfile, os_profile};
+use crate::helper::platform::target::Os;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::io;
+use std::path::{Component, Path, PathBuf};
 
 /// Checks whether a path is a mount point by comparing its device ID with the parent's.
 fn is_mount_point_blocked(path: &Path) -> bool {
@@ -40,18 +45,58 @@ fn is_mount_point_blocked(path: &Path) -> bool {
     blocked
 }
 
+/// The path as the system sees it, with links and `..` resolved. Without that, `/tmp/../etc`
+/// and a link to `/etc` would pass for harmless paths. A path that does not exist (yet) cannot be
+/// resolved by the system and is cleaned of `.` and `..` by its words.
+fn resolve(path: &Path) -> PathBuf {
+    if let Ok(real) = fs::canonicalize(path) {
+        return real;
+    }
+    let mut clean = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => match clean.components().next_back() {
+                Some(Component::Normal(_)) => {
+                    clean.pop();
+                }
+                Some(Component::RootDir | Component::Prefix(_)) => {}
+                _ => clean.push(".."),
+            },
+            other => clean.push(other.as_os_str()),
+        }
+    }
+    clean
+}
+
+/// Whether `path` is `base` or below it. On Windows upper and lower case do not matter
+/// (`C:\WINDOWS` is `C:\Windows`).
+fn is_below(profile: &OsProfile, path: &Path, base: &Path) -> bool {
+    if profile.os != Os::Windows {
+        return path.starts_with(base);
+    }
+    let words = |path: &Path| -> Vec<String> {
+        path.components()
+            .map(|word| word.as_os_str().to_string_lossy().to_lowercase())
+            .collect()
+    };
+    let (path, base) = (words(path), words(base));
+    path.len() >= base.len() && path[..base.len()] == base[..]
+}
+
 /// Checks whether `path` belongs to a protected system directory of the system of `profile`.
+/// `path` must be resolved already (see [`resolve`]).
 fn is_critical_for(profile: &OsProfile, path: &Path) -> bool {
-    // a root ("/", "C:\") is protected, but not everything is "below" it
+    // a root ("/", "C:\\") is protected, but not everything is "below" it
     (path.parent().is_none() && !path.as_os_str().is_empty())
         || profile
             .critical_paths
             .iter()
-            .any(|critical| path.starts_with(critical))
-        || profile
-            .protected_dirs
-            .iter()
-            .any(|dir| path == Path::new(dir))
+            .any(|critical| is_below(profile, path, Path::new(critical)))
+        || profile.protected_dirs.iter().any(|dir| {
+            is_below(profile, path, Path::new(dir))
+                && path.components().count() == Path::new(dir).components().count()
+        })
 }
 
 /// Checks whether the path belongs to a protected system directory.
@@ -77,14 +122,41 @@ fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
         return true;
     }
 
-    let standard = os_profile()
-        .standard_home_folders
-        .iter()
-        .any(|folder| path == home.join(folder));
+    // a standard folder may itself be a link to another place (a relocated `Documents`)
+    let standard = os_profile().standard_home_folders.iter().any(|folder| {
+        let candidate = home.join(folder);
+        path == candidate || fs::canonicalize(&candidate).is_ok_and(|real| real == path)
+    });
     if standard {
         println!("[ERROR] Blocked: Standard Home Folder detected: {:?}", path);
     }
     standard
+}
+
+/// The home directory, resolved (a home that is reached through a link is still the home).
+fn resolved_home() -> Option<PathBuf> {
+    home_directory().map(|home| resolve(&home))
+}
+
+/// Refuses a folder that must not be deleted from: a system path, the home directory and its
+/// standard folders. For the helpers that delete a whole folder; they call it before they touch
+/// anything.
+///
+/// # Errors
+///
+/// `PermissionDenied` with the path in the message.
+pub(crate) fn refuse_protected(path: &Path) -> io::Result<()> {
+    let path = resolve(path);
+    if is_critical_system_path(&path) || is_standard_home_directory(&path, &resolved_home()) {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            format!(
+                "refusing to delete from a protected path: {}",
+                path.display()
+            ),
+        ));
+    }
+    Ok(())
 }
 
 /// Deletes all regular files in a directory.
@@ -113,7 +185,8 @@ fn is_standard_home_directory(path: &Path, home_dir: &Option<PathBuf>) -> bool {
 /// assert!(dir.path().join("sub").is_dir());
 /// ```
 pub fn delete_files_in_dir(path: &Path) {
-    if is_critical_system_path(path) || is_standard_home_directory(path, &home_directory()) {
+    let path = &resolve(path);
+    if is_critical_system_path(path) || is_standard_home_directory(path, &resolved_home()) {
         return;
     }
 
@@ -168,7 +241,9 @@ pub fn delete_files_in_dir(path: &Path) {
 /// assert!(root.path().join("projects/keep.txt").is_file());
 /// ```
 pub fn delete_files_and_parents(path: &Path, stop_dir: &Option<PathBuf>) {
-    if stop_dir.as_deref() == Some(path) {
+    let path = &resolve(path);
+    let stop_dir = &stop_dir.as_deref().map(resolve);
+    if stop_dir.as_deref() == Some(path.as_path()) {
         return;
     }
 
@@ -273,4 +348,70 @@ pub fn delete_files_with_parent(path_str: &str) {
     }
 
     delete_files_and_parents(&clean_path, &home_directory());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::helper::platform::os::os_profile_for;
+
+    fn linux() -> &'static OsProfile {
+        os_profile_for(Os::Linux).unwrap()
+    }
+
+    /// Only looks: nothing is deleted.
+    #[cfg(unix)]
+    #[test]
+    fn dots_and_links_do_not_hide_a_system_path() {
+        assert!(is_critical_for(linux(), &resolve(Path::new("/etc"))));
+        // the path as it is written looks harmless
+        assert!(!is_critical_for(linux(), Path::new("/tmp/../etc")));
+        assert!(is_critical_for(linux(), &resolve(Path::new("/tmp/../etc"))));
+        assert!(is_critical_for(
+            linux(),
+            &resolve(Path::new("/usr/./lib/../bin"))
+        ));
+        // also when the path does not exist: `..` is resolved by its words
+        assert_eq!(
+            resolve(Path::new("/home/nobody/../../etc/none")),
+            Path::new("/etc/none")
+        );
+        assert_eq!(resolve(Path::new("/../..")), Path::new("/"));
+        assert_eq!(resolve(Path::new("../x/./y")), Path::new("../x/y"));
+
+        // a link to a system path is that system path
+        let dir = tempfile::tempdir().unwrap();
+        let link = dir.path().join("link");
+        std::os::unix::fs::symlink("/usr", &link).unwrap();
+        assert!(is_critical_for(linux(), &resolve(&link)));
+        assert!(is_critical_for(linux(), &resolve(&link.join("share"))));
+
+        assert!(!is_critical_for(linux(), &resolve(dir.path())));
+    }
+
+    #[test]
+    fn upper_and_lower_case_are_the_same_on_windows_only() {
+        let windows = os_profile_for(Os::Windows).unwrap();
+        assert!(is_below(
+            windows,
+            Path::new("c:/windows/System32"),
+            Path::new("C:/Windows")
+        ));
+        assert!(is_below(
+            windows,
+            Path::new("C:/WINDOWS"),
+            Path::new("C:/Windows")
+        ));
+        assert!(!is_below(
+            windows,
+            Path::new("C:/WindowsApps"),
+            Path::new("C:/Windows")
+        ));
+        assert!(!is_below(linux(), Path::new("/ETC"), Path::new("/etc")));
+        assert!(is_below(
+            linux(),
+            Path::new("/etc/hosts"),
+            Path::new("/etc")
+        ));
+    }
 }

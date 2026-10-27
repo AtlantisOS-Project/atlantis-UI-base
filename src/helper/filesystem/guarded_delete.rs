@@ -10,8 +10,11 @@
 //! A program that cleans up "its" working folder must never delete the wrong one because a
 //! setting was edited by hand. These functions delete only after the name of the folder was
 //! checked ([`require_dir_name`]). A folder that does not exist is never an error, so
-//! cleaning up twice works.
+//! cleaning up twice works. A system folder, the home directory and its standard folders are
+//! refused as well, whatever their name and however they are reached (`..`, symbolic links): the
+//! error is `PermissionDenied` and nothing is deleted.
 
+use super::delete_files::refuse_protected;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -45,8 +48,10 @@ pub fn require_dir_name(dir: &Path, name: &str) -> io::Result<()> {
 ///
 /// # Errors
 ///
-/// Returns the [`io::Error`] if something cannot be deleted.
+/// Returns the [`io::Error`] if something cannot be deleted, and `PermissionDenied` if `dir` is a
+/// protected folder (see the [module documentation](self)).
 pub fn remove_dir_all_if_exists(dir: &Path) -> io::Result<()> {
+    refuse_protected(dir)?;
     match fs::remove_dir_all(dir) {
         Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
@@ -58,7 +63,8 @@ pub fn remove_dir_all_if_exists(dir: &Path) -> io::Result<()> {
 ///
 /// # Errors
 ///
-/// Returns the [`io::Error`] if something cannot be deleted.
+/// Returns the [`io::Error`] if something cannot be deleted, and `PermissionDenied` if `dir` is a
+/// protected folder (see the [module documentation](self)).
 ///
 /// # Examples
 ///
@@ -74,6 +80,7 @@ pub fn remove_dir_all_if_exists(dir: &Path) -> io::Result<()> {
 /// assert!(dir.path().join("Backup").is_dir());
 /// ```
 pub fn clear_directory_except(dir: &Path, keep: &[&str]) -> io::Result<()> {
+    refuse_protected(dir)?;
     let entries = match fs::read_dir(dir) {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
         other => other?,

@@ -16,7 +16,8 @@ use gtk4::{
     CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, STYLE_PROVIDER_PRIORITY_USER, gdk,
     style_context_add_provider_for_display,
 };
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 use std::thread::LocalKey;
 
 /// Registers CSS for the whole application and keeps it up to date.
@@ -94,14 +95,24 @@ pub fn use_adw_provider_with_priority(css_content: &str, priority: u32) -> CssPr
         style_context_add_provider_for_display(&display, &provider, priority);
     }
 
-    // A weak reference: once the provider is removed, the handler has nothing left to do.
+    // A weak reference, and the handler disconnects itself once the provider is gone (removed with
+    // `style_context_remove_provider_for_display` and dropped): the style manager lives as long as
+    // the program, and a handler that stays would keep the CSS text of every provider ever made.
     let weak = provider.downgrade();
     let css = css_content.to_string();
-    StyleManager::default().connect_dark_notify(move |_| {
-        if let Some(provider) = weak.upgrade() {
-            provider.load_from_string(&css);
+    let id: Rc<RefCell<Option<glib::SignalHandlerId>>> = Rc::default();
+    let handler = StyleManager::default().connect_dark_notify({
+        let id = id.clone();
+        move |manager| match weak.upgrade() {
+            Some(provider) => provider.load_from_string(&css),
+            None => {
+                if let Some(id) = id.borrow_mut().take() {
+                    manager.disconnect(id);
+                }
+            }
         }
     });
+    *id.borrow_mut() = Some(handler);
 
     provider
 }

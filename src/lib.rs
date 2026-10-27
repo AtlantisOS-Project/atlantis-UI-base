@@ -127,7 +127,7 @@ pub mod prelude {
             command_line::{command_line, command_output_timeout, shell_line},
             command_pkexec::command_pkexec,
             execute_command::{capture_command_output, run_command},
-            open_terminal_desktop::open_terminal_by_desktop,
+            open_terminal_desktop::{open_terminal_by_desktop, open_terminal_command},
             open_url::open_url,
         },
         configuration::{
@@ -168,7 +168,8 @@ pub mod prelude {
             elevate::{elevation_command, elevation_command_for},
             feature::{Feature, in_sandbox, supports},
             logging::{
-                init_file_logging, init_logging, journal_follow_command, journal_follow_command_for,
+                MAX_LOG_BYTES, init_file_logging, init_logging, journal_follow_command,
+                journal_follow_command_for, log_file_of, short_target, utc_timestamp,
             },
             os::{Has, OsProfile, os_profile, os_profile_for},
             package::{APT_SOURCES_DIR, PackageManager},
@@ -190,12 +191,13 @@ pub mod prelude {
 
     #[cfg(feature = "download")]
     #[cfg_attr(docsrs, doc(cfg(feature = "download")))]
-    pub use crate::helper::download::download_file;
+    pub use crate::helper::download::{download_file, download_file_verified};
 
     #[cfg(feature = "archive")]
     #[cfg_attr(docsrs, doc(cfg(feature = "archive")))]
     pub use crate::helper::archive::archive_format::{
-        ArchiveFormat, decompress, decompress_file, detect_format,
+        ArchiveFormat, MAX_UNPACKED_BYTES, decompress, decompress_file, decompress_limited,
+        detect_format,
     };
 }
 

@@ -21,6 +21,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 
 /// Data structure of the stored configuration.
 ///
@@ -63,8 +65,14 @@ pub fn get_config(app_name: &str, key: &str) -> Option<String> {
 /// Saves or updates a value in the configuration file.
 ///
 /// The current content of the file is loaded, the key is inserted or overwritten, and the
-/// whole structure is written back. A missing, empty or corrupt file is replaced by a fresh
-/// configuration that contains only the new key.
+/// whole structure is written back. The file is written under a temporary name and moved into
+/// place, so a crash never leaves half a file, and only the user can read it (mode `0600` on
+/// Unix; a program may keep a token in its settings). A file that cannot be read as TOML is not
+/// thrown away: it is moved to `<name>.toml.bad` (an older `.bad` file is replaced), a warning is
+/// logged, and the settings start again with the new key.
+///
+/// Two programs that save at the same moment can still overwrite each other's key (the file is
+/// read, changed and written again).
 ///
 /// # Arguments
 ///
@@ -90,15 +98,49 @@ pub fn get_config(app_name: &str, key: &str) -> Option<String> {
 /// println!("Port: {}", port);
 /// ```
 pub fn set_config(app_name: &str, key: &str, value: &str) -> Result<(), confy::ConfyError> {
-    // load the file and start with an empty structure if it is empty or unreadable
-    let mut cfg: AtlConfigs = match confy::load(app_name, None) {
+    let path = confy::get_configuration_file_path(app_name, None)?;
+
+    let mut cfg: AtlConfigs = match confy::load_path(&path) {
         Ok(config) => config,
-        Err(confy::ConfyError::GeneralLoadError(_)) => AtlConfigs::default(),
-        Err(confy::ConfyError::BadTomlData(_)) => AtlConfigs::default(),
+        Err(confy::ConfyError::GeneralLoadError(_) | confy::ConfyError::BadTomlData(_)) => {
+            keep_damaged_file(&path);
+            AtlConfigs::default()
+        }
         Err(e) => return Err(e),
     };
 
     cfg.data.insert(key.to_string(), value.to_string());
+    store_private(&path, cfg)
+}
 
-    confy::store(app_name, None, cfg)
+/// Moves a file that cannot be read to `<name>.bad`, so the settings in it are not lost.
+fn keep_damaged_file(path: &Path) {
+    let mut bad = path.as_os_str().to_owned();
+    bad.push(".bad");
+    match fs::rename(path, &bad) {
+        Ok(()) => log::warn!(
+            "the settings file {} is damaged, it was moved to {}",
+            path.display(),
+            Path::new(&bad).display()
+        ),
+        Err(error) => log::warn!(
+            "the settings file {} is damaged and cannot be moved away: {error}",
+            path.display()
+        ),
+    }
+}
+
+/// Writes `cfg` to `path` through a temporary file in the same folder (created with the mode
+/// `0600`) and a rename.
+fn store_private(path: &Path, cfg: AtlConfigs) -> Result<(), confy::ConfyError> {
+    let dir = path.parent().ok_or_else(|| {
+        confy::ConfyError::BadConfigDirectory(format!("{} has no folder", path.display()))
+    })?;
+    fs::create_dir_all(dir).map_err(confy::ConfyError::DirectoryCreationFailed)?;
+    let temp = tempfile::NamedTempFile::new_in(dir)
+        .map_err(confy::ConfyError::WriteConfigurationFileError)?;
+    confy::store_path(temp.path(), cfg)?;
+    temp.persist(path)
+        .map_err(|error| confy::ConfyError::WriteConfigurationFileError(error.error))?;
+    Ok(())
 }

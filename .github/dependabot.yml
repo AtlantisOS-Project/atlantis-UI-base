@@ -1,0 +1,19 @@
+# dependabot.yml
+#
+# (C) Copyright 2026 AtlantisOS Project
+# by @NachtsternBuild
+#
+# License: GNU GENERAL PUBLIC LICENSE Version 3
+#
+# Pull requests for newer versions of the dependencies and of the actions of the workflows.
+
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

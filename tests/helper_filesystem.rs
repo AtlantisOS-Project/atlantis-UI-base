@@ -207,3 +207,25 @@ fn folders_are_removed_and_cleared() {
     assert!(!dir.exists());
     remove_dir_all_if_exists(&dir).unwrap();
 }
+
+#[test]
+fn move_file_into_takes_a_name_not_a_path() {
+    let root = tempfile::tempdir().unwrap();
+    let source = root.path().join("download.img");
+    fs::write(&source, b"image").unwrap();
+    let target_dir = root.path().join("work");
+
+    for name in [
+        "../escape.img",
+        "sub/boot.img",
+        "/tmp/escape.img",
+        "..",
+        "",
+        ".",
+    ] {
+        let error = move_file_into(&source, &target_dir, name).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput, "{name:?}");
+    }
+    assert!(source.exists(), "the source is kept");
+    assert!(!root.path().join("escape.img").exists());
+}

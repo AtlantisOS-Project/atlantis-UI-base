@@ -174,3 +174,18 @@ fn a_chain_of_commands_stops_at_the_first_failure() {
 
     assert_eq!(run_command_chain(&[]).unwrap(), []);
 }
+
+/// A command that prints more than 8 MiB does not fill the memory of the program, and does not
+/// stop on a full pipe either: the first 8 MiB are kept and the result says so.
+#[cfg(unix)]
+#[test]
+fn a_chain_keeps_at_most_8_mib_of_the_output_of_a_command() {
+    let results = run_command_chain(&[command_line(
+        "sh",
+        ["-c", "head -c 9000000 /dev/zero | tr '\\0' x"],
+    )])
+    .unwrap();
+    assert_eq!(results[0].stdout.len(), 8 * 1024 * 1024);
+    assert!(results[0].stderr.contains("cut"), "{}", results[0].stderr);
+    assert!(results[0].success);
+}

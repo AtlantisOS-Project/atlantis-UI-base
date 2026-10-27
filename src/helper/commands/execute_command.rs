@@ -7,6 +7,7 @@
 
 //! Functions to run a command and to capture its output.
 
+use crate::helper::commands::command_line::redacted;
 use crate::helper::platform::program::host_command;
 use std::io;
 use std::process::{ExitStatus, Stdio};
@@ -42,6 +43,7 @@ fn split_command<'a>(args: &'a [&'a str]) -> io::Result<(&'a str, &'a [&'a str])
 /// ```
 pub fn run_command(args: &[&str]) -> io::Result<ExitStatus> {
     let (program, rest) = split_command(args)?;
+    log::debug!("run: {}", redacted(args));
     host_command(program).args(rest).spawn()?.wait()
 }
 
@@ -68,6 +70,7 @@ pub fn run_command(args: &[&str]) -> io::Result<ExitStatus> {
 /// ```
 pub fn capture_command_output(args: &[&str]) -> io::Result<String> {
     let (program, rest) = split_command(args)?;
+    log::debug!("run: {}", redacted(args));
     let output = host_command(program)
         .args(rest)
         .stdout(Stdio::piped())
@@ -78,6 +81,7 @@ pub fn capture_command_output(args: &[&str]) -> io::Result<String> {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     } else {
         let error = String::from_utf8_lossy(&output.stderr);
+        log::warn!("failed ({}): {}", output.status, redacted(args));
         Err(io::Error::other(format!("Command failed: {}", error)))
     }
 }

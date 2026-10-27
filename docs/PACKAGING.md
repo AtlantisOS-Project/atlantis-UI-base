@@ -24,7 +24,7 @@ library are missing. Always install `gettext` in your build environment.
 | `carousel-toml` | on | pulls in the `toml` crate; no system libraries |
 | `log-viewer` | on | needs VTE. The GNOME Flatpak runtime has **no** VTE for GTK 4; either build VTE as a Flatpak module or turn the feature off |
 | `archive` | off | pulls in the archive crates; the C code of `bzip2` is compiled in |
-| `download` | off | `download_file` with `ureq` and rustls (bundled root certificates); no system library, no `curl` |
+| `download` | off | `download_file`, `download_file_verified` with `ureq` and rustls (bundled root certificates) and `sha2`; no system library, no `curl` |
 | `format-flatpak`, `format-snap`, `format-appimage`, `format-native` | all on | the package formats that are compiled in; see below |
 | `experimental-api` | off | do not use yet; needs `libdbus-1` |
 

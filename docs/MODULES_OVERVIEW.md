@@ -20,8 +20,8 @@ atlbase
 │   │                    guarded_delete, home_dir, make_path, move_file,
 │   │                    search_file_directory
 │   ├── language         language (gettext, locale directory lookup)
-│   ├── log              write_log (syslog), write_log_text (journal viewer, feature log-viewer)
-│   ├── download         download_file (feature download)
+│   ├── log              write_log (syslog), write_log_text (log viewer, feature log-viewer)
+│   ├── download         download_file, download_file_verified (feature download)
 │   ├── platform         target, os (+ os/*), package_format (+ package_format/*), dirs,
 │   │                    program, elevate, feature, package, logging
 │   │                    (the layer between a program and the operating system)
@@ -60,7 +60,7 @@ atlbase
 | `helper::filesystem::*` | Create, check, search, expand, move and delete paths (`guarded_delete`: only a folder with the right name) |
 | `helper::language::language` | gettext initialization, `LIB_DOMAIN`, `translate` |
 | `helper::log::write_log` | `log` crate backend for syslog |
-| `helper::log::write_log_text` | Journal viewer window and header bar menu |
+| `helper::log::write_log_text` | Log viewer window (shows the log file, VTE) and header bar menu |
 | `helper::platform::target` | `Os`, `Arch`, `Target`: the system and processor the program was built for |
 | `helper::platform::os` | `OsProfile`: one file per operating system (`os/linux.rs`, `windows.rs`, `macos.rs`, `other.rs`); only the profile of the target is compiled |
 | `helper::platform::package_format` | `PackageFormat`: one file per package format (`flatpak`, `snap`, `appimage`, `native`); only the formats of the enabled `format-*` features are compiled |
@@ -69,8 +69,8 @@ atlbase
 | `helper::platform::elevate` | Run a command as administrator: `pkexec`, `osascript` or UAC |
 | `helper::platform::feature` | `supports(Feature::…)`: what the host offers |
 | `helper::platform::package` | `PackageManager`: `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
-| `helper::platform::logging` | `init_logging`: syslog or a log file; the command that follows the journal |
-| `helper::download` | `download_file`: HTTP(S) download without `curl` (feature `download`) |
+| `helper::platform::logging` | `init_logging`: the log file on every system plus syslog where reachable; `log_file_of`; the command that follows the journal |
+| `helper::download` | `download_file`, `download_file_verified`: HTTPS download without `curl`, with an idle timeout, a size limit and an optional SHA-256 check (feature `download`) |
 | `helper::sysinfo::system_info` | Distribution, kernel, processor, graphics card, package versions (from files, no program is started) |
 | `design::carousel` | Swipeable multi-page guides (builder or TOML) |
 | `design::chooser::*` | File and folder dialogs |

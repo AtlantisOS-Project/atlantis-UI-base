@@ -15,7 +15,8 @@ in deb, rpm, Flatpak, Snap and AppImage packages.
 [API documentation](https://docs.rs/atlbase) ·
 [Changelog](CHANGELOG/README.md) ·
 [Packaging guide](docs/PACKAGING.md) ·
-[User guide](docs/USER_GUIDE.md)
+[User guide](docs/USER_GUIDE.md) ·
+[Security audits](docs/SECURITY_AUDIT.md)
 
 ## Contents
 
@@ -155,12 +156,12 @@ docs/                guides and the changelog page
 
 | Module | Purpose |
 |---|---|
-| `helper::commands` | `run_command`, `capture_command_output`, `command_output_timeout`, `command_line`, `shell_line`, `command_pkexec`, `open_terminal_by_desktop`, `open_url`, `command_exists_native` |
+| `helper::commands` | `run_command`, `capture_command_output`, `command_output_timeout`, `command_line`, `shell_line`, `command_pkexec`, `open_terminal_by_desktop`, `open_terminal_command`, `open_url`, `command_exists_native` |
 | `helper::cli` | `read_common_options`, `apply_debug_options`, `version_text` |
 | `helper::platform` | The layer between a program and the operating system: `OsProfile` (one file per system), `PackageFormat` (one file per package format: Flatpak, Snap, AppImage, native), `Target`, `AppDirs`, `find_program`, `host_command`, `elevation_command`, `supports`, `PackageManager`, `init_logging` |
-| `helper::download` | `download_file` over HTTP(S) without `curl` (feature `download`) |
+| `helper::download` | `download_file`, `download_file_verified` (SHA-256) over HTTPS without `curl` (feature `download`) |
 | `helper::sysinfo` | `SystemInfo`, `package_version` |
-| `helper::archive` | `detect_format`, `decompress`, `decompress_file` (feature `archive`) |
+| `helper::archive` | `detect_format`, `decompress`, `decompress_file`, `decompress_limited` (feature `archive`) |
 | `helper::configuration` | `get_config`, `set_config`, `get_execution_environment`, `check_application_environment` |
 | `helper::file` | `add_line_file`, `get_config_value`, `write_file`, `trim_and_clean`, temporary file |
 | `helper::filesystem` | create, check, search, expand and delete paths |
@@ -319,6 +320,7 @@ cargo package --allow-dirty     # does the crate build from the packaged files?
 * [docs/DEVELOPER_DOCS.md](docs/DEVELOPER_DOCS.md) — all functions and the conventions of the code
 * [docs/MODULES_OVERVIEW.md](docs/MODULES_OVERVIEW.md) — what each module is for
 * [docs/PACKAGING.md](docs/PACKAGING.md) — deb, rpm, Flatpak, Snap, AppImage
+* [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) — the security audits: the scale, what is open, what was fixed
 
 ## Changelog
 

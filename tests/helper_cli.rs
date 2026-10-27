@@ -83,7 +83,24 @@ fn the_debug_options_change_the_process() {
     apply_debug_options(&options, "org.example.Demo");
 
     assert!(debug_mode() && fallback_language());
-    assert_eq!(std::env::var("SNAP").unwrap(), "/tmp/snap-debug");
+    // a folder of its own, not a name that others could know in advance
+    let snap = std::path::PathBuf::from(std::env::var("SNAP").unwrap());
+    assert!(snap.starts_with(std::env::temp_dir()), "{snap:?}");
+    assert_ne!(snap, std::path::Path::new("/tmp/snap-debug"));
+    assert!(
+        snap.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("snap-debug-")
+    );
+    assert_eq!(std::fs::read_dir(&snap).unwrap().count(), 0);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&snap).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o700);
+    }
+    let _ = std::fs::remove_dir(&snap);
     assert_eq!(std::env::var("FLATPAK_ID").unwrap(), "org.example.Demo");
     assert_eq!(get_execution_environment(), "flatpak");
 

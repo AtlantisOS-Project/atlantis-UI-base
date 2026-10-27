@@ -13,6 +13,9 @@
   loads the list, then every file in it, and renders them as one page. The versions are listed in
   a navigation bar on the left (the one that is being read is marked; on a narrow screen the bar
   folds above the text). No build step and no external script or font: everything is in this file.
+  The Content-Security-Policy below allows exactly this script and this style (by their hashes), no
+  other script and no other address to talk to than this site and raw.githubusercontent.com. If you
+  change the script or the style, `cargo test --test changelog` shows the new hash to put there.
 
   Where the folder is looked for, in this order:
     1. CHANGELOG/               next to this page (copy it here if you want a self-contained site)
@@ -24,6 +27,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0vutVx6nHWLsIyfb2wjIa1IZrqkkGs++va2PdSRKHAg='; style-src 'sha256-+uYrHMbkXzrjIIFl9tjYZ6KMfJt0MmqerH/kjoGPHVA='; img-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>AtlBase changelog</title>
 <meta name="description" content="What changed in atlbase: new functions, changed calls and behavior, removed items and their replacements.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233d6fb0'/%3E%3Cpath d='M9 22l7-12 7 12' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -269,17 +274,24 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // A link is shown only if it is a relative address or its scheme is http, https or mailto.
+  // Control characters are refused: a browser drops them from the front of an address, so
+  // "\u0001javascript:..." would be a javascript: link.
   function safeUrl(u) {
-    return !/^\s*(javascript|data|vbscript):/i.test(u);
+    if (/[\u0000-\u0020\u007f-\u009f]/.test(u)) { return false; }
+    var scheme = /^([a-z][a-z0-9+.-]*):/i.exec(u);
+    return !scheme || /^(https?|mailto)$/i.test(scheme[1]);
   }
 
   // inline: `code`, [text](url), **bold**, *italic*; everything else is escaped text
   function inline(text) {
     var codes = [];
+    // the marks that stand in for code spans must not come from the text
+    text = text.replace(/\u0000/g, '');
     text = text.replace(/`([^`]+)`/g, function (_, c) { codes.push(c); return '\u0000' + (codes.length - 1) + '\u0000'; });
     text = esc(text);
     text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, label, url) {
-      return safeUrl(url) ? '<a href="' + url + '">' + label + '</a>' : label;
+      return safeUrl(url) ? '<a href="' + url + '" rel="noopener noreferrer">' + label + '</a>' : label;
     });
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     text = text.replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s).,;:]|$)/g, '$1<em>$2</em>');

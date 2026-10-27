@@ -7,9 +7,9 @@
 
 //! Reads values from traditional configuration files.
 //!
-//! The module parses files in the `KEY=VALUE` or `KEY="VALUE"` format (for example
-//! `/etc/os-release`). It tolerates surrounding whitespace and rejects paths that contain
-//! `..`.
+//! The module parses files in the `KEY=VALUE`, `KEY="VALUE"` or `KEY='VALUE'` format (for
+//! example `/etc/os-release`). It tolerates surrounding whitespace and rejects paths that
+//! contain `..`.
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, ErrorKind};
@@ -17,13 +17,15 @@ use std::path::Path;
 
 /// Searches a configuration file for a key and returns its value.
 ///
-/// Simple values and values in double quotes are supported; the quotes are removed. Lines
-/// that are not valid UTF-8 are skipped. The first matching line wins.
+/// Simple values and values in double or single quotes are supported; the quotes are removed.
+/// Lines that are not valid UTF-8 are skipped. The first matching line wins.
 ///
 /// # Security
 ///
-/// Paths with a `..` component are rejected (path traversal protection), so a path that
-/// is assembled from user input cannot leave the intended directory.
+/// Paths with a `..` component are rejected, so a path that is put together from a name cannot
+/// step out of its folder that way. That is **all** the check does: an absolute path is read as
+/// it is, and so is a symbolic link. A program that takes the path from a user has to decide
+/// itself which files may be read.
 ///
 /// # Arguments
 ///
@@ -79,6 +81,9 @@ pub(crate) fn config_line_value(line: &str, key: &str) -> Option<String> {
 
     // the key must be followed by `=` (optionally after spaces), not by more letters
     let mut value = rest.trim_start().strip_prefix('=')?.trim();
+    if let Some(quoted) = value.strip_prefix('\'') {
+        return Some(quoted.split('\'').next().unwrap_or_default().to_string());
+    }
     if let Some(unquoted) = value.strip_prefix('"') {
         value = unquoted;
     }

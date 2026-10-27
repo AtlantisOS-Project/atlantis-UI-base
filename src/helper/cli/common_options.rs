@@ -181,7 +181,10 @@ pub fn fallback_language() -> bool {
 }
 
 /// Applies the options: turns the debug mode on and remembers the fallback language. `-snp`
-/// sets `$SNAP` and `-flp` sets `$FLATPAK_ID` (to `flatpak_id`); both also set
+/// sets `$SNAP` (to a new, empty folder `snap-debug-XXXXXX` that only the user can enter, in the
+/// temporary directory: the programs of a Snap are looked for below `$SNAP` before `PATH`, so it
+/// must not be a place others could put a program into) and `-flp` sets `$FLATPAK_ID` (to
+/// `flatpak_id`); both also set
 /// `ATL_PACKAGE_FORMAT` (`package_format::FORMAT_OVERRIDE`), so the program believes it runs in that
 /// sandbox wherever it is. Only the formats that are compiled in can be pretended: a build for one
 /// format ignores the flags.
@@ -192,15 +195,19 @@ pub fn apply_debug_options(options: &CliOptions, flatpak_id: &str) {
     set_debug_mode(options.debug);
     FALLBACK_LANGUAGE.store(options.fallback_language, Ordering::Relaxed);
 
+    // the folder is made before the environment is changed
+    #[cfg(feature = "format-snap")]
+    let fake_snap = options.fake_snap.then(fake_snap_dir).flatten();
+
     // SAFETY: documented to be called from `main` before any thread is started.
     #[allow(unused_unsafe)] // nothing to set when no sandbox format is compiled in
     unsafe {
         // only for the package formats that are compiled in
         #[cfg(feature = "format-snap")]
-        if options.fake_snap {
-            std::env::set_var("SNAP", "/tmp/snap-debug");
+        if let Some(root) = fake_snap {
+            std::env::set_var("SNAP", &root);
             std::env::set_var(FORMAT_OVERRIDE, "snap");
-            println!("[DEBUG] SNAP-Env: $SNAP=/tmp/snap-debug");
+            println!("[DEBUG] SNAP-Env: $SNAP={}", root.display());
         }
         #[cfg(feature = "format-flatpak")]
         if options.fake_flatpak {
@@ -210,5 +217,26 @@ pub fn apply_debug_options(options: &CliOptions, flatpak_id: &str) {
         }
         #[cfg(not(feature = "format-flatpak"))]
         let _ = flatpak_id;
+    }
+}
+
+/// A new folder for `$SNAP` of `-debug -snp`: a random name and the mode `0700`, so nobody else
+/// can have put anything into it. It stays after the program ends (it is empty).
+#[cfg(feature = "format-snap")]
+fn fake_snap_dir() -> Option<std::path::PathBuf> {
+    let mut builder = tempfile::Builder::new();
+    builder.prefix("snap-debug-");
+    // the mode of a folder from `tempfile` follows the umask: it is set here
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        builder.permissions(std::fs::Permissions::from_mode(0o700));
+    }
+    match builder.tempdir() {
+        Ok(dir) => Some(dir.keep()),
+        Err(error) => {
+            eprintln!("Warning: cannot make a folder for $SNAP, -snp is ignored: {error}");
+            None
+        }
     }
 }

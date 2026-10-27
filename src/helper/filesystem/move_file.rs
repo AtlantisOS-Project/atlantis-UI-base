@@ -7,6 +7,7 @@
 
 //! Moving a file, also to another file system.
 
+use super::make_path::is_plain_name;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -24,6 +25,8 @@ use std::path::{Path, PathBuf};
 /// # Errors
 ///
 /// Returns the [`io::Error`] if the file cannot be moved. The source is kept in that case.
+/// `new_name` must be one plain name (no separator, not `..`): otherwise the error is of kind
+/// `InvalidInput` and nothing happens.
 ///
 /// # Examples
 ///
@@ -39,6 +42,12 @@ use std::path::{Path, PathBuf};
 /// assert!(!source.exists());
 /// ```
 pub fn move_file_into(source: &Path, target_dir: &Path, new_name: &str) -> io::Result<PathBuf> {
+    if !is_plain_name(new_name) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("the new name must be one plain name, not a path: {new_name:?}"),
+        ));
+    }
     fs::create_dir_all(target_dir)?;
     let target = target_dir.join(new_name);
 

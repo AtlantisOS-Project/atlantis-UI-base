@@ -55,9 +55,9 @@ carousel-toml = ["dep:toml"]
 ## Pulls in VTE (`libvte-2.91-gtk4`), which is not part of the Flatpak GNOME runtime;
 ## turn it off with `default-features = false` if you do not need it.
 log-viewer = ["dep:vte4"]
-## Download a file over HTTP(S) (`helper::download`) with a small built-in client: no `curl` and no
-## certificates of the system are needed.
-download = ["dep:ureq"]
+## Download a file over HTTPS (`helper::download`) with a small built-in client: no `curl` and no
+## certificates of the system are needed. `sha2` checks the SHA-256 sum of `download_file_verified`.
+download = ["dep:ureq", "dep:sha2"]
 ## Recognize and unpack archives (`helper::archive`: tar, tar.xz, tar.gz, tar.bz2, xz, gz, bz2, zip, 7z).
 archive = ["dep:tar", "dep:xz2", "dep:flate2", "dep:bzip2", "dep:zip", "dep:sevenz-rust2"]
 ## Unfinished system configuration API (module `system`). Does not compile yet.
@@ -79,6 +79,7 @@ tempfile = "3.27"
 # optional: only needed by the features above
 toml = { version = "1", optional = true }
 ureq = { version = "3", optional = true }
+sha2 = { version = "0.11", optional = true }
 tar = { version = "0.4.40", optional = true }
 xz2 = { version = "0.1.7", optional = true }
 flate2 = { version = "1.0.30", optional = true }
@@ -91,6 +92,10 @@ sevenz-rust2 = { version = "0.24", optional = true }
 networkmanager = { version = "0.5", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
 thiserror = { version = "2", optional = true }
+
+# the web page of the changelog is checked against its Content-Security-Policy
+[dev-dependencies]
+sha2 = "0.11"
 
 # VTE exists on Linux only
 [target.'cfg(target_os = "linux")'.dependencies]

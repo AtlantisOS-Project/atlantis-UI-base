@@ -11,6 +11,7 @@
 //! a list of subdirectories.
 
 use crate::helper::filesystem::home_dir::home_directory;
+use crate::helper::filesystem::make_path::{is_plain_name, is_plain_relative};
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -33,7 +34,10 @@ use std::path::PathBuf;
 /// # Errors
 ///
 /// Returns an [`io::Error`] if the home directory cannot be determined, a directory cannot
-/// be created or the file cannot be written.
+/// be created or the file cannot be written. `filename` must be one name and the entries of
+/// `path_list` relative paths of plain names, none of them absolute or with `..`: otherwise
+/// the error is of kind `InvalidInput` and nothing is written. (`base_path` is trusted; it can
+/// be anything.)
 ///
 /// # Examples
 ///
@@ -67,6 +71,18 @@ pub fn write_file(
     base_path: Option<PathBuf>,
     path_list: &[&str],
 ) -> io::Result<()> {
+    if !is_plain_name(filename) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("the file name must be one plain name, not a path: {filename:?}"),
+        ));
+    }
+    if let Some(bad) = path_list.iter().find(|segment| !is_plain_relative(segment)) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("the folders must be relative paths without `..`: {bad:?}"),
+        ));
+    }
     let mut full_path = match base_path {
         Some(path) => path,
         None => home_directory()

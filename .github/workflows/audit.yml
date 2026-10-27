@@ -1,0 +1,37 @@
+# audit.yml
+#
+# (C) Copyright 2026 AtlantisOS Project
+# by @NachtsternBuild
+#
+# License: GNU GENERAL PUBLIC LICENSE Version 3
+#
+# Looks for known vulnerabilities in the dependencies (cargo audit, the RustSec database): on every
+# push to main, on every pull request, and once a week, because new advisories appear without a
+# change of the code. The repository has no Cargo.lock (atlbase is a library), so the dependencies
+# are resolved first, as an application that uses atlbase would get them.
+
+name: audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-audit:
+    runs-on: ubuntu-latest
+    steps:
+      # pinned to a commit: a tag can be moved
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Resolve the dependencies
+        run: cargo generate-lockfile
+      # fails for a vulnerability; warnings (unmaintained, unsound) are only shown
+      - name: Audit
+        run: cargo audit

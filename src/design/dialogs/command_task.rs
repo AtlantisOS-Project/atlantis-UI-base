@@ -12,6 +12,7 @@ use crate::design::dialogs::standard_dialogs::{
     show_dialog_title, show_error_dialog, show_success_dialog,
 };
 use crate::gettext;
+use crate::helper::platform::logging::excerpt;
 use gtk4::Widget;
 use gtk4::prelude::*;
 
@@ -138,7 +139,7 @@ impl CommandTask {
             self.indicator,
             Some(Box::new(move |result| match result {
                 Ok(output) => match outcome {
-                    TaskOutcome::Nothing => log::debug!("task finished: {output}"),
+                    TaskOutcome::Nothing => log::debug!("task finished: {}", excerpt(&output)),
                     TaskOutcome::Success(message) => show_success_dialog(&parent_widget, &message),
                     TaskOutcome::Output(title) => {
                         let output = output.trim();
@@ -151,7 +152,7 @@ impl CommandTask {
                     }
                 },
                 Err(error) => {
-                    log::error!("task failed: {error}");
+                    log::error!("task failed: {}", excerpt(&error));
                     show_error_dialog(&parent_widget, &task_error_text(&error, hint));
                 }
             })),

@@ -118,3 +118,70 @@ fn write_file_creates_the_directories() {
     let content = fs::read_to_string(root.path().join("x/y/a.txt")).unwrap();
     assert_eq!(content, "two", "an existing file is overwritten");
 }
+
+#[test]
+fn values_in_single_quotes_are_read_too() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("os-release");
+    fs::write(
+        &file,
+        "NAME='Some OS'\nOTHER=\"double\"\nEMPTY=''\nPLAIN=x\n",
+    )
+    .unwrap();
+    assert_eq!(get_config_value(&file, "NAME").as_deref(), Some("Some OS"));
+    assert_eq!(get_config_value(&file, "OTHER").as_deref(), Some("double"));
+    assert_eq!(get_config_value(&file, "EMPTY").as_deref(), Some(""));
+    assert_eq!(get_config_value(&file, "PLAIN").as_deref(), Some("x"));
+}
+
+#[test]
+fn write_file_takes_names_and_folders_not_paths() {
+    let root = tempfile::tempdir().unwrap();
+    let base = || Some(root.path().to_path_buf());
+
+    write_file("a.txt", "ok", base(), &["x", "y/z"]).unwrap();
+    assert_eq!(
+        fs::read_to_string(root.path().join("x/y/z/a.txt")).unwrap(),
+        "ok"
+    );
+
+    let outside = root.path().join("outside.txt");
+    for (name, folders) in [
+        ("../outside.txt", &[][..]),
+        ("sub/a.txt", &[][..]),
+        (outside.to_str().unwrap(), &[][..]),
+        ("..", &[][..]),
+        ("", &[][..]),
+        ("a.txt", &["../up"][..]),
+        ("a.txt", &["x", "/etc"][..]),
+        ("a.txt", &[""][..]),
+        ("a.txt", &["./here"][..]),
+    ] {
+        let error = write_file(name, "no", base(), folders).unwrap_err();
+        assert_eq!(
+            error.kind(),
+            std::io::ErrorKind::InvalidInput,
+            "{name} {folders:?}"
+        );
+    }
+    assert!(!outside.exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn the_backup_of_add_line_file_never_goes_through_a_link() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("hosts");
+    fs::write(&file, "127.0.0.1 localhost\n").unwrap();
+    // somebody put a link where the backup goes, to a file that does not exist yet
+    let victim = dir.path().join("victim");
+    std::os::unix::fs::symlink(&victim, dir.path().join("hosts.bak")).unwrap();
+
+    add_line_file(true, file.to_str().unwrap(), "10.0.0.1 server").unwrap();
+    assert!(!victim.exists(), "the backup was written through the link");
+    assert!(
+        fs::read_to_string(&file)
+            .unwrap()
+            .contains("10.0.0.1 server")
+    );
+}

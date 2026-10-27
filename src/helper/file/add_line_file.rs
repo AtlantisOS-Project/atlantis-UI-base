@@ -10,7 +10,7 @@
 //! The module adds a line to the end of a file, including a duplicate check and an
 //! optional backup.
 
-use std::fs;
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
 use std::path::Path;
 
@@ -70,8 +70,12 @@ pub fn add_line_file(create_backup: bool, path: &str, line: &str) -> io::Result<
     if create_backup && Path::new(path).exists() {
         let backup_path = format!("{}.bak", path);
         if !Path::new(&backup_path).exists() {
-            fs::copy(path, &backup_path)?;
-            println!("Created backup: {}", backup_path);
+            match copy_new(Path::new(path), Path::new(&backup_path)) {
+                Ok(()) => println!("Created backup: {}", backup_path),
+                // something is there already, for example a link: it is not written through
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+                Err(error) => return Err(error),
+            }
         }
     }
 
@@ -86,4 +90,13 @@ pub fn add_line_file(create_backup: bool, path: &str, line: &str) -> io::Result<
     println!("Entry added to {}", path);
 
     Ok(())
+}
+
+/// Copies a file to a place where nothing is yet: `create_new` fails on an existing file and on
+/// a symbolic link too, even one that points nowhere, so the copy never goes through a link.
+fn copy_new(from: &Path, to: &Path) -> io::Result<()> {
+    let mut source = File::open(from)?;
+    let mut target = OpenOptions::new().write(true).create_new(true).open(to)?;
+    io::copy(&mut source, &mut target)?;
+    target.set_permissions(source.metadata()?.permissions())
 }

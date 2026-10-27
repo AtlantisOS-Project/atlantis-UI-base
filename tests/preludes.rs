@@ -26,16 +26,22 @@ use atlbase::prelude::{
 };
 // the building blocks for programs with many pages
 #[cfg(feature = "archive")]
-use atlbase::prelude::{ArchiveFormat, decompress, decompress_file, detect_format};
+use atlbase::prelude::{
+    ArchiveFormat, MAX_UNPACKED_BYTES, decompress, decompress_file, decompress_limited,
+    detect_format,
+};
+#[cfg(feature = "download")]
+use atlbase::prelude::{download_file, download_file_verified};
 // the platform layer
 use atlbase::prelude::{
-    APT_SOURCES_DIR, AppDirs, Arch, DataDirs, FORMAT_OVERRIDE, Feature, Has, Lookup, Os, OsProfile,
-    PACKAGE_FORMATS, PackageFormat, PackageManager, Target, current_package_format,
+    APT_SOURCES_DIR, AppDirs, Arch, DataDirs, FORMAT_OVERRIDE, Feature, Has, Lookup, MAX_LOG_BYTES,
+    Os, OsProfile, PACKAGE_FORMATS, PackageFormat, PackageManager, Target, current_package_format,
     detect_package_format, detect_package_format_at, documents_dir, elevation_command,
     elevation_command_for, find_program, home_dir, host_command, host_command_line, in_sandbox,
     init_file_logging, init_logging, is_executable, is_mount_point, journal_follow_command,
-    journal_follow_command_for, os_profile, os_profile_for, package_bin_dirs, package_roots,
-    program_file_names, program_path, register_tool_dir, supports,
+    journal_follow_command_for, log_file_of, os_profile, os_profile_for, package_bin_dirs,
+    package_roots, program_file_names, program_path, register_tool_dir, short_target, supports,
+    utc_timestamp,
 };
 use atlbase::prelude::{
     CliOptions, CliRequest, CommandResult as ChainResult, SystemInfo, apply_debug_options,

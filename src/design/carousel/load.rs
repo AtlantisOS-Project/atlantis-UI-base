@@ -512,7 +512,32 @@ struct Ctx<'a> {
 const CONTENT_KEYS: &str =
     "heading, paragraph, markup, bullets, steps, code, image, callout, button";
 
+/// The content of a block whose key was found by the check above.
+fn need<T>(value: Option<T>) -> Result<T, String> {
+    value.ok_or_else(|| "internal error: the content of the block is missing".to_string())
+}
+
 impl Ctx<'_> {
+    /// The translated text of a `markup` block. A text that is not valid Pango markup would be
+    /// shown as an empty label with a warning of GTK, so it is refused here, with the reason. A
+    /// translation that broke the markup (an `&` that is not escaped, a tag that is not closed)
+    /// is not used: the original text is.
+    fn markup(&self, original: &str) -> Result<String, String> {
+        let check = |text: &str| gtk4::pango::parse_markup(text, '\0').map(|_| ());
+        check(original).map_err(|error| format!("invalid Pango markup ({error}): {original}"))?;
+        let translated = self.tr(original);
+        match check(&translated) {
+            Ok(()) => Ok(translated),
+            Err(error) => {
+                glib::g_warning!(
+                    "atlbase",
+                    "the translation of \"{original}\" is not valid markup ({error}), the original is used"
+                );
+                Ok(original.to_string())
+            }
+        }
+    }
+
     fn tr(&self, text: &str) -> String {
         match &self.loader.translate {
             _ if text.trim().is_empty() => text.to_owned(), // gettext("") returns the PO header
@@ -573,13 +598,13 @@ impl Ctx<'_> {
         }
 
         Ok(match kind {
-            "heading" => Block::Heading(self.tr(&def.heading.unwrap())),
+            "heading" => Block::Heading(self.tr(&need(def.heading)?)),
             "paragraph" => Block::Paragraph {
-                text: self.tr(&def.paragraph.unwrap()),
+                text: self.tr(&need(def.paragraph)?),
                 markup: false,
             },
             "markup" => Block::Paragraph {
-                text: self.tr(&def.markup.unwrap()),
+                text: self.markup(&need(def.markup)?)?,
                 markup: true,
             },
             "bullets" => Block::Bullets(
@@ -607,9 +632,9 @@ impl Ctx<'_> {
                     })
                     .collect(),
             },
-            "code" => Block::Code(def.code.unwrap()),
+            "code" => Block::Code(need(def.code)?),
             "image" => {
-                let mut image = self.image(&def.image.unwrap());
+                let mut image = self.image(&need(def.image)?);
                 if let Some(caption) = &def.caption {
                     image = image.caption(self.tr(caption));
                 }
@@ -630,7 +655,7 @@ impl Ctx<'_> {
                         KindDef::Danger => CalloutKind::Danger,
                     },
                     title: None,
-                    text: self.tr(&def.callout.unwrap()),
+                    text: self.tr(&need(def.callout)?),
                 };
                 if let Some(title) = &def.title {
                     callout = callout.title(self.tr(title));
@@ -643,13 +668,13 @@ impl Ctx<'_> {
                         "a `button` block needs `action` (the name the application gets)".into(),
                     );
                 };
-                let mut button = ActionButton::new(action, self.tr(&def.button.unwrap()));
+                let mut button = ActionButton::new(action, self.tr(&need(def.button)?));
                 if let Some(icon) = def.icon {
                     button = button.icon(icon);
                 }
                 Block::Button(button)
             }
-            _ => unreachable!("kind comes from the list above"),
+            other => return Err(format!("unknown block kind `{other}`")),
         })
     }
 
@@ -1337,5 +1362,39 @@ blocks = [
             resolved(&loader, "resource:/io/x/a.png"),
             ImageSource::Resource(p) if p == "/io/x/a.png"
         ));
+    }
+
+    #[test]
+    fn markup_must_be_valid_and_a_broken_translation_is_not_used() {
+        let toml = |text: &str| {
+            format!(
+                "title = \"t\"\n[[pages]]\ntitle = \"p\"\nblocks = [ {{ markup = \"{text}\" }} ]\n"
+            )
+        };
+        let text_of = |guide: &Guide| match &guide.pages[0].blocks[0] {
+            Block::Paragraph { text, markup: true } => text.clone(),
+            other => panic!("{other:?}"),
+        };
+        let loader = GuideLoader::new();
+        assert!(loader.load_str(&toml("Tap <b>Start</b> &amp; go")).is_ok());
+
+        // not valid: the place and the reason are in the message
+        let error = loader
+            .load_str(&toml("Tap <b>Start"))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains("page 1") && error.contains("markup"),
+            "{error}"
+        );
+        assert!(loader.load_str(&toml("a & b")).is_err());
+
+        // a translation that breaks the markup is left out, a good one is used
+        let broken = GuideLoader::new().translate(|text| format!("{text} <i>"));
+        let guide = broken.load_str(&toml("Tap <b>Start</b>")).unwrap();
+        assert_eq!(text_of(&guide), "Tap <b>Start</b>");
+        let good = GuideLoader::new().translate(|_| "Tippe <b>Start</b>".to_string());
+        let guide = good.load_str(&toml("Tap <b>Start</b>")).unwrap();
+        assert_eq!(text_of(&guide), "Tippe <b>Start</b>");
     }
 }

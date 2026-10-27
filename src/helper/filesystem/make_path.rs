@@ -12,7 +12,22 @@
 
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Component, Path};
+
+/// Whether `name` is one plain name: not empty, no separator, not `.` or `..`, not absolute. A name
+/// from outside that passes this check cannot leave the folder it is put into.
+pub(crate) fn is_plain_name(name: &str) -> bool {
+    let mut components = Path::new(name).components();
+    matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none()
+}
+
+/// Whether `path` is a relative path of plain names (`a/b`): no `..`, no `.`, not absolute.
+pub(crate) fn is_plain_relative(path: &str) -> bool {
+    Path::new(path).components().next().is_some()
+        && Path::new(path)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+}
 
 /// Creates a directory and all missing parent directories (recursively).
 ///

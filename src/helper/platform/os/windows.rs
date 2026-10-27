@@ -16,19 +16,47 @@ fn quote(word: &str) -> String {
     format!("'{}'", word.replace('\'', "''"))
 }
 
+/// One argument the way the C runtime and `CommandLineToArgvW` read it back: in double quotes if
+/// it has a space, a tab or a quote, and the quotes and the backslashes in front of them escaped.
+/// `Start-Process -ArgumentList` does no quoting of its own: it joins its list with spaces, so an
+/// argument with a space would become two.
+fn quote_argument(arg: &str) -> String {
+    if !arg.is_empty() && !arg.contains([' ', '\t', '\n', '\u{b}', '"']) {
+        return arg.to_string();
+    }
+    let mut quoted = String::from('"');
+    let mut backslashes = 0;
+    for c in arg.chars() {
+        match c {
+            '\\' => backslashes += 1,
+            '"' => {
+                // the backslashes before a quote are doubled, and the quote gets one more
+                quoted.push_str(&"\\".repeat(backslashes * 2 + 1));
+                quoted.push('"');
+                backslashes = 0;
+            }
+            c => {
+                quoted.push_str(&"\\".repeat(backslashes));
+                quoted.push(c);
+                backslashes = 0;
+            }
+        }
+    }
+    // the backslashes before the closing quote are doubled, so they do not escape it
+    quoted.push_str(&"\\".repeat(backslashes * 2));
+    quoted.push('"');
+    quoted
+}
+
 /// `powershell Start-Process <program> -Verb RunAs -Wait`: the UAC prompt.
 fn elevate(command: &[String]) -> Vec<String> {
     let (program, args) = command.split_first().expect("a command");
     let arguments = if args.is_empty() {
         String::new()
     } else {
-        format!(
-            " -ArgumentList {}",
-            args.iter()
-                .map(|arg| quote(arg))
-                .collect::<Vec<_>>()
-                .join(",")
-        )
+        // one string with the whole command line of the program
+        let line: Vec<String> = args.iter().map(|arg| quote_argument(arg)).collect();
+        format!(" -ArgumentList {}", quote(&line.join(" ")))
     };
     words(&[
         "powershell",
@@ -129,9 +157,29 @@ mod tests {
         assert_eq!(line[..3], ["powershell", "-NoProfile", "-Command"]);
         assert_eq!(
             line[3],
-            "$p = Start-Process -FilePath 'tool.exe' -ArgumentList 'it''s','b' -Verb RunAs -Wait -PassThru; exit $p.ExitCode"
+            "$p = Start-Process -FilePath 'tool.exe' -ArgumentList 'it''s b' -Verb RunAs -Wait -PassThru; exit $p.ExitCode"
         );
         assert!(!elevate(&words(&["tool.exe"]))[3].contains("-ArgumentList"));
+    }
+
+    #[test]
+    fn an_argument_stays_one_argument() {
+        // plain: untouched
+        assert_eq!(quote_argument("flash"), "flash");
+        assert_eq!(quote_argument(r"C:\dir\file.img"), r"C:\dir\file.img");
+        // a space, a quote, nothing at all
+        assert_eq!(quote_argument("a b"), "\"a b\"");
+        assert_eq!(quote_argument(r#"say "hi""#), r#""say \"hi\"""#);
+        assert_eq!(quote_argument(""), "\"\"");
+        // backslashes only count in front of a quote
+        assert_eq!(quote_argument(r"C:\my dir\"), r#""C:\my dir\\""#);
+        assert_eq!(quote_argument(r#"a\"b"#), r#""a\\\"b""#);
+
+        let line = elevate(&words(&["tool.exe", "C:\\my dir\\x.img", "--note=a \"b\""]));
+        assert_eq!(
+            line[3],
+            "$p = Start-Process -FilePath 'tool.exe' -ArgumentList '\"C:\\my dir\\x.img\" \"--note=a \\\"b\\\"\"' -Verb RunAs -Wait -PassThru; exit $p.ExitCode"
+        );
     }
 
     #[test]

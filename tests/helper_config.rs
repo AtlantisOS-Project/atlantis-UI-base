@@ -35,15 +35,47 @@ fn settings_are_stored_below_xdg_config_home() {
         "the file lives in the XDG directory"
     );
 
-    // a corrupt file is replaced instead of blocking the application forever
+    // only the user can read the file (it may hold a token)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let file = confy_file(config_home.path(), app);
+        assert_eq!(
+            fs::metadata(file).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+
+    // a corrupt file does not block the application forever, and what was in it is kept
     let file = fs::read_dir(config_home.path().join(app))
         .unwrap()
         .next()
         .unwrap()
         .unwrap()
         .path();
-    fs::write(&file, "this is = not [valid toml").unwrap();
+    let damaged = "[data]\ntheme = \"light\"\nport = \"80";
+    fs::write(&file, damaged).unwrap();
     assert_eq!(get_config(app, "theme"), None);
     set_config(app, "theme", "dark").unwrap();
     assert_eq!(get_config(app, "theme").as_deref(), Some("dark"));
+    let mut bad = file.as_os_str().to_owned();
+    bad.push(".bad");
+    assert_eq!(fs::read_to_string(bad).unwrap(), damaged);
+
+    // no temporary file is left in the folder
+    let names: Vec<_> = fs::read_dir(config_home.path().join(app))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(names.len(), 2, "{names:?}");
+}
+
+/// The settings file of `app` below `config_home`.
+fn confy_file(config_home: &std::path::Path, app: &str) -> std::path::PathBuf {
+    fs::read_dir(config_home.join(app))
+        .unwrap()
+        .next()
+        .unwrap()
+        .unwrap()
+        .path()
 }

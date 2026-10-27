@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atlbase 0.1.9\n"
 "Report-Msgid-Bugs-To: https://github.com/AtlantisOS-Project/atlantis-UI-base/issues\n"
-"POT-Creation-Date: 2026-10-20 10:44+0200\n"
+"POT-Creation-Date: 2026-10-27 12:35+0100\n"
 "PO-Revision-Date: 2026-10-16 09:00+0200\n"
 "Last-Translator: AtlantisOS Project\n"
 "Language-Team: German\n"
@@ -40,13 +40,21 @@ msgstr "Datei auswählen"
 msgid "Choose folder"
 msgstr "Ordner auswählen"
 
-#: src/design/form.rs:201
+#: src/design/form.rs:232
 msgid "Choose…"
 msgstr "Auswählen…"
 
 #: src/design/carousel/model.rs:71
 msgid "Copy"
 msgstr "Kopieren"
+
+#: src/helper/log/write_log_text.rs:128
+msgid "Copy the path of the log file"
+msgstr "Pfad der Protokolldatei kopieren"
+
+#: src/helper/log/write_log_text.rs:167
+msgid "Could not show the log: {}"
+msgstr "Das Protokoll konnte nicht angezeigt werden: {}"
 
 #: src/design/dialogs/about_dialog.rs:142
 msgid "Documentation"
@@ -56,17 +64,17 @@ msgstr "Dokumentation"
 msgid "Done"
 msgstr "Fertig"
 
-#: src/design/dialogs/standard_dialogs.rs:371
-#: src/design/dialogs/standard_dialogs.rs:395
-#: src/design/dialogs/standard_dialogs.rs:448
+#: src/design/dialogs/standard_dialogs.rs:378
+#: src/design/dialogs/standard_dialogs.rs:402
+#: src/design/dialogs/standard_dialogs.rs:455
 msgid "Error"
 msgstr "Fehler"
 
-#: src/design/carousel/model.rs:68 src/helper/log/write_log_text.rs:142
+#: src/design/carousel/model.rs:68 src/helper/log/write_log_text.rs:214
 msgid "Exit"
 msgstr "Beenden"
 
-#: src/helper/log/write_log_text.rs:143
+#: src/helper/log/write_log_text.rs:215
 msgid "Exit the application"
 msgstr "Anwendung beenden"
 
@@ -78,12 +86,13 @@ msgstr "Schriftarten"
 msgid "Image not found"
 msgstr "Bild nicht gefunden"
 
-#: src/design/dialogs/standard_dialogs.rs:234
-#: src/design/dialogs/standard_dialogs.rs:263
+#: src/design/dialogs/standard_dialogs.rs:241
+#: src/design/dialogs/standard_dialogs.rs:270
 msgid "Information"
 msgstr "Information"
 
-#: src/helper/log/write_log_text.rs:59 src/helper/log/write_log_text.rs:64
+#: src/helper/log/write_log_text.rs:95 src/helper/log/write_log_text.rs:135
+#: src/helper/log/write_log_text.rs:140
 msgid "Log Viewer"
 msgstr "Protokollanzeige"
 
@@ -91,35 +100,51 @@ msgstr "Protokollanzeige"
 msgid "Next"
 msgstr "Weiter"
 
-#: src/design/form.rs:197 src/design/form.rs:241
+#: src/design/form.rs:200 src/design/form.rs:228
 msgid "Nothing chosen"
 msgstr "Nichts ausgewählt"
 
-#: src/design/dialogs/standard_dialogs.rs:236
-#: src/design/dialogs/standard_dialogs.rs:287
-#: src/design/dialogs/standard_dialogs.rs:315
-#: src/design/dialogs/standard_dialogs.rs:344
-#: src/design/dialogs/standard_dialogs.rs:373
-#: src/design/dialogs/standard_dialogs.rs:419
+#: src/design/dialogs/standard_dialogs.rs:243
+#: src/design/dialogs/standard_dialogs.rs:294
+#: src/design/dialogs/standard_dialogs.rs:322
+#: src/design/dialogs/standard_dialogs.rs:351
+#: src/design/dialogs/standard_dialogs.rs:380
+#: src/design/dialogs/standard_dialogs.rs:426
 msgid "OK"
 msgstr "OK"
 
-#: src/helper/log/write_log_text.rs:136
+#: src/helper/log/write_log_text.rs:208
 msgid "Show Log"
 msgstr "Protokoll anzeigen"
+
+#: src/helper/log/write_log_text.rs:120
+msgid "Show the log file in its folder"
+msgstr "Protokolldatei im Ordner anzeigen"
 
 #: src/design/dialogs/about_dialog.rs:156
 msgid "Special thanks to"
 msgstr "Besonderer Dank an"
 
-#: src/design/dialogs/standard_dialogs.rs:313
+#: src/design/dialogs/standard_dialogs.rs:320
 msgid "Success"
 msgstr "Erfolg"
+
+#: src/helper/log/write_log_text.rs:141
+msgid "System log"
+msgstr "Systemprotokoll"
+
+#: src/helper/log/write_log_text.rs:147
+msgid "The command that shows the log ended (status {})."
+msgstr "Der Befehl, der das Protokoll anzeigt, wurde beendet (Status {})."
 
 #: src/design/dialogs/dialog_work.rs:52
 msgid "The work ended unexpectedly."
 msgstr "Die Arbeit wurde unerwartet beendet."
 
-#: src/design/dialogs/standard_dialogs.rs:342
+#: src/helper/log/write_log_text.rs:112
+msgid "There is no log on this system yet."
+msgstr "Auf diesem System gibt es noch kein Protokoll."
+
+#: src/design/dialogs/standard_dialogs.rs:349
 msgid "Warning"
 msgstr "Warnung"

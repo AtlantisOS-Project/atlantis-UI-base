@@ -324,7 +324,12 @@ fn create_home_page(stack: &Stack) -> GtkBox {
     btn_login.connect_clicked(move |_| {
         let user = username_entry.text();
         let pass = password_entry.text();
-        println!("Login Try -> User: {}, Pass: {}", user, pass);
+        // a password does not belong in the output, not even in a demo
+        println!(
+            "Login Try -> User: {}, password: {} characters",
+            user,
+            pass.len()
+        );
     });
 
     grid.attach(&btn_login, 0, 5, 2, 1);

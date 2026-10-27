@@ -32,6 +32,45 @@ fn home_and_standard_folders_are_protected() {
     assert!(documents.join("thesis.txt").exists());
     assert!(home.path().join("notes.txt").exists());
 
+    // the way to a protected folder does not matter: `..`, a link, a link to the home itself
+    delete_files_in_dir(&documents.join("../Documents"));
+    delete_files_in_dir(&home.path().join(".cache/../Documents"));
+    #[cfg(unix)]
+    {
+        let link = home.path().join("shortcut");
+        std::os::unix::fs::symlink(&documents, &link).unwrap();
+        delete_files_in_dir(&link);
+        delete_files_with_parent(link.to_str().unwrap());
+        let to_home = home.path().join("to-home");
+        std::os::unix::fs::symlink(home.path(), &to_home).unwrap();
+        delete_files_in_dir(&to_home);
+        delete_files_and_parents(&to_home, &None);
+    }
+    assert!(documents.join("thesis.txt").exists());
+    assert!(home.path().join("notes.txt").exists());
+
+    // the helpers that delete a whole folder refuse them as well, and delete nothing
+    for protected in [
+        home.path().to_path_buf(),
+        documents.clone(),
+        documents.join("../Documents"),
+    ] {
+        let error = clear_directory_except(&protected, &[]).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+        let error = remove_dir_all_if_exists(&protected).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    }
+    assert!(documents.join("thesis.txt").exists());
+    assert!(home.path().join("notes.txt").exists());
+    // a folder of the application in the home directory is fine
+    let work = home.path().join("ROM-Install");
+    fs::create_dir(&work).unwrap();
+    fs::write(work.join("rom.img"), "x").unwrap();
+    clear_directory_except(&work, &[]).unwrap();
+    assert!(work.exists() && !work.join("rom.img").exists());
+    remove_dir_all_if_exists(&work).unwrap();
+    assert!(!work.exists());
+
     // other folders in the home directory are fine, and the climb stops at the home directory
     let cache = home.path().join(".cache/myapp");
     fs::create_dir_all(&cache).unwrap();

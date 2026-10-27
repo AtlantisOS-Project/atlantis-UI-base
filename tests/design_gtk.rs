@@ -36,6 +36,7 @@ fn main() {
         ("css provider", css_provider),
         ("status dialogs", status_dialogs),
         ("guide navigation", guide_navigation),
+        ("steps with a huge number", steps_with_a_huge_number),
         ("guide in a stack", guide_in_a_stack),
         ("guide with a missing image", guide_with_missing_image),
         ("guide with a button", guide_with_button),
@@ -105,6 +106,29 @@ fn css_provider() {
     let first = use_adw_provider("label { color: red; }");
     let second = use_adw_provider("label { color: blue; }");
     assert_ne!(first, second);
+
+    // the handler that reloads a provider on a change of the style goes away with the provider
+    let manager = adw::StyleManager::default();
+    let notify = glib::subclass::SignalId::lookup("notify", glib::Object::static_type()).unwrap();
+    let dark = Some(glib::Quark::from_str("dark"));
+    let handlers = || glib::signal::signal_has_handler_pending(&manager, notify, dark, true);
+    manager.set_color_scheme(adw::ColorScheme::ForceLight);
+    // (the handlers of the two providers above are there)
+    assert!(handlers());
+
+    let display = gtk4::gdk::Display::default().unwrap();
+    for provider in [&first, &second] {
+        gtk4::style_context_remove_provider_for_display(&display, provider);
+    }
+    drop((first, second));
+    // the handlers see on the next change that their providers are gone
+    manager.set_color_scheme(adw::ColorScheme::ForceDark);
+    manager.set_color_scheme(adw::ColorScheme::ForceLight);
+    assert!(
+        !handlers(),
+        "handlers of providers that are gone stay connected"
+    );
+    manager.set_color_scheme(adw::ColorScheme::Default);
 }
 
 fn status_dialogs() {
@@ -157,6 +181,13 @@ fn guide_navigation() {
     // "Done" on the last page ends the guide
     view.emit_by_name::<()>("finished", &[]);
     assert_eq!(finished.get(), 1);
+}
+
+fn steps_with_a_huge_number() {
+    // the number comes from a file; counting up from the largest one must not overflow
+    let page = Page::new("Steps").steps_from(u32::MAX - 1, ["one", "two", "three"]);
+    let view = GuideView::new(&Guide::new("Tour").page(page));
+    assert_eq!(view.n_pages(), 1);
 }
 
 fn guide_in_a_stack() {

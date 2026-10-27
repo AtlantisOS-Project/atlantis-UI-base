@@ -42,7 +42,8 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 | `command_pkexec(args: &[&str])` | Run a command as root with `pkexec`, print the result |
 | `run_command(args: &[&str]) -> io::Result<ExitStatus>` | Run a command, output goes to the console |
 | `capture_command_output(args: &[&str]) -> io::Result<String>` | Run a command, return its `stdout` |
-| `open_terminal_by_desktop(function_command: &str)` | Open the terminal of the desktop and run a command |
+| `open_terminal_by_desktop(function_command: &str)` | Open the terminal of the desktop and run a command; the text is run by a shell, so never pass text from outside |
+| `open_terminal_command(command: &[String]) -> io::Result<()>` | The same for a program and its arguments: every word is quoted for the shell of the system, and on Windows and WSL only plain words are accepted |
 | `open_url(url: &str)` | Open a URL or file with the default application |
 | `command_line(program, args) -> Vec<String>` | Build a command line for the progress dialogs (`&str` and `String` arguments) |
 | `shell_line(command: &[String]) -> String` | Quote a command line for a shell (a terminal) |
@@ -54,7 +55,7 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 | Item | Purpose |
 |---|---|
 | `get_config(app_name, key) -> Option<String>` | Read a setting from `<config dir>/<app>/default-config.toml` |
-| `set_config(app_name, key, value) -> Result<(), ConfyError>` | Store a setting |
+| `set_config(app_name, key, value) -> Result<(), ConfyError>` | Store a setting: written atomically, readable only by the user (`0600`); a file that cannot be read is kept as `<name>.bad` |
 | `enum AppEnvironment { Flatpak, Snap, AppImage, Ppa, LocalDeb, Unknown }` | Where the application was installed from |
 | `get_execution_environment() -> String` | `"flatpak"`, `"snap"`, `"appimage"` or `"native"` |
 | `check_application_environment(search_string, source_dir) -> AppEnvironment` | Detect the installation source (APT sources) |
@@ -69,7 +70,7 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 | `add_line_file(create_backup: bool, path, line) -> io::Result<()>` | Append a line once, with optional `.bak` |
 | `get_config_value(filename, key) -> Option<String>` | Read `KEY=VALUE` / `KEY="VALUE"` files |
 | `trim_and_clean(s: &str) -> &str` | Trim whitespace and enclosing quotes |
-| `write_file(filename, content, base_path, path_list) -> io::Result<()>` | Write a file and create the directories |
+| `write_file(filename, content, base_path, path_list) -> io::Result<()>` | Write a file and create the directories; `filename` is one name and `path_list` plain relative folders (`InvalidInput` otherwise) |
 | `write_to_temp`, `read_from_temp`, `remove_line_from_temp`, `clear_temp_file` | One temporary file per process |
 
 ## `helper::filesystem`
@@ -86,7 +87,7 @@ The command line options all AtlantisOS programs share: `-debug` (with the flags
 | `search_file_directory(dir, text) -> io::Result<bool>` | Is there a file whose name contains the text? A missing directory is a `NotFound` error |
 | `move_file_into(source, target_dir, new_name) -> io::Result<PathBuf>` | Move and rename a file, also to another file system |
 | `require_dir_name(dir, name) -> io::Result<()>` | Refuse (`PermissionDenied`) unless the folder has this name: the check before a cleanup |
-| `remove_dir_all_if_exists(dir)` / `clear_directory_except(dir, keep)` | Delete a folder / its content except some entries; a missing folder is fine |
+| `remove_dir_all_if_exists(dir)` / `clear_directory_except(dir, keep)` | Delete a folder / its content except some entries; a missing folder is fine; system folders, the home directory and its standard folders are refused (`PermissionDenied`) |
 
 ## `helper::platform`
 
@@ -135,7 +136,7 @@ in the library changes.
 | `elevation_command(command)` | The command with `pkexec` (Linux), `osascript` (macOS) or a UAC prompt (Windows) in front |
 | `supports(Feature::…)`, `in_sandbox()` | `Elevation`, `HostTerminal`, `SystemLog`, `PackageInstall`, `PosixShell`: show a button only where the host offers it |
 | `PackageManager::detect()`, `.install_command(packages)` | `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
-| `init_logging(app)` | syslog on Linux and macOS, `AppDirs::log_file` on Windows |
+| `init_logging(app)` | The log file `AppDirs::log_file` on every system and package format (UTC time, level, part of the program; rotated at 1 MB) and syslog next to it on Linux and macOS. Afterwards `info!`, `warn!`, … work; `log_file_of(app)` is the path |
 
 ```rust
 use atlbase::prelude::*;
@@ -155,6 +156,14 @@ if supports(Feature::PackageInstall) {
 `get_config`, `init_language`, `GuideLoader`, `ensure_app_icon`, `delete_files_*` and
 `SystemInfo::collect` use the layer, so a program that only calls them is portable already.
 
+### Logging
+
+Use the `log` macros; `init_logging(app)` (once, at the start) writes them to the log file and syslog. What to log:
+
+* `info!` what the program does for the user (a flash, a deletion, a download, a setting that changes) and what it found (devices, tools); `warn!` something that failed but the program goes on; `error!` what the user has to be told; `debug!` details (a command line and its time, a page that was loaded).
+* The library logs for you: every command of `run_command_chain` (all progress dialogs), `run_command` and `capture_command_output`, and every status dialog (`show_error_dialog`, …) with the text the user sees.
+* Write messages in English, short, without secrets (no passwords, no serial numbers of a device): a log is pasted into bug reports. The part of the program in front of the text is added by the logger.
+
 ## `helper::sysinfo`
 
 | Item | Purpose |
@@ -168,7 +177,8 @@ if supports(Feature::PackageInstall) {
 | Item | Purpose |
 |---|---|
 | `detect_format(path) -> io::Result<Option<ArchiveFormat>>` | Recognize `tar`, `tar.xz`, `tar.gz`, `tar.bz2`, `xz`, `gz`, `bz2`, `zip`, `7z` by the first bytes, not by the name |
-| `decompress(path, output_dir, format)` / `decompress_file(path, output_dir)` | Unpack; a damaged archive leaves `output_dir` as it was. Returns the files that were created |
+| `decompress(path, output_dir, format)` / `decompress_file(path, output_dir)` | Unpack (at most `MAX_UNPACKED_BYTES`, 64 GiB); a damaged archive leaves `output_dir` as it was. Folders are merged into existing folders, a file never replaces a folder. Returns the files that were created |
+| `decompress_limited(path, output_dir, format, max_bytes)` | The same with your own limit |
 | `ArchiveFormat::ALL`, `.label()` | For a menu when the format is unknown |
 
 
@@ -176,7 +186,8 @@ if supports(Feature::PackageInstall) {
 
 | Item | Purpose |
 |---|---|
-| `download_file(url, destination, progress) -> io::Result<u64>` | Download a file over HTTP(S) without `curl`: written as `<destination>.part` and renamed when complete, redirects are followed, an `https` address stays `https`, `progress(done, total)` after every block. Needs a thread of its own (`run_background`, `show_work_dialog`) |
+| `download_file(url, destination, progress) -> io::Result<u64>` | Download a file over HTTPS without `curl` (plain http only to the own computer): written as `<destination>.part` and renamed when complete, redirects are followed, an `https` address stays `https`, `progress(done, total)` after every block; fails when the server is silent for 30 s (how long the whole download takes does not matter) and for more than 16 GiB. Needs a thread of its own (`run_background`, `show_work_dialog`) |
+| `download_file_verified(url, destination, sha256, progress)` | The same; the file must have this SHA-256 sum, otherwise it is deleted (`InvalidData`) |
 
 ## `helper::language`
 
@@ -192,7 +203,7 @@ if supports(Feature::PackageInstall) {
 | Item | Purpose |
 |---|---|
 | `init_syslog(app_name) -> Result<(), SetLoggerError>` | Send `log` messages to syslog |
-| `show_log_viewer(app, domain)` | Window that follows the journal (feature `log-viewer`) |
+| `show_log_viewer(app, domain)` | Window that shows the log file (latest 300 lines, then new lines) with buttons for the folder and the path; without a file it follows the system log (feature `log-viewer`) |
 | `create_custom_headerbar(app, domain) -> gtk4::Box` | Header bar menu: log viewer and exit (feature `log-viewer`) |
 
 ## `design::carousel`

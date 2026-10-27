@@ -137,7 +137,7 @@ Windows build is checked with `cargo check --target x86_64-pc-windows-gnu`
 | `elevation_command(command)`, `elevation_command_for(os, command)` | `pkexec` on Linux, `osascript` on macOS, `powershell … -Verb RunAs` on Windows |
 | `Feature` (`Elevation`, `HostTerminal`, `SystemLog`, `PackageInstall`, `PosixShell`), `supports(feature)`, `in_sandbox()` | What the host offers to this program; hide a button instead of failing |
 | `PackageManager` (`detect()`, `install_command(packages)`, `needs_elevation()`), `APT_SOURCES_DIR` | `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
-| `init_logging(app)`, `init_file_logging(path)`, `journal_follow_command(app)` | syslog on Linux and macOS, a log file on Windows; the command the log viewer follows |
+| `init_logging(app)`, `init_file_logging(path)`, `journal_follow_command(app)`, `log_file_of(app)`, `short_target(target)`, `utc_timestamp(seconds)`, `MAX_LOG_BYTES` | `init_logging` writes the **log file** on every system and package format (one line per message: `2026-10-27T11:25:22Z INFO  flash::manager: …`, UTC, rotated at 1 MB to `<name>.log.old`) and, where it can be reached, the system log (syslog on Linux and macOS); the command the log viewer follows |
 | `SystemInfo::architecture` | `x86_64` or `aarch64`; `SystemInfo::collect()` also works on Windows and macOS (name, architecture, language, desktop) |
 
 #### Less memory
@@ -165,6 +165,9 @@ Windows build is checked with `cargo check --target x86_64-pc-windows-gnu`
 | `AppEnvironment: Hash` | `helper::configuration` | Usable as a map key |
 | `commands_pkexec_spinner`, `commands_pkexec_progressbar` | `ui_prelude` | Existed in `design::utils`, but were missing from the prelude |
 | `get_current_domain`, `LIB_DOMAIN` | `prelude` | Added to the prelude |
+| `open_terminal_command(command)` | `helper::commands` | `open_terminal_by_desktop` for a program and its arguments: every word is quoted for the shell of the system; on Windows and WSL only plain words are accepted (`InvalidInput`) |
+| `decompress_limited(path, output_dir, format, max_bytes)`, `MAX_UNPACKED_BYTES` | `helper::archive` | `decompress` with a limit on the unpacked data (the default is 64 GiB) |
+| `download_file_verified(url, destination, sha256, progress)` | `helper::download` | `download_file` that checks a SHA-256 sum and deletes a file with another one |
 
 #### New Cargo features
 
@@ -173,7 +176,7 @@ Windows build is checked with `cargo check --target x86_64-pc-windows-gnu`
 | `carousel-toml` | on | `GuideLoader` and `GuideError` (adds the `toml` crate) |
 | `log-viewer` | on | `show_log_viewer`, `create_custom_headerbar` (adds VTE) |
 | `archive` | off | `helper::archive` (adds `tar`, `xz2`, `flate2`, `bzip2`, `zip`, `sevenz-rust2`; the C code of bzip2 is compiled in, because the name of the system library differs between Debian and Fedora) |
-| `download` | off | `helper::download`: `download_file(url, destination, progress)` over HTTP(S) without `curl` (adds `ureq` with rustls and the bundled root certificates; no system library) |
+| `download` | off | `helper::download`: `download_file(url, destination, progress)` over HTTPS without `curl` (adds `ureq` with rustls and the bundled root certificates, and `sha2` for the checksum; no system library) |
 | `format-flatpak`, `format-snap`, `format-appimage`, `format-native` | all on | The package formats that are compiled in (see `helper::platform`): enable only the one you build for to leave the code of the others out; at least one is needed |
 
 #### New files and directories
@@ -227,6 +230,18 @@ next breaking release; 0.2 is that release):
 | `run_command`, `capture_command_output` | panicked on an empty slice | return an error of kind `InvalidInput` |
 | `open_terminal_by_desktop` | used only the terminal of the desktop and did nothing (silently) if it was not installed; MATE used `--`, Xfce used `-e` | tries the terminal of the desktop first, then every known terminal, and uses the first one that is installed; MATE and Xfce use `-x`; errors are printed; macOS quoting is escaped |
 | `open_url` | started `xdg-open` and printed a garbled error text ("nicht öffnen") | opens the link through GIO (the *OpenURI* portal in a Flatpak and a Snap; no tool of the system); prints `Could not open '<url>': <reason>` |
+| `run_command_chain` (behind all progress dialogs) | collected all output in memory, without a limit in size or time | keeps 8 MiB of each of the two outputs (a note says so) and stops a command after 2 hours; a progress dialog cannot be closed, so a command that waits for a device that is not there blocked the window for ever |
+| `command_output_timeout` | the time limit did not hold if the program had started another program that kept the output open (`sh -c "sleep 4"` with a limit of 0.2 s returned after 4 s) | returns after the limit; the output of a program that has ended is waited for a quarter of a second at most |
+| `open_url` | passed everything with a `:` in it on as an address (`/home/me/a:b` was no path; `javascript:`, `ssh:` and the handlers of other programs were started) | opens `http`, `https`, `mailto`, `file` and `tel`, and paths as `file:` addresses; every other scheme is refused with an error line |
+| `write_file`, `move_file_into` | took `..`, separators and absolute paths in the file name and the folders as they came | `filename` / `new_name` is one plain name and the folders are plain relative paths, otherwise `InvalidInput` |
+| `get_config_value` | read only `"` as a quote | reads `'value'` too |
+| `add_line_file` | the `.bak` copy was written through a symbolic link that was there already | never through a link |
+| `set_config` | a file that could not be read was replaced, and the other settings were gone; the file was written in place with the mode of the `umask` | the damaged file is kept as `<name>.bad`; the new file is written atomically with the mode `0600` |
+| `apply_debug_options` (`-snp`) | `$SNAP` was `/tmp/snap-debug`, a name everybody knows; programs below it are looked for before `PATH` | a new folder `snap-debug-XXXXXX` with the mode `0700` |
+| `download_file` | any `http://` address, no size limit, a limit of 30 s for the whole download (a download of more than 30 s always failed) | https, plain http only to the own computer; at most 16 GiB; fails after 30 s without new data, however long the download takes; never writes through a link at the place of `.part` |
+| `decompress`, `decompress_file` | replaced a folder of the same name completely (`Pictures/` of the archive deleted the `Pictures/` that was there); no limit | merges the folders, a file never replaces a folder; at most 64 GiB; the zip is unpacked by the library itself (links are left out) |
+| `delete_files_in_dir`, `delete_files_and_parents` | looked at the path as it was written (`/tmp/../etc`, a link to `/etc`); on Windows `C:\WINDOWS` was not `C:\Windows` | resolve the path first; case does not matter on Windows |
+| `remove_dir_all_if_exists`, `clear_directory_except` | no protection | refuse system folders, the home directory and its standard folders (`PermissionDenied`) |
 
 ##### `helper::configuration`
 
@@ -288,6 +303,22 @@ next breaking release; 0.2 is that release):
 | `commands_pkexec_*` | an empty list showed a dialog that closed at once | does nothing (as `command_pkexec_*` did already) |
 | `use_adw_provider` | one global provider; a second call made the first stylesheet overwrite the second on every theme change | one provider per call, reloaded independently |
 
+#### The log
+
+| Item | Before | Now |
+|---|---|---|
+| `init_logging` | syslog on Linux and macOS, a file only on Windows: a Flatpak, which cannot reach `/dev/log`, had no log at all | the log file on every system and package format, and syslog next to it where it can be reached |
+| messages | the text only; the log file had the seconds since 1970 | `2026-10-27T11:25:22Z INFO  flash::manager: text`: UTC time, level and the part of the program (the last two parts of the module path); the syslog message starts with the part of the program too |
+| log file | grew without end | rotated at 1 MB to `<name>.log.old` |
+| `show_log_viewer`, `create_custom_headerbar` | followed `journalctl` and showed **only new lines** (`-n 0`): the window was empty when it opened, and stayed so without a readable journal, in a Flatpak and on a system without `journalctl` | shows the log file: the latest 300 lines, then every new line (`tail -F`, which follows a rotated file); without a log file it follows the system log (`journalctl -n 200`); says so when the command ends or cannot be started; the header bar has buttons to show the folder of the log file and to copy its path; the title shows the file |
+| `journal_follow_command` | `journalctl -f -n 0 -t <app>` | `journalctl -f -n 200 -t <app> --output=short-iso` |
+| `run_command_chain` (behind all progress dialogs), `run_command`, `capture_command_output` | wrote nothing | log the command line, its result and its time (`INFO`; a failed command `WARN` with the first lines of `stderr`; a command that cannot be started `ERROR`) |
+| `show_error_dialog`, `show_warning_dialog`, `show_success_dialog`, `show_info_dialog` and the variants with a title or a button | wrote nothing | log what the user is told (`ERROR`, `WARN`, `INFO`), so a log shows the error dialog that belongs to a failed command |
+| log messages | any character | control characters (`ESC`, `CR`, the 8 bit `CSI`) and direction marks are written as `\x1b`, `\u{202e}`, …; the viewer shows the file in a terminal, where they could clear lines or set the title |
+| log file and folder | the mode of the `umask` | `0600` and `0700` (a log file from before is closed, too) |
+| command lines in the log | all words | the values of `password`, `psk`, `token`, `secret`, … are replaced by `***` (best effort) |
+| dialogs and finished tasks in the log | the whole text | the first 5 lines, 500 bytes |
+
 ### Removed
 
 **One public function was removed** (`search_string_file`, merged into `search_file_directory`); no type or module. What went away:
@@ -332,6 +363,14 @@ release (see "Call changed"). What is left:
 * A panic in `run_command(&[])` and `capture_command_output(&[])`.
 * Wrong documentation: copy-pasted texts in `create_button_icon*`, a password example that read the
   wrong field, examples that called functions that do not exist, unresolved links.
+* `set_config` lost all other keys when the settings file was damaged.
+* A guide with a `markup` block of invalid Pango markup showed an empty label; it is an error with
+  the page and the reason now, and a translation that breaks the markup is not used.
+* A step number of a guide that counts up from the largest number overflowed.
+* The handlers that reload a stylesheet on a change of the style (`use_adw_provider`) stayed
+  connected after the provider was gone.
+* A file of a server (not a path) that was chosen in a file chooser vanished without a word; it is
+  logged now.
 * Doc examples that did not compile or called functions that do not exist; all examples are
   compiled (and, where possible, run) by `cargo test --doc` now.
 
@@ -366,6 +405,28 @@ what was done:
 * `gettext-rs` is updated to 0.8 (RUSTSEC-2026-0244): `setlocale` is `unsafe` there, because it reads
   the environment without a lock. `init_language` documents that it must run before other threads
   start.
+* Downloads: `download_file` refuses plain `http://` (except to the own computer), takes at most
+  16 GiB, never writes through a link, and `download_file_verified` checks a SHA-256 sum. A
+  download of more than 30 seconds no longer fails (the limit is for silence now).
+* Unpacking: no more than 64 GiB (`decompress_limited` for another limit); an existing folder is
+  merged, no longer deleted.
+* The settings file (`set_config`) is written atomically with the mode `0600` and a damaged file
+  is kept, not thrown away.
+* The log: control characters cannot reach the log file or syslog (the viewer shows it in a
+  terminal), the file and its folder are private, secrets in command lines are hidden, and long
+  texts are cut.
+* The deletion helpers resolve `..` and links before they check a path, and the helpers that
+  delete a whole folder refuse protected folders as well.
+* `open_terminal_command` runs a program in a terminal without a shell reading its arguments;
+  `open_url` opens only `http`, `https`, `mailto`, `file` and `tel`.
+* `-debug -snp` uses a private folder for `$SNAP`; a fixed name in `/tmp` was searched for
+  programs before `PATH`.
+* The elevation on Windows (`Start-Process`) quotes the arguments, so one with a space stays one.
+* `command_output_timeout` and `run_command_chain` hold their time and size limits.
+* The web page of the changelog has a Content-Security-Policy (the script and the style by their
+  hashes) and shows only links to `http`, `https`, `mailto` and relative addresses.
+* `.github/workflows/audit.yml` runs `cargo audit` on every push, pull request and once a week;
+  `.github/dependabot.yml` proposes updates of the dependencies.
 
 ### Build and packaging
 

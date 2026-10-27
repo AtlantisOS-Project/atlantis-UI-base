@@ -72,10 +72,10 @@ fn journal_follow(app_name: &str) -> Vec<String> {
         "journalctl",
         "-f",
         "-n",
-        "0",
+        "200",
         "-t",
         app_name,
-        "--output=short",
+        "--output=short-iso",
     ])
 }
 

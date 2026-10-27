@@ -64,7 +64,19 @@ pub fn show_chooser(
     // what the user chose, or the reason why nothing was chosen
     fn files(result: Result<Vec<gio::File>, glib::Error>, on_chosen: impl Fn(Vec<PathBuf>)) {
         match result {
-            Ok(files) => on_chosen(files.iter().filter_map(gio::File::path).collect()),
+            Ok(files) => on_chosen(
+                files
+                    .iter()
+                    .filter_map(|file| {
+                        let path = file.path();
+                        if path.is_none() {
+                            // a file on a server, for example: there is no path to give
+                            log::warn!("{} is not a local file and is ignored", file.uri());
+                        }
+                        path
+                    })
+                    .collect(),
+            ),
             Err(error) if error.matches(gtk4::DialogError::Dismissed) => {}
             Err(error) => log::warn!("the file dialog failed: {error}"),
         }

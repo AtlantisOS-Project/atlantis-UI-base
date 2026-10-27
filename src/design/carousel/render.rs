@@ -196,7 +196,12 @@ fn steps(start: u32, items: &[Step]) -> gtk4::Widget {
 
     for (i, step) in items.iter().enumerate() {
         let number = gtk4::Label::builder()
-            .label((start + i as u32).to_string())
+            // `start` comes from a file: no overflow, whatever it says
+            .label(
+                start
+                    .saturating_add(u32::try_from(i).unwrap_or(u32::MAX))
+                    .to_string(),
+            )
             .halign(gtk4::Align::Center)
             .valign(gtk4::Align::Center)
             .css_classes(["guide-step-number"])

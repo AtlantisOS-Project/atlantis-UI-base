@@ -169,9 +169,13 @@ fn decompressed_name(path: &Path, format: ArchiveFormat) -> String {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    match name.strip_suffix(&format!(".{}", format.label())) {
-        Some(stem) if !stem.is_empty() => stem.to_string(),
-        _ => format!("{name}.out"),
+    let suffix = format!(".{}", format.label());
+    // the ending is not case sensitive (`SYSTEM.IMG.GZ`)
+    match name.len().checked_sub(suffix.len()).filter(|&at| {
+        at > 0 && name.is_char_boundary(at) && name[at..].eq_ignore_ascii_case(&suffix)
+    }) {
+        Some(at) => name[..at].to_string(),
+        None => format!("{name}.out"),
     }
 }
 
@@ -189,11 +193,119 @@ fn files_below(dir: &Path, found: &mut Vec<PathBuf>) -> io::Result<()> {
     Ok(())
 }
 
-/// Decompresses `path` into `output_dir`.
+/// The most data [`decompress`] and [`decompress_file`] write: 64 GiB. A damaged or hostile
+/// archive can be a few kilobytes and unpack to terabytes; the limit stops that before the disk
+/// is full. Use [`decompress_limited`] for another limit.
+pub const MAX_UNPACKED_BYTES: u64 = 64 * 1024 * 1024 * 1024;
+
+/// A reader that fails when more than the allowed number of bytes has been read through it. The
+/// count is kept in `left`, so one limit can cover all the files of an archive.
+struct Limited<'a, R> {
+    inner: R,
+    left: &'a mut u64,
+}
+
+impl<'a, R> Limited<'a, R> {
+    fn new(inner: R, left: &'a mut u64) -> Self {
+        Limited { inner, left }
+    }
+}
+
+impl<R: Read> Read for Limited<'_, R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let read = self.inner.read(buf)?;
+        if read as u64 > *self.left {
+            *self.left = 0;
+            return Err(io::Error::new(
+                io::ErrorKind::FileTooLarge,
+                "the unpacked data is bigger than the limit",
+            ));
+        }
+        *self.left -= read as u64;
+        Ok(read)
+    }
+}
+
+/// Unpacks a zip archive into `out`. Not `ZipArchive::extract`: it cannot count the bytes it
+/// writes, and the links of an archive are no way out of the folder this way. Links are left
+/// out, a file never replaces another one, and the mode of a file is cut to `rwxrwxrwx` (no
+/// setuid and setgid bits).
+fn extract_zip(
+    reader: BufReader<File>,
+    out: &Path,
+    left: &mut u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut archive = zip::ZipArchive::new(reader)?;
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index)?;
+        let Some(name) = entry.enclosed_name() else {
+            let shown = entry.name().map(|n| n.into_owned()).unwrap_or_default();
+            return Err(format!("unsafe path in the archive: {shown}").into());
+        };
+        let target = out.join(name);
+        if entry.is_dir() {
+            fs::create_dir_all(&target)?;
+            continue;
+        }
+        if entry.is_symlink() {
+            continue;
+        }
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&target)?;
+        io::copy(&mut Limited::new(&mut entry, &mut *left), &mut file)?;
+        #[cfg(unix)]
+        if let Some(mode) = entry.unix_mode() {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&target, fs::Permissions::from_mode(mode & 0o777))?;
+        }
+    }
+    Ok(())
+}
+
+/// Moves `from` to `to`. A folder is merged into a folder of the same name, a file replaces a
+/// file; a file and a folder never replace each other (an error, nothing is deleted).
+fn move_into(from: &Path, to: &Path) -> io::Result<()> {
+    let from_is_dir = fs::symlink_metadata(from)?.is_dir();
+    match fs::symlink_metadata(to) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => fs::rename(from, to),
+        Err(error) => Err(error),
+        Ok(existing) if from_is_dir && existing.is_dir() => {
+            for entry in fs::read_dir(from)? {
+                let entry = entry?;
+                move_into(&entry.path(), &to.join(entry.file_name()))?;
+            }
+            Ok(())
+        }
+        Ok(existing) if !from_is_dir && !existing.is_dir() => {
+            fs::remove_file(to)?;
+            fs::rename(from, to)
+        }
+        Ok(_) => Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!(
+                "{} exists and is a file where the archive has a folder, or the other way round",
+                to.display()
+            ),
+        )),
+    }
+}
+
+/// Decompresses `path` into `output_dir`; at most [`MAX_UNPACKED_BYTES`] are written.
 ///
 /// The archive is unpacked into a temporary folder inside `output_dir` first. When that
-/// worked, its content replaces files with the same names in `output_dir`; a damaged
-/// archive therefore leaves `output_dir` as it was.
+/// worked, its content is moved into `output_dir`: a folder of the archive is **merged** into a
+/// folder of the same name (what is in it and not in the archive stays), a file replaces a file
+/// of the same name. A file never replaces a folder, nor a folder a file: that is an error. A
+/// damaged archive, or one that is too big, therefore leaves `output_dir` as it was.
+///
+/// Links in an archive are unpacked by `tar` only (they are left out of a zip) and never
+/// followed. A 7z entry or a zip entry with `..` or an absolute path is refused. The modes of
+/// the unpacked files never have setuid or setgid bits.
 ///
 /// # Returns
 ///
@@ -201,11 +313,40 @@ fn files_below(dir: &Path, found: &mut Vec<PathBuf>) -> io::Result<()> {
 ///
 /// # Errors
 ///
-/// Returns an error if the file cannot be read or is damaged, or does not fit `format`.
+/// Returns an error if the file cannot be read or is damaged, does not fit `format`, or
+/// unpacks to more than [`MAX_UNPACKED_BYTES`].
 pub fn decompress(
     path: &Path,
     output_dir: &Path,
     format: ArchiveFormat,
+) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+    decompress_limited(path, output_dir, format, MAX_UNPACKED_BYTES)
+}
+
+/// Like [`decompress`], but with your own limit: the archive fails if it unpacks to more than
+/// `max_bytes`, counted over all its files.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::prelude::{ArchiveFormat, decompress_limited};
+/// use std::path::Path;
+///
+/// // a ROM of at most 12 GB
+/// let files = decompress_limited(
+///     Path::new("rom.tar.xz"),
+///     Path::new("/home/me/work"),
+///     ArchiveFormat::TarXz,
+///     12_000_000_000,
+/// )?;
+/// # let _ = files;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+pub fn decompress_limited(
+    path: &Path,
+    output_dir: &Path,
+    format: ArchiveFormat,
+    max_bytes: u64,
 ) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
     fs::create_dir_all(output_dir)?;
     let temp = tempfile::Builder::new()
@@ -213,55 +354,67 @@ pub fn decompress(
         .tempdir_in(output_dir)?;
     let out = temp.path();
     let reader = || -> io::Result<BufReader<File>> { Ok(BufReader::new(File::open(path)?)) };
-    let single = |mut source: &mut dyn Read| -> io::Result<u64> {
+    let mut left = max_bytes;
+    let single = |source: &mut dyn Read, left: &mut u64| -> io::Result<u64> {
         io::copy(
-            &mut source,
+            &mut Limited::new(source, left),
             &mut File::create(out.join(decompressed_name(path, format)))?,
         )
     };
 
     match format {
-        ArchiveFormat::Tar => tar::Archive::new(reader()?).unpack(out)?,
-        ArchiveFormat::TarXz => {
-            tar::Archive::new(xz2::read::XzDecoder::new(reader()?)).unpack(out)?
-        }
-        ArchiveFormat::TarGz => {
-            tar::Archive::new(flate2::read::GzDecoder::new(reader()?)).unpack(out)?
-        }
-        ArchiveFormat::TarBz2 => {
-            tar::Archive::new(bzip2::read::BzDecoder::new(reader()?)).unpack(out)?
-        }
+        ArchiveFormat::Tar => tar::Archive::new(Limited::new(reader()?, &mut left)).unpack(out)?,
+        ArchiveFormat::TarXz => tar::Archive::new(Limited::new(
+            xz2::read::XzDecoder::new(reader()?),
+            &mut left,
+        ))
+        .unpack(out)?,
+        ArchiveFormat::TarGz => tar::Archive::new(Limited::new(
+            flate2::read::GzDecoder::new(reader()?),
+            &mut left,
+        ))
+        .unpack(out)?,
+        ArchiveFormat::TarBz2 => tar::Archive::new(Limited::new(
+            bzip2::read::BzDecoder::new(reader()?),
+            &mut left,
+        ))
+        .unpack(out)?,
         ArchiveFormat::Xz => {
-            single(&mut xz2::read::XzDecoder::new(reader()?))?;
+            single(&mut xz2::read::XzDecoder::new(reader()?), &mut left)?;
         }
         ArchiveFormat::Gz => {
-            single(&mut flate2::read::GzDecoder::new(reader()?))?;
+            single(&mut flate2::read::GzDecoder::new(reader()?), &mut left)?;
         }
         ArchiveFormat::Bz2 => {
-            single(&mut bzip2::read::BzDecoder::new(reader()?))?;
+            single(&mut bzip2::read::BzDecoder::new(reader()?), &mut left)?;
         }
-        ArchiveFormat::Zip => zip::ZipArchive::new(reader()?)?.extract(out)?,
-        ArchiveFormat::SevenZ => sevenz_rust2::decompress_file(path, out)?,
+        ArchiveFormat::Zip => extract_zip(reader()?, out, &mut left)?,
+        ArchiveFormat::SevenZ => {
+            sevenz_rust2::decompress_file_with_extract_fn(path, out, |entry, source, dest| {
+                sevenz_rust2::default_entry_extract_fn(
+                    entry,
+                    &mut Limited::new(source, &mut left),
+                    dest,
+                )
+            })?
+        }
     }
 
-    // move the result up: the top-level entries replace what has the same name
-    let mut created = Vec::new();
+    // what is created: the files of the temporary folder, at their final places
+    let mut unpacked = Vec::new();
+    files_below(out, &mut unpacked)?;
+    let mut created: Vec<PathBuf> = unpacked
+        .iter()
+        .filter_map(|file| file.strip_prefix(out).ok())
+        .map(|relative| output_dir.join(relative))
+        .collect();
+    created.sort();
+
     for entry in fs::read_dir(out)? {
         let from = entry?.path();
         let to = output_dir.join(from.file_name().ok_or("an entry without a name")?);
-        if to.is_dir() {
-            fs::remove_dir_all(&to)?;
-        } else if to.exists() {
-            fs::remove_file(&to)?;
-        }
-        fs::rename(&from, &to)?;
-        if to.symlink_metadata()?.is_dir() {
-            files_below(&to, &mut created)?;
-        } else {
-            created.push(to);
-        }
+        move_into(&from, &to)?;
     }
-    created.sort();
     Ok(created)
 }
 
@@ -410,15 +563,29 @@ mod tests {
     }
 
     /// A 7z archive with one file under the name `name`, written without any check of the name.
-    fn seven_z_with_entry(path: &Path, name: &str) {
+    fn seven_z_with_data(path: &Path, name: &str, data: &[u8]) {
         let mut writer = sevenz_rust2::ArchiveWriter::create(path).unwrap();
         writer
-            .push_archive_entry(
-                sevenz_rust2::ArchiveEntry::new_file(name),
-                Some(&b"written outside"[..]),
-            )
+            .push_archive_entry(sevenz_rust2::ArchiveEntry::new_file(name), Some(data))
             .unwrap();
         writer.finish().unwrap();
+    }
+
+    fn seven_z_with_entry(path: &Path, name: &str) {
+        seven_z_with_data(path, name, b"written outside");
+    }
+
+    /// A tar archive with the files `files` (name, content).
+    fn tar_files(files: &[(&str, &[u8])]) -> Vec<u8> {
+        let mut builder = tar::Builder::new(Vec::new());
+        for (name, data) in files {
+            let mut header = tar::Header::new_gnu();
+            header.set_size(data.len() as u64);
+            header.set_mode(0o644);
+            header.set_cksum();
+            builder.append_data(&mut header, name, *data).unwrap();
+        }
+        builder.into_inner().unwrap()
     }
 
     #[test]
@@ -526,6 +693,110 @@ mod tests {
     }
 
     #[test]
+    fn a_folder_of_the_archive_is_merged_into_an_existing_folder() {
+        let root = tempfile::tempdir().unwrap();
+        let out = root.path().join("out");
+        fs::create_dir_all(out.join("Pictures")).unwrap();
+        fs::write(out.join("Pictures/holiday.jpg"), b"precious").unwrap();
+        fs::write(out.join("Pictures/boot.img"), b"old").unwrap();
+        let archive = root.path().join("a.tar");
+        write_with(
+            &archive,
+            &tar_files(&[
+                ("Pictures/boot.img", b"boot data"),
+                ("Pictures/new.txt", b"new"),
+            ]),
+        );
+
+        let files = decompress_file(&archive, &out).unwrap();
+        // only what the archive brought is listed
+        assert_eq!(
+            files,
+            [out.join("Pictures/boot.img"), out.join("Pictures/new.txt")]
+        );
+        assert_eq!(
+            fs::read(out.join("Pictures/holiday.jpg")).unwrap(),
+            b"precious"
+        );
+        assert_eq!(
+            fs::read(out.join("Pictures/boot.img")).unwrap(),
+            b"boot data"
+        );
+    }
+
+    #[test]
+    fn a_file_and_a_folder_never_replace_each_other() {
+        let root = tempfile::tempdir().unwrap();
+        let out = root.path().join("out");
+        fs::create_dir_all(out.join("boot.img")).unwrap();
+        fs::write(out.join("boot.img/keep"), b"keep").unwrap();
+        let archive = root.path().join("a.tar");
+        write_with(&archive, &tar_bytes());
+
+        let error = decompress_file(&archive, &out).unwrap_err().to_string();
+        assert!(error.contains("boot.img"), "{error}");
+        assert_eq!(fs::read(out.join("boot.img/keep")).unwrap(), b"keep");
+        // the temporary folder is gone, too
+        assert_eq!(fs::read_dir(&out).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn unpacking_stops_at_the_limit_in_every_format() {
+        let root = tempfile::tempdir().unwrap();
+        let data = vec![0u8; 100_000];
+
+        let mut zip = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+        zip.start_file("big.img", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(&data).unwrap();
+
+        let cases: Vec<(&str, ArchiveFormat, Vec<u8>)> = vec![
+            (
+                "big.tar",
+                ArchiveFormat::Tar,
+                tar_files(&[("big.img", &data)]),
+            ),
+            (
+                "big.tar.gz",
+                ArchiveFormat::TarGz,
+                gz(&tar_files(&[("big.img", &data)])),
+            ),
+            ("big.img.gz", ArchiveFormat::Gz, gz(&data)),
+            ("big.img.xz", ArchiveFormat::Xz, xz(&data)),
+            ("big.img.bz2", ArchiveFormat::Bz2, bz2(&data)),
+            (
+                "big.zip",
+                ArchiveFormat::Zip,
+                zip.finish().unwrap().into_inner(),
+            ),
+        ];
+        for (name, format, bytes) in cases {
+            let archive = root.path().join(name);
+            write_with(&archive, &bytes);
+            let out = root.path().join(format!("out-{name}"));
+
+            assert!(
+                decompress_limited(&archive, &out, format, 10_000).is_err(),
+                "{name}"
+            );
+            assert_eq!(
+                fs::read_dir(&out).unwrap().count(),
+                0,
+                "{name}: nothing is left"
+            );
+            // a limit that is big enough is no hindrance
+            decompress_limited(&archive, &out, format, 1_000_000).unwrap();
+        }
+
+        let archive = root.path().join("big.7z");
+        seven_z_with_data(&archive, "big.img", &data);
+        let out = root.path().join("out-7z");
+        assert!(decompress_limited(&archive, &out, ArchiveFormat::SevenZ, 10_000).is_err());
+        assert_eq!(fs::read_dir(&out).unwrap().count(), 0);
+        decompress_limited(&archive, &out, ArchiveFormat::SevenZ, 1_000_000).unwrap();
+    }
+
+    #[test]
     fn a_wrong_format_or_a_damaged_file_changes_nothing() {
         let root = tempfile::tempdir().unwrap();
         let out = root.path().join("out");
@@ -579,6 +850,15 @@ mod tests {
         assert_eq!(
             decompressed_name(Path::new("/a/image"), ArchiveFormat::Gz),
             "image.out"
+        );
+        // the ending is not case sensitive; a name that is only the ending keeps it
+        assert_eq!(
+            decompressed_name(Path::new("/a/SYSTEM.IMG.GZ"), ArchiveFormat::Gz),
+            "SYSTEM.IMG"
+        );
+        assert_eq!(
+            decompressed_name(Path::new("/a/.gz"), ArchiveFormat::Gz),
+            ".gz.out"
         );
     }
 }
