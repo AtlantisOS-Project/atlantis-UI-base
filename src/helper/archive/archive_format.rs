@@ -121,6 +121,23 @@ fn inner_is_tar(mut reader: impl Read) -> bool {
 /// # Errors
 ///
 /// Returns the [`io::Error`] if the file cannot be read.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{ArchiveFormat, detect_format};
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// let packed = dir.path().join("boot.img.gz");
+/// let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+/// std::io::Write::write_all(&mut gz, b"image data").unwrap();
+/// std::fs::write(&packed, gz.finish().unwrap()).unwrap();
+///
+/// // the content decides, not the name
+/// assert_eq!(detect_format(&packed).unwrap(), Some(ArchiveFormat::Gz));
+/// std::fs::write(&packed, b"just text").unwrap();
+/// assert_eq!(detect_format(&packed).unwrap(), None);
+/// ```
 pub fn detect_format(path: &Path) -> io::Result<Option<ArchiveFormat>> {
     let mut head = Vec::new();
     File::open(path)?
@@ -315,6 +332,23 @@ fn move_into(from: &Path, to: &Path) -> io::Result<()> {
 ///
 /// Returns an error if the file cannot be read or is damaged, does not fit `format`, or
 /// unpacks to more than [`MAX_UNPACKED_BYTES`].
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{ArchiveFormat, decompress};
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// let packed = dir.path().join("boot.img.gz");
+/// let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+/// std::io::Write::write_all(&mut gz, b"image data").unwrap();
+/// std::fs::write(&packed, gz.finish().unwrap()).unwrap();
+///
+/// // the format is the one the user chose (or `detect_format` found)
+/// let files = decompress(&packed, &dir.path().join("out"), ArchiveFormat::Gz).unwrap();
+/// assert_eq!(files.len(), 1);
+/// assert_eq!(std::fs::read(&files[0]).unwrap(), b"image data");
+/// ```
 pub fn decompress(
     path: &Path,
     output_dir: &Path,
@@ -425,6 +459,21 @@ pub fn decompress_limited(
 ///
 /// Returns an error if the format is not known (use [`decompress`] with the format the user
 /// chose then), or if the file cannot be read or is damaged.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::decompress_file;
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// let packed = dir.path().join("boot.img.gz");
+/// let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+/// std::io::Write::write_all(&mut gz, b"image data").unwrap();
+/// std::fs::write(&packed, gz.finish().unwrap()).unwrap();
+///
+/// let files = decompress_file(&packed, &dir.path().join("out")).unwrap();
+/// assert_eq!(std::fs::read(&files[0]).unwrap(), b"image data");
+/// ```
 pub fn decompress_file(
     path: &Path,
     output_dir: &Path,

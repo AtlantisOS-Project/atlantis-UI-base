@@ -50,6 +50,22 @@ pub fn require_dir_name(dir: &Path, name: &str) -> io::Result<()> {
 ///
 /// Returns the [`io::Error`] if something cannot be deleted, and `PermissionDenied` if `dir` is a
 /// protected folder (see the [module documentation](self)).
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::remove_dir_all_if_exists;
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// let cache = dir.path().join("cache");
+/// std::fs::create_dir_all(cache.join("sub")).unwrap();
+/// std::fs::write(cache.join("sub/file"), "x").unwrap();
+///
+/// remove_dir_all_if_exists(&cache).unwrap();
+/// assert!(!cache.exists());
+/// // a folder that is not there is fine
+/// remove_dir_all_if_exists(&cache).unwrap();
+/// ```
 pub fn remove_dir_all_if_exists(dir: &Path) -> io::Result<()> {
     refuse_protected(dir)?;
     match fs::remove_dir_all(dir) {

@@ -430,6 +430,10 @@ what was done:
 
 ### Build and packaging
 
+* New `docs/WORKFLOWS.md`: everyday work, adding things, the changelog, what runs automatically
+  (`audit.yml`, dependabot), publishing a version and the mechanisms behind the code. docs.rs builds
+  the feature `download` too. Every free function has a documentation example now (the ones
+  that need a window are `no_run`).
 * `include` in `Cargo.toml` lacked `build.rs` and `po/`, so the published crate had no
   translations. It now lists them, plus `examples/`, `tests/` and the documentation.
 * `build.rs` no longer fails when `msgfmt` is missing (it warns), so documentation builds work

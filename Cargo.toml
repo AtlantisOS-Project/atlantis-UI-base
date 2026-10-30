@@ -106,7 +106,7 @@ vte4 = { version = "0.10", optional = true }
 syslog = "7.0"
 
 [package.metadata.docs.rs]
-features = ["carousel-toml", "archive"]
+features = ["carousel-toml", "archive", "download"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [lints.rust]

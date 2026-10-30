@@ -34,6 +34,15 @@ pub enum Feature {
 
 /// Whether the program runs in a sandbox (Flatpak or Snap), which has no access to the programs of
 /// the host.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{current_package_format, in_sandbox};
+///
+/// // the same answer as the package format gives
+/// assert_eq!(in_sandbox(), current_package_format().sandboxed);
+/// ```
 pub fn in_sandbox() -> bool {
     detect_package_format(&|key| std::env::var_os(key)).sandboxed
 }

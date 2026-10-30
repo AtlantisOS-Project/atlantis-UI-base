@@ -154,6 +154,16 @@ impl FormDialog {
 }
 
 /// A row with a drop-down menu.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::{create_combo_row, selected_index};
+/// # gtk4::init().unwrap();
+///
+/// let row = create_combo_row("Slot", &["Automatic".to_string(), "a".to_string(), "b".to_string()]);
+/// assert_eq!(selected_index(&row), 0);
+/// ```
 pub fn create_combo_row(title: &str, items: &[String]) -> adw::ComboRow {
     let items: Vec<&str> = items.iter().map(String::as_str).collect();
     adw::ComboRow::builder()
@@ -163,11 +173,32 @@ pub fn create_combo_row(title: &str, items: &[String]) -> adw::ComboRow {
 }
 
 /// The index of the chosen entry of a menu.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::{create_combo_row, selected_index};
+/// # gtk4::init().unwrap();
+///
+/// let row = create_combo_row("Method", &["With root".to_string(), "Without root".to_string()]);
+/// let without_root = selected_index(&row) == 1;
+/// ```
 pub fn selected_index(row: &adw::ComboRow) -> usize {
     row.selected() as usize
 }
 
 /// A row with a switch.
+///
+/// # Examples
+///
+/// ```no_run
+/// use adw::prelude::*;
+/// use atlbase::ui_prelude::create_switch_row;
+/// # gtk4::init().unwrap();
+///
+/// let row = create_switch_row("Erase first", "For a system that is replaced");
+/// row.set_active(true);
+/// ```
 pub fn create_switch_row(title: &str, subtitle: &str) -> adw::SwitchRow {
     adw::SwitchRow::builder()
         .title(title)
@@ -176,6 +207,17 @@ pub fn create_switch_row(title: &str, subtitle: &str) -> adw::SwitchRow {
 }
 
 /// Calls `update` now and whenever the choice of the menu changes.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::{create_combo_row, on_selection_change};
+/// # gtk4::init().unwrap();
+///
+/// let row = create_combo_row("Method", &["With root".to_string(), "Without root".to_string()]);
+/// // shows or hides the rows that belong to the choice, now and at every change
+/// on_selection_change(&row, || println!("the choice changed"));
+/// ```
 pub fn on_selection_change(row: &adw::ComboRow, update: impl Fn() + 'static) {
     row.connect_selected_notify(move |_| update());
 }

@@ -52,6 +52,16 @@ pub fn home_dir() -> Option<PathBuf> {
 
 /// The folder for the user's documents (`~/Documents`, `C:\Users\<name>\Documents`), if the
 /// system names one. A good place to suggest for files the user wants to find again.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::documents_dir;
+///
+/// if let Some(dir) = documents_dir() {
+///     assert!(dir.is_absolute());
+/// }
+/// ```
 pub fn documents_dir() -> Option<PathBuf> {
     UserDirs::new().and_then(|dirs| dirs.document_dir().map(Path::to_path_buf))
 }

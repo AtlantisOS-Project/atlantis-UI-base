@@ -115,6 +115,20 @@ compile_error!(
 /// The format the program runs in, found out from the environment of the process; not remembered.
 ///
 /// With one format compiled in, that is the answer without a look at the environment.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::detect_package_format;
+///
+/// // nothing in the environment: no sandbox
+/// let format = detect_package_format(&|_| None);
+/// assert!(!format.sandboxed);
+///
+/// // $FLATPAK_ID is what a Flatpak sets
+/// let in_flatpak = |key: &str| (key == "FLATPAK_ID").then(|| "org.example.App".into());
+/// println!("{}", detect_package_format(&in_flatpak).label);
+/// ```
 pub fn detect_package_format(var: Lookup) -> &'static PackageFormat {
     detect_package_format_at(var, std::env::current_exe().ok().as_deref())
 }
@@ -132,6 +146,23 @@ pub const FORMAT_OVERRIDE: &str = "ATL_PACKAGE_FORMAT";
 /// root. That matters more often than it seems: a program that was started by a program of a Snap
 /// (`cargo run` with the `cargo` of the rustup Snap, a terminal of a Snap) inherits `$SNAP`
 /// without being in the Snap.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{PACKAGE_FORMATS, detect_package_format_at};
+/// use std::path::Path;
+///
+/// let snap = |key: &str| (key == "SNAP").then(|| "/snap/my-app/7".into());
+/// if PACKAGE_FORMATS.len() > 1 {
+///     // started by a program of a Snap (`cargo run` with the cargo of a Snap): not this Snap
+///     let elsewhere = Path::new("/home/me/target/debug/my-app");
+///     assert_ne!(detect_package_format_at(&snap, Some(elsewhere)).id, "snap");
+///     // below the root of the Snap: the Snap
+///     let inside = Path::new("/snap/my-app/7/usr/bin/my-app");
+///     assert_eq!(detect_package_format_at(&snap, Some(inside)).id, "snap");
+/// }
+/// ```
 pub fn detect_package_format_at(var: Lookup, exe: Option<&Path>) -> &'static PackageFormat {
     if let [only] = PACKAGE_FORMATS {
         return only;
@@ -176,6 +207,19 @@ pub fn current_package_format() -> &'static PackageFormat {
 
 /// The roots of all formats that report one (the folders the programs of a package live below),
 /// in the order of [`PACKAGE_FORMATS`].
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::package_roots;
+///
+/// let in_snap = |key: &str| (key == "SNAP").then(|| "/snap/my-app/7".into());
+/// for (format, root) in package_roots(&in_snap) {
+///     assert_eq!(format.id, "snap");
+///     assert_eq!(root, std::path::PathBuf::from("/snap/my-app/7"));
+/// }
+/// assert!(package_roots(&|_| None).is_empty());
+/// ```
 pub fn package_roots(var: Lookup) -> Vec<(&'static PackageFormat, PathBuf)> {
     PACKAGE_FORMATS
         .iter()

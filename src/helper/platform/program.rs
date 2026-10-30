@@ -80,6 +80,17 @@ pub fn program_file_names(os: Os, name: &str, pathext: Option<&str>) -> Option<V
 ///
 /// On Unix that means a regular file with an execute bit; on Windows any file (the ending
 /// decides, see [`program_file_names`]).
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{find_program, is_executable};
+///
+/// assert!(!is_executable(std::path::Path::new("/definitely/not/here")));
+/// if let Some(shell) = find_program("sh") {
+///     assert!(is_executable(&shell));
+/// }
+/// ```
 pub fn is_executable(path: &Path) -> bool {
     let Ok(meta) = path.metadata() else {
         return false;

@@ -126,17 +126,18 @@ in the library changes.
 | Item | Purpose |
 |---|---|
 | `Os`, `Arch`, `Target` | Which system and processor the program was built for; `Arch::name()` (`x86_64`, `aarch64`), `Arch::debian_name()` (`amd64`, `arm64`), `Os::exe_suffix()` |
-| `OsProfile`, `os_profile()`, `os_profile_for(os)` | The description of the operating system (fields: `critical_paths`, `protected_dirs`, `standard_home_folders`, `elevate`, `terminal`, `package_managers`, `journal_follow`, `syslog`, `program_names`, …) |
-| `PackageFormat`, `PACKAGE_FORMATS`, `current_package_format()`, `detect_package_format(var)`, `package_roots(var)` | The package format the program runs in, and the list of the formats that are compiled in |
+| `OsProfile`, `os_profile()`, `os_profile_for(os)`, `Has` | The description of the operating system (fields: `critical_paths`, `protected_dirs`, `standard_home_folders`, `elevate`, `terminal`, `package_managers`, `journal_follow`, `syslog`, `program_names`, …) |
+| `PackageFormat`, `PACKAGE_FORMATS`, `current_package_format()`, `detect_package_format(var)`, `detect_package_format_at(var, exe)`, `package_roots(var)`, `Lookup` | The package format the program runs in, and the list of the formats that are compiled in. A Snap or an AppImage counts only if the program (`exe`) lives below its root; `Lookup` is an environment lookup (tests pass their own) |
+| `FORMAT_OVERRIDE` (`ATL_PACKAGE_FORMAT`) | The environment variable that chooses the format by hand (`snap`, `flatpak`, `appimage`, `native`); `-debug -snp` and `-debug -flp` set it |
 | `AppDirs::new(app)` | `config_dir()`, `config_file()`, `data_dir()`, `cache_dir()`, `state_dir()`, `log_file()` of an application |
-| `home_dir()`, `documents_dir()` | The home directory and the folder for documents |
+| `home_dir()`, `documents_dir()`, `is_mount_point(path)` | The home directory, the folder for documents, and whether a path is a mount point (what the delete helpers refuse) |
 | `DataDirs::current().data_dirs()` | Folders with read-only resources (translations, icons, guides) in search order, for every package format |
-| `find_program(name)`, `program_path(name)`, `register_tool_dir(dir)`, `package_bin_dirs(&DataDirs)` | Where an external program is: bundled folders, the programs of the package format (`/app/bin`, `$SNAP/usr/bin`, `$APPDIR/usr/bin`), then `PATH`; `.exe` on Windows |
+| `find_program(name)`, `program_path(name)`, `register_tool_dir(dir)`, `package_bin_dirs(&DataDirs)`, `is_executable(path)`, `program_file_names(os, name, pathext)` | Where an external program is: bundled folders, the programs of the package format (`/app/bin`, `$SNAP/usr/bin`, `$APPDIR/usr/bin`), then `PATH`; `.exe` on Windows |
 | `host_command(program)`, `host_command_line(&[String])` | `Command::new` for programs of the host; use these instead (no console window on Windows) |
-| `elevation_command(command)` | The command with `pkexec` (Linux), `osascript` (macOS) or a UAC prompt (Windows) in front |
+| `elevation_command(command)`, `elevation_command_for(os, command)` | The command with `pkexec` (Linux), `osascript` (macOS) or a UAC prompt (Windows) in front; the second asks for another system (tests) |
 | `supports(Feature::…)`, `in_sandbox()` | `Elevation`, `HostTerminal`, `SystemLog`, `PackageInstall`, `PosixShell`: show a button only where the host offers it |
-| `PackageManager::detect()`, `.install_command(packages)` | `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew` |
-| `init_logging(app)` | The log file `AppDirs::log_file` on every system and package format (UTC time, level, part of the program; rotated at 1 MB) and syslog next to it on Linux and macOS. Afterwards `info!`, `warn!`, … work; `log_file_of(app)` is the path |
+| `PackageManager::detect()`, `.install_command(packages)`, `APT_SOURCES_DIR` | `apt-get`, `dnf`, `pacman`, `zypper`, `winget`, `brew`; the folder with the APT sources (`/etc/apt/sources.list.d`) |
+| `init_logging(app)`, `init_file_logging(path)`, `log_file_of(app)`, `short_target(target)`, `utc_timestamp(seconds)`, `MAX_LOG_BYTES`, `journal_follow_command(app)` / `journal_follow_command_for(os, app)` | `init_logging`: the log file `AppDirs::log_file` on every system and package format (UTC time, level, part of the program; rotated at 1 MB) and syslog next to it on Linux and macOS. Afterwards `info!`, `warn!`, … work. `init_file_logging` logs to one file only; `log_file_of` is the path; `short_target` and `utc_timestamp` format an entry; `MAX_LOG_BYTES` is the size at which the file is rotated; `journal_follow_command` is the command that shows the system log |
 
 ```rust
 use atlbase::prelude::*;
@@ -235,7 +236,7 @@ Use the `log` macros; `init_logging(app)` (once, at the start) writes them to th
 | `show_spinner_dialog(…, commands, IndicatorType, on_complete)` | Spinner or progress bar while commands run |
 | `show_spinner_dialog_return_output(…)` | The same, with the result of every command (`CommandResult`) |
 | `show_task_dialog(parent, title, message, IndicatorType, task)` | The same for a Rust function |
-| `CommandTask::new(title, message, commands)` | A chain of commands with a progress dialog and a result dialog; `.progress_bar()`, `.success_message()`, `.show_output()`, `.explain_errors()`, `.run(parent)` |
+| `CommandTask::new(title, message, commands)` | A chain of commands with a progress dialog and a result dialog; `.progress_bar()`, `.success_message()`, `.show_output()`, `.explain_errors()`, `.run(parent)`. `TaskOutcome` is what the user is told after success, `ErrorHint` a hint for a known error text, `task_error_text(error, hint)` the text of the error dialog |
 | `show_confirm_dialog(parent, heading, body, confirm_label, on_confirm)` | "Cancel" and a red button before something cannot be undone |
 | `show_work_dialog(parent, title, message, work)` | Spinner while a closure `-> Result<String, String>` works; then a success or error dialog |
 
@@ -280,7 +281,7 @@ references that nothing is left.
 | `run_background(work, done)` | Run slow work in a thread and its result in the main loop; the window does not freeze |
 | `create_page_container`, `create_rows_box`, `create_scrolling_page(rows, bottom)`, `create_clamped_scrolling_page(content, bottom, max_width)` | The containers of a page: centered, scrolling list with a button at the bottom, a narrow column |
 | `create_heading`, `create_text_label`, `create_pill_button(icon, label, suggested, on_click)` | Heading, wrapping text, standard pill button with an icon |
-| `MenuEntry::new(icon, label, action)`, `create_button_grid(entries, columns, MenuGridStyle)` | A grid of big buttons; long texts are cut to the column in the font that is used |
+| `MenuEntry::new(icon, label, action)` (`MenuAction` is the type of the handler), `create_button_grid(entries, columns, MenuGridStyle)` | A grid of big buttons; long texts are cut to the column in the font that is used |
 | `show_stack_page(stack, id, rebuild, build)` | Show a page of a `gtk4::Stack`, built when it is first needed (`rebuild`: on every visit) |
 | `StackWindow::new(app, title, width, height)`, `.present(show_first)` | A window of fixed size with a header bar and a stack for the pages |
 | `StatusRow::new(title)`, `.set_result(ok, text)`, `.is_ok()` | A row with a spinner that turns into a check mark or a warning |

@@ -33,7 +33,7 @@ atlbase
 │   │                    dialog_entry, dialog_function, dialog_spinner_return, dialog_work,
 │   │                    dialogs_spinner, image_dialog, standard_dialogs
 │   ├── form             FormDialog, PickRow, combo and switch rows
-│   ├── theme            load_adw_provider
+│   ├── theme            load_adw_provider, app_icon, renderer
 │   └── utils            background, command_pkexec_ui, create_entry, create_label_icon,
 │                        create_special_button, menu_grid, page_layout, stack_pages,
 │                        stack_window, status_row
@@ -44,6 +44,7 @@ atlbase
 |---|---|
 | `helper::archive::archive_format` | Recognize and unpack tar, xz, gz, bz2, zip and 7z (feature `archive`) |
 | `helper::cli::common_options` | `-debug`, `--version` and `--help` for every AtlantisOS program |
+| `helper::commands::command_chain` | `run_command_chain`: commands one after another, with a result for each (what every progress dialog runs; logs each command) |
 | `helper::commands::command_exists` | Is a program installed (searches `PATH`, checks the execute bit) |
 | `helper::commands::command_line` | Build and quote command lines, ask a command with a time limit |
 | `helper::commands::command_pkexec` | Run a command as root with `pkexec` |
@@ -77,6 +78,8 @@ atlbase
 | `design::dialogs::*` | Alert, entry, custom, image, about, confirm, spinner, work and task dialogs; `CommandTask` |
 | `design::form` | Dialogs with a form: drop-down menus, switches, file and folder rows |
 | `design::theme::load_adw_provider` | CSS providers that follow light/dark |
+| `design::theme::app_icon` | `ensure_app_icon`: makes the icon of the program findable (installed, AppDir, Snap, source tree) |
+| `design::theme::renderer` | `set_renderer`: how GTK draws the windows (processor or graphics card) |
 | `design::utils::*` | Widget factories, page layout, button grid, stack pages and window, background work |
 
 The project also has the directories `examples/` (programs), `tests/` (integration tests),

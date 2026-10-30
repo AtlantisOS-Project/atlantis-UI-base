@@ -16,6 +16,7 @@ in deb, rpm, Flatpak, Snap and AppImage packages.
 [Changelog](CHANGELOG/README.md) ·
 [Packaging guide](docs/PACKAGING.md) ·
 [User guide](docs/USER_GUIDE.md) ·
+[Workflows](docs/WORKFLOWS.md) ·
 [Security audits](docs/SECURITY_AUDIT.md)
 
 ## Contents
@@ -84,7 +85,7 @@ fn main() -> glib::ExitCode {
   helpers, path expansion
 - Settings in a TOML file (`get_config`, `set_config`), detection of Flatpak / Snap / AppImage / PPA
 - Internationalization with gettext; the texts of the library are translated out of the box
-- Logging to syslog and a journal viewer window
+- Logging to a file and to syslog, and a log viewer window
 - Examples and tests for everything
 
 ## Installation
@@ -99,8 +100,10 @@ atlbase = "0.2"
 | Cargo feature | Default | Description |
 |---|---|---|
 | `carousel-toml` | yes | Load multi-page guides from TOML files (`GuideLoader`) |
-| `log-viewer` | yes | Journal viewer window and header bar menu (needs VTE) |
+| `log-viewer` | yes | Log viewer window and header bar menu (needs VTE) |
 | `archive` | no | Recognize and unpack tar, xz, gz, bz2, zip and 7z (`helper::archive`) |
+| `download` | no | Download a file over HTTP(S) without `curl` (`helper::download`) |
+| `format-flatpak`, `format-snap`, `format-appimage`, `format-native` | all yes | The package formats that are compiled in; at least one is needed, see below |
 | `experimental-api` | no | Unfinished `system` module (does not compile yet) |
 
 Without VTE (for example for a Flatpak that uses the GNOME runtime), and compiled for one package
@@ -166,7 +169,7 @@ docs/                guides and the changelog page
 | `helper::file` | `add_line_file`, `get_config_value`, `write_file`, `trim_and_clean`, temporary file |
 | `helper::filesystem` | create, check, search, expand and delete paths |
 | `helper::language` | `init_language`, `translate`, `LIB_DOMAIN` |
-| `helper::log` | `init_syslog`, `show_log_viewer`, `create_custom_headerbar` |
+| `helper::log` | `init_syslog` (syslog only), `show_log_viewer` (shows the log file), `create_custom_headerbar`; `init_logging` of `helper::platform` writes the file and syslog |
 | `design::dialogs` | all dialogs, `CommandTask` |
 | `design::form` | `FormDialog`, `PickRow`, combo and switch rows |
 | `design::carousel` | `Guide`, `Page`, `GuideView`, `GuideLoader` |
@@ -287,6 +290,8 @@ What `tests/` covers:
 | `helper_config.rs` | settings in `$XDG_CONFIG_HOME` (also how Flatpak and Snap redirect them) |
 | `helper_commands.rs`, `helper_environment.rs`, `helper_cli.rs` | running commands, command lines, detection of Flatpak / Snap / AppImage / deb, the shared command line options |
 | `language_library.rs`, `language_application.rs` | translations of the library and of an application |
+| `helper_platform.rs` | the platform layer: operating systems, folders, programs, package formats, logging |
+| `changelog.rs` | the changelog folder and the page that shows it fit together |
 | `carousel_toml.rs`, `design_gtk.rs`, `preludes.rs` | guides, GTK widgets, the exported names |
 
 Good to know:
@@ -320,6 +325,7 @@ cargo package --allow-dirty     # does the crate build from the packaged files?
 * [docs/DEVELOPER_DOCS.md](docs/DEVELOPER_DOCS.md) — all functions and the conventions of the code
 * [docs/MODULES_OVERVIEW.md](docs/MODULES_OVERVIEW.md) — what each module is for
 * [docs/PACKAGING.md](docs/PACKAGING.md) — deb, rpm, Flatpak, Snap, AppImage
+* [docs/WORKFLOWS.md](docs/WORKFLOWS.md) — everyday work, adding things, the changelog, what runs automatically, publishing, and the mechanisms behind the code
 * [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) — the security audits: the scale, what is open, what was fixed
 
 ## Changelog

@@ -14,6 +14,17 @@ use gtk4::{Align, Box as GtkBox, Button, Label, Orientation, PolicyType, Scrolle
 
 /// The vertical container a menu page starts with: its content is centered, with space
 /// around it.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::*;
+/// use gtk4::prelude::*;
+/// # gtk4::init().unwrap();
+///
+/// let page = create_page_container();
+/// page.append(&create_text_label("Choose what to do."));
+/// ```
 pub fn create_page_container() -> GtkBox {
     GtkBox::builder()
         .orientation(Orientation::Vertical)
@@ -30,6 +41,18 @@ pub fn create_page_container() -> GtkBox {
 }
 
 /// The box for the rows of a [`create_scrolling_page`].
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::*;
+/// use gtk4::prelude::*;
+/// # gtk4::init().unwrap();
+///
+/// let rows = create_rows_box();
+/// rows.append(&create_heading("Settings"));
+/// // pass `rows` to `create_scrolling_page`
+/// ```
 pub fn create_rows_box() -> GtkBox {
     GtkBox::builder()
         .orientation(Orientation::Vertical)
@@ -74,6 +97,17 @@ pub fn create_scrolling_page(rows: &GtkBox, bottom: &Button) -> GtkBox {
 }
 
 /// A heading (style `title-3`) for a list of rows.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::create_heading;
+/// use gtk4::prelude::*;
+/// # gtk4::init().unwrap();
+///
+/// let heading = create_heading("Devices");
+/// assert!(heading.has_css_class("title-3"));
+/// ```
 pub fn create_heading(text: &str) -> Label {
     let label = Label::new(Some(text));
     label.add_css_class("title-3");
@@ -82,6 +116,15 @@ pub fn create_heading(text: &str) -> Label {
 }
 
 /// A left-aligned, wrapping label for the text of a page.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::create_text_label;
+/// # gtk4::init().unwrap();
+///
+/// let label = create_text_label("A text that wraps when the window is narrow.");
+/// ```
 pub fn create_text_label(text: &str) -> Label {
     Label::builder()
         .label(text)
@@ -95,6 +138,15 @@ pub fn create_text_label(text: &str) -> Label {
 
 /// A standard Libadwaita pill button with an icon. `suggested` marks the main action of a
 /// page with the accent color.
+///
+/// # Examples
+///
+/// ```no_run
+/// use atlbase::ui_prelude::create_pill_button;
+/// # gtk4::init().unwrap();
+///
+/// let save = create_pill_button("document-save-symbolic", "Save", true, |_| println!("saved"));
+/// ```
 pub fn create_pill_button(
     icon: &str,
     label: &str,

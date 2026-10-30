@@ -654,9 +654,9 @@ fn switch_to_page(stack: &Stack, target: Page) {
 * Main function that create the basic gtk/adw UI
 */
 fn build_ui(app: &adw::Application) {
-    // init syslog
+    // init logging: the log file (shown by the log viewer) and syslog
     let test_domain = "atl_test";
-    init_syslog(test_domain).expect("Unable to initialize Syslog");
+    init_logging(test_domain).expect("Unable to initialize logging");
     // init language
     let test_dir = env!("COMPILED_LOCALE_DIR");
     language::init_language(test_domain, test_dir, false);

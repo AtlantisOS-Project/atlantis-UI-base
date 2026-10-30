@@ -54,7 +54,7 @@ fn main() -> glib::ExitCode {
         .build();
 
     app.connect_activate(|app| {
-        init_syslog("demo").ok();                          // log to syslog / journal
+        init_logging("demo").ok();                         // log to a file and syslog
         init_language("demo", "/usr/share/locale", false); // translations
         use_adw_provider("button { border-radius: 12px; }");
 

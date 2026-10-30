@@ -314,6 +314,21 @@ pub fn log_file_of(app_name: &str) -> Option<PathBuf> {
 /// Returns a [`log::SetLoggerError`] if a logger has already been registered, and prints a
 /// message to `stderr` and returns `Ok` if the file cannot be opened (a program must not stop
 /// because it cannot log).
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::init_file_logging;
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// let file = dir.path().join("logs/app.log");
+/// init_file_logging(&file).unwrap();
+/// log::info!("started");
+/// log::logger().flush();
+///
+/// let text = std::fs::read_to_string(&file).unwrap();
+/// assert!(text.contains("INFO") && text.contains("started"));
+/// ```
 pub fn init_file_logging(path: &Path) -> Result<(), SetLoggerError> {
     let logger = match FileLogger::open(path) {
         Ok(logger) => logger,
@@ -389,6 +404,17 @@ pub fn journal_follow_command_for(os: Os, app_name: &str) -> Option<Vec<String>>
 }
 
 /// [`journal_follow_command_for`] for the system the program runs on.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::journal_follow_command;
+///
+/// // Linux has a system log to follow; the command names the application
+/// if let Some(command) = journal_follow_command("my-app") {
+///     assert!(command.contains(&"my-app".to_string()));
+/// }
+/// ```
 pub fn journal_follow_command(app_name: &str) -> Option<Vec<String>> {
     os_profile().journal_follow.map(|follow| follow(app_name))
 }

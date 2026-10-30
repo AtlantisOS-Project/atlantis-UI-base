@@ -38,8 +38,9 @@ fn demo_button(
 }
 
 fn build_ui(app: &adw::Application) {
-    // 1. log to syslog (ignore the error if a logger exists already)
-    let _ = init_syslog("atlbase-dialogs-demo");
+    // 1. log to the log file and syslog; the log viewer of the header bar shows the file (ignore
+    //    the error if a logger exists already)
+    let _ = init_logging("atlbase-dialogs-demo");
     log::info!("dialogs demo started");
 
     // 2. translations: this application has no catalog of its own, but the texts of the

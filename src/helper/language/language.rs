@@ -92,6 +92,20 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 /// # Arguments
 ///
 /// * `dir` - The locale directory, for example `/usr/share/locale`.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::{get_language_dir, set_language_dir};
+///
+/// let dir = tempfile::tempdir().unwrap();
+/// set_language_dir(dir.path().to_str().unwrap());
+/// assert_eq!(get_language_dir(), dir.path());
+///
+/// // a path that is not a directory is ignored
+/// set_language_dir("/this/path/does/not/exist");
+/// assert_eq!(get_language_dir(), dir.path());
+/// ```
 pub fn set_language_dir(dir: &str) {
     let path = Path::new(dir);
     if path.is_dir() {
@@ -103,6 +117,15 @@ pub fn set_language_dir(dir: &str) {
 ///
 /// The path is empty as long as neither [`set_language_dir`] nor [`init_language`] found a
 /// directory.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::get_language_dir;
+///
+/// // empty until `init_language` or `set_language_dir` found a directory
+/// assert!(get_language_dir().as_os_str().is_empty());
+/// ```
 pub fn get_language_dir() -> PathBuf {
     lock(&CURRENT_LOCALEDIR).clone()
 }
@@ -110,6 +133,15 @@ pub fn get_language_dir() -> PathBuf {
 /// Returns the current text domain.
 ///
 /// The text is empty until [`init_language`] has been called.
+///
+/// # Examples
+///
+/// ```
+/// use atlbase::prelude::get_current_domain;
+///
+/// // empty until `init_language` has been called
+/// assert_eq!(get_current_domain(), "");
+/// ```
 pub fn get_current_domain() -> String {
     lock(&CURRENT_DOMAIN).clone()
 }

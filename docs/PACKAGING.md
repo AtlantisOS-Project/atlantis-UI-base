@@ -148,7 +148,8 @@ Generate the vendored sources with `flatpak-cargo-generator.py Cargo.lock`. Insi
 | file and folder choosers | use the portal, no extra permission |
 | `open_url` | uses the OpenURI portal |
 | `pkexec` helpers, host terminals | not available; hide them |
-| `init_syslog`, journal viewer | `/dev/log` and `journalctl` are not available; messages are dropped |
+| `init_logging` | `/dev/log` is not available: the log file (`~/.var/app/<id>/.local/state/<app>/<app>.log`) is the only log |
+| `show_log_viewer` | shows that file; needs VTE, which the GNOME runtime lacks: build without the feature `log-viewer` |
 
 ## Snap
 

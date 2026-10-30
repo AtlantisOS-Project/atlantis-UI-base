@@ -53,16 +53,17 @@
 //!
 //! More complete programs live in the `examples/` directory of the repository
 //! (`cargo run --example dialogs`, `--example guide`, `--example helper_tools`,
-//! `--example localized_app`).
+//! `--example pages`, `--example test_app`).
 //!
 //! # Feature flags
 //!
 //! | Feature | Default | Description |
 //! |---|---|---|
-//! | `carousel-toml` | yes | Loads multi-page guides from TOML files ([`GuideLoader`](design::carousel::GuideLoader)). |
+//! | `carousel-toml` | yes | Loads multi-page guides from TOML files (`GuideLoader`). |
 //! | `download` | no | Downloads a file over HTTP(S) (`helper::download`) without `curl`. |
-//! | `archive` | no | Recognizes and unpacks archives ([`helper::archive`]): tar, tar.xz, tar.gz, tar.bz2, xz, gz, bz2, zip and 7z. |
-//! | `log-viewer` | yes | Journal viewer window and header bar menu; needs VTE (`libvte-2.91-gtk4`). |
+//! | `archive` | no | Recognizes and unpacks archives (`helper::archive`): tar, tar.xz, tar.gz, tar.bz2, xz, gz, bz2, zip and 7z. |
+//! | `log-viewer` | yes | Log viewer window (shows the log file) and header bar menu; needs VTE (`libvte-2.91-gtk4`). |
+//! | `format-flatpak`, `format-snap`, `format-appimage`, `format-native` | all yes | The package formats that are compiled in ([`helper::platform::package_format`]); at least one is needed. Build for one to leave the code of the others out. |
 //! | `experimental-api` | no | Unfinished `system` module. Does not compile yet. |
 //!
 //! # Localization
@@ -95,6 +96,13 @@
 
 #![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+// A link to an item of a feature that is off (`GuideLoader`, `show_log_viewer`) cannot be resolved
+// in a build without it. The documentation with the default features is checked in full; a build
+// of a package format only (`--no-default-features --features format-snap`) is not documented.
+#![cfg_attr(
+    not(all(feature = "carousel-toml", feature = "log-viewer")),
+    allow(rustdoc::broken_intra_doc_links)
+)]
 
 pub mod design;
 pub mod helper;
