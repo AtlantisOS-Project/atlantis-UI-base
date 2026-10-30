@@ -72,7 +72,7 @@ gio = "0.22"
 adw = { version = "0.9.1", package = "libadwaita", features = ["v1_8"] }
 glib = "0.22"
 serde = { version = "1.0", features = ["derive"] }
-confy = "0.6"
+confy = "2.0"
 directories = "6.0"
 tempfile = "3.27"
 
@@ -86,7 +86,7 @@ flate2 = { version = "1.0.30", optional = true }
 # "static": the C code of bzip2 is compiled in. The sonames of the system library differ between
 # distributions (libbz2.so.1.0 on Debian and Ubuntu, libbz2.so.1 on Fedora), so a program built on
 # one would not start on the other.
-bzip2 = { version = "0.4", features = ["static"], optional = true }
+bzip2 = { version = "0.6", features = ["static"], optional = true }
 zip = { version = "9", optional = true }
 sevenz-rust2 = { version = "0.24", optional = true }
 networkmanager = { version = "0.5", optional = true }
